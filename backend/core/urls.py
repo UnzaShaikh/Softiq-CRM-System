@@ -17,18 +17,22 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
     TokenRefreshView,
     TokenVerifyView,
 )
 
 from users.views import register_view
+from users.authentication import EmailTokenObtainPairView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
     # JWT Auth endpoints
-    path('api/auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path(
+    'api/auth/login/',
+    EmailTokenObtainPairView.as_view(),
+    name='token_obtain_pair',
+),
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('api/auth/register/', register_view, name='register'),

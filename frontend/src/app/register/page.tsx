@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 interface FormData {
+  username: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -13,7 +14,9 @@ interface FormData {
   confirmPassword: string;
   agreeToTerms: boolean;
 }
+
 interface FormErrors {
+  username?: string;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -207,9 +210,14 @@ export default function RegisterPage() {
   const { login } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState<FormData>({
-    firstName: "", lastName: "", email: "",
-    password: "", confirmPassword: "", agreeToTerms: false,
-  });
+  username: "",
+  firstName: "",
+  lastName: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+  agreeToTerms: false,
+});
   const [showPw, setShowPw] = useState(false);
   const [showCpw, setShowCpw] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -227,6 +235,7 @@ export default function RegisterPage() {
 
   function validate(): FormErrors {
     const e: FormErrors = {};
+    if (!form.username.trim()) e.username = "Username is required.";
     if (!form.firstName.trim()) e.firstName = "First name is required.";
     if (!form.lastName.trim()) e.lastName = "Last name is required.";
     if (!form.email) e.email = "Email is required.";
@@ -241,27 +250,53 @@ export default function RegisterPage() {
   }
 
   async function handleSubmit(e: React.FormEvent) {
+    console.log("handleSubmit called");
     e.preventDefault();
     setGError(""); setSuccess("");
     const errs = validate();
+    console.log("Validation Errors:", errs);
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
     setLoading(true);
-    try {
-      await new Promise((r) => setTimeout(r, 1800));
-      // Save user to global auth context
-      login({ firstName: form.firstName, lastName: form.lastName, email: form.email });
-      setSuccess("Account created! Redirecting to dashboard…");
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 1500);
-    } catch {
-      setGError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+
+try {
+  const response = await fetch("http://127.0.0.1:8000/api/auth/register/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      username: form.username,
+      email: form.email,
+      first_name: form.firstName,
+      last_name: form.lastName,
+      password: form.password,
+      password2: form.confirmPassword,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.detail ||
+      JSON.stringify(data) ||
+      "Registration failed."
+    );
   }
+
+  setSuccess("Account created successfully! Redirecting to login...");
+
+  setTimeout(() => {
+    router.push("/login");
+  }, 1500);
+
+} catch (err: any) {
+  setGError(err.message || "Something went wrong.");
+} finally {
+  setLoading(false);
+}}
 
   return (
     <div style={base.page}>
@@ -303,6 +338,28 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} noValidate style={{ display:"flex", flexDirection:"column", gap:"1.125rem" }}>
           {/* Name row */}
+          <div style={base.group}>
+  <label htmlFor="username" style={base.label}>
+    Username
+  </label>
+
+  <input
+    id="username"
+    type="text"
+    style={inp(!!errors.username, false)}
+    placeholder="john_doe"
+    value={form.username}
+    onChange={(e) => set("username", e.target.value)}
+    autoComplete="username"
+  />
+
+  {errors.username && (
+    <span style={base.fieldErr}>
+      <ErrIcon />
+      {errors.username}
+    </span>
+  )}
+</div>
           <div style={base.grid2}>
             <div style={base.group}>
               <label htmlFor="firstName" style={base.label}>First name</label>
