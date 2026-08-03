@@ -43,9 +43,12 @@ export default function Navbar() {
     ["#dc2626", "#b91c1c"],
     ["#7c3aed", "#6d28d9"],
   ];
-  const colorIndex = user
-    ? (user.firstName.charCodeAt(0) + (user.lastName.charCodeAt(0) || 0)) % avatarColors.length
-    : 0;
+const colorIndex = user
+  ? (
+      (user.firstName?.charCodeAt(0) || 0) +
+      (user.lastName?.charCodeAt(0) || 0)
+    ) % avatarColors.length
+  : 0;
   const [c1, c2] = avatarColors[colorIndex];
 
   return (

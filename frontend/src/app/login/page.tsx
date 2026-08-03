@@ -272,18 +272,41 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      await new Promise((r) => setTimeout(r, 1500));
-      // Mock: extract name from email (e.g. john.doe@... → John Doe)
-      // TODO: replace with real API — get firstName/lastName from response
-      const [rawFirst = "User", rawLast = ""] = email.split("@")[0].split(/[._]/);
-      const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-      login({ firstName: cap(rawFirst), lastName: cap(rawLast), email });
-      router.push("/dashboard");
-    } catch {
-      setError("Invalid email or password. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+  const response = await fetch("http://127.0.0.1:8000/api/auth/login/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email,
+      password,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.detail || "Invalid username or password.");
+  }
+
+ login(
+  {
+    username: data.user.username,
+    email: data.user.email,
+    firstName: data.user.first_name,
+    lastName: data.user.last_name,
+  },
+  data.access,
+  data.refresh
+);
+
+  router.push("/dashboard");
+
+} catch (err: any) {
+  setError(err.message || "Login failed.");
+} finally {
+  setIsLoading(false);
+}
   }
 
   return (
