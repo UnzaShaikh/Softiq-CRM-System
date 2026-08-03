@@ -25,10 +25,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Persist across page refreshes using localStorage
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("crm_user");
-      if (stored) setUser(JSON.parse(stored));
-    } catch {}
+    const t = setTimeout(() => {
+      try {
+        const stored = localStorage.getItem("crm_user");
+        if (stored) setUser(JSON.parse(stored));
+      } catch {}
+    }, 0);
+    return () => clearTimeout(t);
   }, []);
 
   function login(u: AuthUser) {
