@@ -37,3 +37,33 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'date_joined')
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(
+        write_only=True,
+        required=False,
+        validators=[validate_password],
+    )
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name', 'password')
+        extra_kwargs = {
+            'username': {'required': False},
+            'email': {'required': False},
+        }
+
+    def validate_email(self, value):
+        user = self.context['request'].user
+        if User.objects.exclude(pk=user.pk).filter(email=value).exists():
+            raise serializers.ValidationError('A user with that email already exists.')
+        return value
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        user = super().update(instance, validated_data)
+        if password:
+            user.set_password(password)
+            user.save()
+        return user

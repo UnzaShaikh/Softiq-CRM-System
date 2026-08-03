@@ -1,10 +1,10 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .serializers import RegisterSerializer, UserSerializer
+from .serializers import RegisterSerializer, UserSerializer, UserUpdateSerializer
 
 
 @api_view(['POST'])
@@ -24,3 +24,27 @@ def register_view(request):
         },
         status=status.HTTP_201_CREATED,
     )
+
+
+@api_view(['GET', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def me_view(request):
+    user = request.user
+
+    if request.method == 'GET':
+        return Response(UserSerializer(user).data)
+
+    if request.method == 'DELETE':
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    serializer = UserUpdateSerializer(
+        user,
+        data=request.data,
+        partial=True,
+        context={'request': request},
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+
+    return Response(UserSerializer(user).data)
