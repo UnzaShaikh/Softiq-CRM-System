@@ -7,7 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import RegisterSerializer, UserSerializer, UserUpdateSerializer
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([AllowAny])
 def register_view(request):
     serializer = RegisterSerializer(data=request.data)
@@ -18,23 +18,23 @@ def register_view(request):
 
     return Response(
         {
-            'user': UserSerializer(user).data,
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
+            "user": UserSerializer(user).data,
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
         },
         status=status.HTTP_201_CREATED,
     )
 
 
-@api_view(['GET', 'PATCH', 'DELETE'])
+@api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])
 def me_view(request):
     user = request.user
 
-    if request.method == 'GET':
+    if request.method == "GET":
         return Response(UserSerializer(user).data)
 
-    if request.method == 'DELETE':
+    if request.method == "DELETE":
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -42,7 +42,7 @@ def me_view(request):
         user,
         data=request.data,
         partial=True,
-        context={'request': request},
+        context={"request": request},
     )
     serializer.is_valid(raise_exception=True)
     serializer.save()

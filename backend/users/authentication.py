@@ -7,26 +7,23 @@ User = get_user_model()
 
 
 class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
-    # Override the default username field
+    """
+    Authenticate users using email instead of username
+    and return JWT access/refresh tokens.
+    """
+
     username_field = "email"
 
-    # Explicitly declare the fields
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        print("CUSTOM LOGIN SERIALIZER CALLED")
-
         email = attrs.get("email")
         password = attrs.get("password")
 
-        print("Email:", email)
-
         try:
             user = User.objects.get(email=email)
-            print("User found:", user.username)
         except User.DoesNotExist:
-            print("User NOT found")
             raise serializers.ValidationError(
                 {"detail": "No active account found with the given credentials."}
             )
@@ -35,8 +32,6 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
             username=user.username,
             password=password,
         )
-
-        print("Authenticated user:", authenticated_user)
 
         if authenticated_user is None:
             raise serializers.ValidationError(
@@ -59,4 +54,8 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class EmailTokenObtainPairView(TokenObtainPairView):
+    """
+    JWT login endpoint using email authentication.
+    """
+
     serializer_class = EmailTokenObtainPairSerializer
