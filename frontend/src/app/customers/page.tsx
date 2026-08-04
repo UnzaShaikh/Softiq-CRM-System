@@ -1,51 +1,100 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import CustomerTable from "@/components/customers/CustomerTable";
 import SearchBar from "@/components/customers/SearchBar";
 import Pagination from "@/components/customers/Pagination";
-import customersData, { Customer, CustomerStatus } from "@/data/customers";
+import { Customer, CustomerStatus, ApiCustomerList, toCustomer } from "@/data/customers";
+import { apiRequest, getAccessToken } from "@/lib/api";
 
-const ITEMS_PER_PAGE = 8;
+const PAGE_SIZE = 10;
 
 type FilterStatus = "All" | CustomerStatus;
+
+const STATUS_QUERY: Record<FilterStatus, string | undefined> = {
+  All: undefined,
+  Active: "active",
+  Inactive: "inactive",
+  Lead: "lead",
+};
 
 export default function CustomersPage() {
   const router = useRouter();
 
   // ── State ──────────────────────────────────────────────
-  const [customers, setCustomers] = useState<Customer[]>(customersData);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0, lead: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [deleteModal, setDeleteModal] = useState<Customer | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // ── Derived / filtered list ────────────────────────────
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    return customers.filter((c) => {
-      const matchesSearch =
-        !q ||
-        c.name.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q) ||
-        c.company.toLowerCase().includes(q) ||
-        c.phone.includes(q) ||
-        c.location.toLowerCase().includes(q);
-      const matchesStatus =
-        statusFilter === "All" || c.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [customers, search, statusFilter]);
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  // ── Data fetching ──────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
 
-  const paginated = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filtered.slice(start, start + ITEMS_PER_PAGE);
-  }, [filtered, currentPage]);
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    const statusQ = STATUS_QUERY[statusFilter];
+    if (statusQ) params.set("status", statusQ);
+    params.set("page", String(currentPage));
+
+    const run = async () => {
+      try {
+        const data = await apiRequest<ApiCustomerList>(`/api/customers/?${params.toString()}`);
+        if (cancelled) return;
+        setCustomers(data.results.map(toCustomer));
+        setTotalCount(data.count);
+        setError(null);
+        const maxPage = Math.max(1, Math.ceil(data.count / PAGE_SIZE));
+        if (currentPage > maxPage) setCurrentPage(maxPage);
+      } catch (err) {
+        if (cancelled) return;
+        setError((err as Error).message);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [search, statusFilter, currentPage, refreshKey, router]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchStats = async () => {
+      const [all, active, inactive, lead] = await Promise.all([
+        apiRequest<ApiCustomerList>("/api/customers/"),
+        apiRequest<ApiCustomerList>("/api/customers/?status=active"),
+        apiRequest<ApiCustomerList>("/api/customers/?status=inactive"),
+        apiRequest<ApiCustomerList>("/api/customers/?status=lead"),
+      ]);
+      if (cancelled) return;
+      setStats({
+        total: all.count,
+        active: active.count,
+        inactive: inactive.count,
+        lead: lead.count,
+      });
+    };
+    fetchStats().catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey]);
 
   // Reset to page 1 when filter/search changes
   function handleSearch(val: string) {
@@ -77,20 +126,20 @@ export default function CustomersPage() {
     setDeleteModal(customer);
   }
 
-  function handleDeleteConfirmed() {
+  async function handleDeleteConfirmed() {
     if (!deleteModal) return;
-    setCustomers((prev) => prev.filter((c) => c.id !== deleteModal.id));
-    showToast(`"${deleteModal.name}" has been deleted.`);
-    setDeleteModal(null);
-    // If current page becomes empty, go back one
-    const newFiltered = customers.filter((c) => c.id !== deleteModal.id);
-    const newTotal = Math.ceil(newFiltered.length / ITEMS_PER_PAGE);
-    if (currentPage > newTotal) setCurrentPage(Math.max(1, newTotal));
+    setDeleting(true);
+    try {
+      await apiRequest(`/api/customers/${deleteModal.id}/`, { method: "DELETE" });
+      showToast(`"${deleteModal.name}" has been deleted.`);
+      setDeleteModal(null);
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      showToast(`Failed to delete: ${(err as Error).message}`);
+    } finally {
+      setDeleting(false);
+    }
   }
-
-  // ── Stats ──────────────────────────────────────────────
-  const totalActive = customers.filter((c) => c.status === "Active").length;
-  const totalInactive = customers.filter((c) => c.status === "Inactive").length;
 
   // ── Render ─────────────────────────────────────────────
   return (
@@ -182,24 +231,31 @@ export default function CustomersPage() {
           {[
             {
               label: "Total Customers",
-              value: customers.length,
+              value: stats.total,
               icon: "👥",
               color: "#4f46e5",
               bg: "#eef2ff",
             },
             {
               label: "Active",
-              value: totalActive,
+              value: stats.active,
               icon: "✅",
               color: "#16a34a",
               bg: "#dcfce7",
             },
             {
               label: "Inactive",
-              value: totalInactive,
+              value: stats.inactive,
               icon: "⏸️",
               color: "#64748b",
               bg: "#f1f5f9",
+            },
+            {
+              label: "Leads",
+              value: stats.lead,
+              icon: "⚡",
+              color: "#b45309",
+              bg: "#fef3c7",
             },
           ].map((card) => (
             <div
@@ -276,7 +332,7 @@ export default function CustomersPage() {
               <SearchBar
                 value={search}
                 onChange={handleSearch}
-                resultCount={filtered.length}
+                resultCount={totalCount}
               />
             </div>
 
@@ -291,7 +347,7 @@ export default function CustomersPage() {
                 padding: "3px",
               }}
             >
-              {(["All", "Active", "Inactive"] as FilterStatus[]).map((tab) => (
+              {(["All", "Active", "Inactive", "Lead"] as FilterStatus[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => handleStatusFilter(tab)}
@@ -321,22 +377,57 @@ export default function CustomersPage() {
 
           {/* Table */}
           <div style={{ padding: "0" }}>
-            <CustomerTable
-              customers={paginated}
-              onView={handleView}
-              onEdit={handleEdit}
-              onDelete={confirmDelete}
-            />
+            {loading ? (
+              <div
+                style={{
+                  padding: "40px",
+                  textAlign: "center",
+                  color: "#64748b",
+                  fontSize: "0.875rem",
+                }}
+              >
+                Loading customers…
+              </div>
+            ) : error ? (
+              <div
+                style={{
+                  padding: "40px",
+                  textAlign: "center",
+                  color: "#ef4444",
+                  fontSize: "0.875rem",
+                }}
+              >
+                {error}
+              </div>
+            ) : customers.length === 0 ? (
+              <div
+                style={{
+                  padding: "40px",
+                  textAlign: "center",
+                  color: "#64748b",
+                  fontSize: "0.875rem",
+                }}
+              >
+                No customers found.
+              </div>
+            ) : (
+              <CustomerTable
+                customers={customers}
+                onView={handleView}
+                onEdit={handleEdit}
+                onDelete={confirmDelete}
+              />
+            )}
           </div>
 
           {/* Pagination */}
-          {filtered.length > 0 && (
+          {!loading && !error && totalCount > 0 && (
             <div style={{ padding: "4px 20px 16px" }}>
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
-                totalItems={filtered.length}
-                itemsPerPage={ITEMS_PER_PAGE}
+                totalItems={totalCount}
+                itemsPerPage={PAGE_SIZE}
                 onPageChange={setCurrentPage}
               />
             </div>
@@ -456,6 +547,7 @@ export default function CustomersPage() {
               </button>
               <button
                 onClick={handleDeleteConfirmed}
+                disabled={deleting}
                 style={{
                   flex: 1,
                   padding: "10px",
@@ -465,9 +557,10 @@ export default function CustomersPage() {
                   color: "#fff",
                   fontWeight: 600,
                   fontSize: "0.9rem",
-                  cursor: "pointer",
+                  cursor: deleting ? "not-allowed" : "pointer",
                   fontFamily: "inherit",
                   boxShadow: "0 2px 8px rgba(239,68,68,0.4)",
+                  opacity: deleting ? 0.7 : 1,
                   transition: "opacity 0.15s ease",
                 }}
                 onMouseEnter={(e) =>
@@ -477,7 +570,7 @@ export default function CustomersPage() {
                   ((e.currentTarget as HTMLButtonElement).style.opacity = "1")
                 }
               >
-                Delete
+                {deleting ? "Deleting…" : "Delete"}
               </button>
             </div>
           </div>

@@ -5,7 +5,13 @@ interface StatusBadgeProps {
 }
 
 export default function StatusBadge({ status }: StatusBadgeProps) {
-  const isActive = status === "Active";
+  const styles: Record<CustomerStatus, { bg: string; color: string; border: string; dot: string }> = {
+    Active: { bg: "#dcfce7", color: "#15803d", border: "#bbf7d0", dot: "#22c55e" },
+    Inactive: { bg: "#f1f5f9", color: "#64748b", border: "#e2e8f0", dot: "#94a3b8" },
+    Lead: { bg: "#fef3c7", color: "#b45309", border: "#fde68a", dot: "#f59e0b" },
+  };
+
+  const style = styles[status];
 
   return (
     <span
@@ -18,9 +24,9 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
         fontSize: "0.75rem",
         fontWeight: 600,
         letterSpacing: "0.02em",
-        background: isActive ? "#dcfce7" : "#f1f5f9",
-        color: isActive ? "#15803d" : "#64748b",
-        border: `1px solid ${isActive ? "#bbf7d0" : "#e2e8f0"}`,
+        background: style.bg,
+        color: style.color,
+        border: `1px solid ${style.border}`,
         whiteSpace: "nowrap",
       }}
     >
@@ -30,7 +36,7 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
           width: 6,
           height: 6,
           borderRadius: "50%",
-          background: isActive ? "#22c55e" : "#94a3b8",
+          background: style.dot,
           flexShrink: 0,
         }}
       />
