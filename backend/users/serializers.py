@@ -15,20 +15,29 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'password', 'password2')
+        fields = (
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "password",
+            "password2",
+        )
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError('A user with that email already exists.')
+            raise serializers.ValidationError("A user with that email already exists.")
         return value
 
     def validate(self, attrs):
-        if attrs['password'] != attrs['password2']:
-            raise serializers.ValidationError({'password2': 'Password fields did not match.'})
+        if attrs["password"] != attrs["password2"]:
+            raise serializers.ValidationError(
+                {"password2": "Password fields did not match."}
+            )
         return attrs
 
     def create(self, validated_data):
-        validated_data.pop('password2')
+        validated_data.pop("password2")
         user = User.objects.create_user(**validated_data)
         return user
 
@@ -36,7 +45,15 @@ class RegisterSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'date_joined')
+        fields = (
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "is_active",
+            "date_joined",
+        )
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
@@ -48,20 +65,20 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'password')
+        fields = ("username", "email", "first_name", "last_name", "password")
         extra_kwargs = {
-            'username': {'required': False},
-            'email': {'required': False},
+            "username": {"required": False},
+            "email": {"required": False},
         }
 
     def validate_email(self, value):
-        user = self.context['request'].user
+        user = self.context["request"].user
         if User.objects.exclude(pk=user.pk).filter(email=value).exists():
-            raise serializers.ValidationError('A user with that email already exists.')
+            raise serializers.ValidationError("A user with that email already exists.")
         return value
 
     def update(self, instance, validated_data):
-        password = validated_data.pop('password', None)
+        password = validated_data.pop("password", None)
         user = super().update(instance, validated_data)
         if password:
             user.set_password(password)

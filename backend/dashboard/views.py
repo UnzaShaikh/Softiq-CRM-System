@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from .serializers import DashboardSummarySerializer
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def dashboard_summary(request):
     """
