@@ -1,78 +1,108 @@
-import Navbar from "@/components/Navbar";
+"use client";
 
-const stats = [
-  { label: "Total Customers", value: "2,491", change: "+12%", up: true, icon: "👥" },
-  { label: "Active Deals",    value: "148",    change: "+5%",  up: true, icon: "🤝" },
-  { label: "Revenue (MTD)",   value: "$84,200", change: "+8.3%", up: true, icon: "💰" },
-  { label: "Open Tickets",    value: "23",     change: "-4%",  up: false, icon: "🎫" },
-];
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+type DashboardData = {
+  total_customers: number;
+  total_leads: number;
+  opportunities: number;
+  revenue: number;
+  tasks_due: number;
+};
 
 export default function DashboardPage() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  useEffect(() => {
+    // Helper to read a cookie by name
+    const getCookie = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(";").shift();
+      return null;
+    };
+
+    const token = getCookie("access_token");
+
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    fetch("http://127.0.0.1:8000/api/dashboard-summary/", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(async (res) => {
+        if (res.status === 401) {
+          // Token expired or invalid → clear cookies and redirect
+          document.cookie = "access_token=; path=/; max-age=0";
+          document.cookie = "refresh_token=; path=/; max-age=0";
+          router.replace("/login");
+          throw new Error("Unauthorized");
+        }
+        if (!res.ok) {
+          throw new Error("Failed to fetch dashboard data");
+        }
+        return res.json();
+      })
+      .then(setData)
+      .catch((err) => {
+        setError(err.message);
+      })
+      .finally(() => setLoading(false));
+  }, [router]);
+
+  // Logout function
+  const handleLogout = () => {
+    document.cookie = "access_token=; path=/; max-age=0";
+    document.cookie = "refresh_token=; path=/; max-age=0";
+    router.push("/login");
+  };
+
+  if (loading) return <div className="p-8">Loading dashboard...</div>;
+  if (error) return <div className="p-8 text-red-500">Error: {error}</div>;
+  if (!data) return <div className="p-8">No data available</div>;
+
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "#f8fafc",
-      fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
-    }}>
-      <Navbar />
+    <div className="p-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+        >
+          Logout
+        </button>
+      </div>
 
-      <main style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
-        {/* Page title */}
-        <div style={{ marginBottom: "2rem" }}>
-          <h1 style={{ fontSize: "1.625rem", fontWeight: 700, color: "#0f172a", margin: 0, letterSpacing: "-0.02em" }}>
-            Dashboard
-          </h1>
-          <p style={{ marginTop: "0.25rem", color: "#64748b", fontSize: "0.9375rem" }}>
-            Here&apos;s what&apos;s happening today.
-          </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="border p-4 rounded shadow">
+          <h2 className="text-lg font-semibold">Total Customers</h2>
+          <p className="text-2xl">{data.total_customers}</p>
         </div>
-
-        {/* Stats grid */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "1.25rem",
-          marginBottom: "2rem",
-        }}>
-          {stats.map((s) => (
-            <div key={s.label} style={{
-              background: "#ffffff",
-              borderRadius: "1rem",
-              padding: "1.5rem",
-              border: "1px solid #e2e8f0",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div>
-                  <p style={{ fontSize: "0.8125rem", color: "#64748b", margin: 0, fontWeight: 500 }}>{s.label}</p>
-                  <p style={{ fontSize: "1.75rem", fontWeight: 700, color: "#0f172a", margin: "0.375rem 0 0", letterSpacing: "-0.02em" }}>{s.value}</p>
-                </div>
-                <span style={{ fontSize: "1.75rem" }}>{s.icon}</span>
-              </div>
-              <p style={{ marginTop: "0.75rem", fontSize: "0.8125rem", fontWeight: 600, color: s.up ? "#16a34a" : "#dc2626" }}>
-                {s.change} <span style={{ color: "#94a3b8", fontWeight: 400 }}>vs last month</span>
-              </p>
-            </div>
-          ))}
+        <div className="border p-4 rounded shadow">
+          <h2 className="text-lg font-semibold">Total Leads</h2>
+          <p className="text-2xl">{data.total_leads}</p>
         </div>
-
-        {/* Placeholder notice */}
-        <div style={{
-          background: "#eef2ff",
-          border: "1px solid #c7d2fe",
-          borderRadius: "1rem",
-          padding: "2rem",
-          textAlign: "center",
-        }}>
-          <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>🚀</div>
-          <h2 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#3730a3", margin: "0 0 0.5rem" }}>
-            Dashboard Under Construction
-          </h2>
-          <p style={{ color: "#4f46e5", fontSize: "0.9375rem", margin: 0 }}>
-            Connect the Django backend to bring this to life.
-          </p>
+        <div className="border p-4 rounded shadow">
+          <h2 className="text-lg font-semibold">Opportunities</h2>
+          <p className="text-2xl">{data.opportunities}</p>
         </div>
-      </main>
+        <div className="border p-4 rounded shadow">
+          <h2 className="text-lg font-semibold">Revenue</h2>
+          <p className="text-2xl">${data.revenue}</p>
+        </div>
+        <div className="border p-4 rounded shadow">
+          <h2 className="text-lg font-semibold">Tasks Due</h2>
+          <p className="text-2xl">{data.tasks_due}</p>
+        </div>
+      </div>
     </div>
   );
 }

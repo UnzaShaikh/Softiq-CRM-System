@@ -2,52 +2,53 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-export interface AuthUser {
-  firstName: string;
-  lastName: string;
-  email: string;
-}
-
 interface AuthContextType {
-  user: AuthUser | null;
-  login: (user: AuthUser) => void;
+  isAuthenticated: boolean;
   logout: () => void;
+  login: (access: string, refresh: string) => void;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  login: () => {},
-  logout: () => {},
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Persist across page refreshes using localStorage
+  // Helper to read cookies
+  const getCookie = (name: string) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(";").shift();
+    return null;
+  };
+
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("crm_user");
-      if (stored) setUser(JSON.parse(stored));
-    } catch {}
+    const token = getCookie("access_token");
+    setIsAuthenticated(!!token);
   }, []);
 
-  function login(u: AuthUser) {
-    setUser(u);
-    localStorage.setItem("crm_user", JSON.stringify(u));
-  }
+  const login = (access: string, refresh: string) => {
+    document.cookie = `access_token=${access}; path=/; max-age=86400`;
+    document.cookie = `refresh_token=${refresh}; path=/; max-age=86400`;
+    setIsAuthenticated(true);
+  };
 
-  function logout() {
-    setUser(null);
-    localStorage.removeItem("crm_user");
-  }
+  const logout = () => {
+    document.cookie = "access_token=; path=/; max-age=0";
+    document.cookie = "refresh_token=; path=/; max-age=0";
+    setIsAuthenticated(false);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }
