@@ -15,33 +15,32 @@ class CustomerListCreateView(generics.ListCreateAPIView):
     serializer_class = CustomerSerializer
     permission_classes = [IsAuthenticated]
 
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    ]
 
-filter_backends = [
-    DjangoFilterBackend,
-    filters.SearchFilter,
-    filters.OrderingFilter,
-]
+    filterset_fields = [
+        "status",
+    ]
 
-filterset_fields = [
-    "status",
-]
+    search_fields = [
+        "first_name",
+        "last_name",
+        "email",
+        "company",
+    ]
 
-search_fields = [
-    "first_name",
-    "last_name",
-    "email",
-    "company",
-]
+    ordering_fields = [
+        "created_at",
+        "first_name",
+        "last_name",
+    ]
 
-ordering_fields = [
-    "created_at",
-    "first_name",
-    "last_name",
-]
-
-ordering = [
-    "-created_at",
-]
+    ordering = [
+        "-created_at",
+    ]
 
 
 class CustomerDetailView(generics.RetrieveUpdateDestroyAPIView):
