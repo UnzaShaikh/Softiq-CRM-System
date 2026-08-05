@@ -36,7 +36,7 @@ class RecentCustomerSerializer(serializers.Serializer):
     company = serializers.CharField()
     status = serializers.CharField()
     revenue = serializers.DecimalField(max_digits=12, decimal_places=2)
-    joined_date = serializers.DateField()
+    joined_date = serializers.DateField()   # ✅ kept from your branch
 
 class RecentLeadSerializer(serializers.Serializer):
     id = serializers.IntegerField()

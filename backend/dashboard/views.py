@@ -19,7 +19,7 @@ from .serializers import (
     TopPerformerSerializer,
 )
 
-# ---------- 1. Dashboard Summary (Already Done) ----------
+# ---------- 1. Dashboard Summary ----------
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dashboard_summary(request):

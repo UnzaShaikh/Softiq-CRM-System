@@ -1,0 +1,104 @@
+export type CustomerStatus = "Active" | "Inactive" | "Lead";
+
+export interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  status: CustomerStatus;
+  location: string;
+  joinedDate: string;
+  totalDeals: number;
+  totalRevenue: number;
+  avatar: string; // initials
+}
+
+export interface ApiCustomer {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  company: string;
+  status: "lead" | "active" | "inactive";
+  created_at: string;
+  updated_at: string;
+}
+
+export const STATUS_FROM_API: Record<ApiCustomer["status"], CustomerStatus> = {
+  lead: "Lead",
+  active: "Active",
+  inactive: "Inactive",
+};
+
+export const STATUS_TO_API: Record<CustomerStatus, ApiCustomer["status"]> = {
+  Lead: "lead",
+  Active: "active",
+  Inactive: "inactive",
+};
+
+export function toCustomer(api: ApiCustomer): Customer {
+  const first = api.first_name || "Unnamed";
+  const last = api.last_name || "";
+  const initials = `${first.charAt(0)}${last.charAt(0) || ""}`.toUpperCase() || "?";
+
+  return {
+    id: String(api.id),
+    name: `${first} ${last}`.trim(),
+    email: api.email,
+    phone: api.phone,
+    company: api.company,
+    status: STATUS_FROM_API[api.status],
+    location: "—",
+    joinedDate: api.created_at.slice(0, 10),
+    totalDeals: 0,
+    totalRevenue: 0,
+    avatar: initials,
+  };
+}
+
+export interface CustomerFormValues {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  company: string;
+  status: CustomerStatus;
+}
+
+export function toFormValues(api: ApiCustomer): CustomerFormValues {
+  return {
+    first_name: api.first_name,
+    last_name: api.last_name,
+    email: api.email,
+    phone: api.phone,
+    company: api.company,
+    status: STATUS_FROM_API[api.status],
+  };
+}
+
+export interface ApiCustomerList {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: ApiCustomer[];
+}
+
+export const customers: Customer[] = [
+  { id: "C001", name: "Ahmed Ali", email: "ahmed.ali@example.com", phone: "+92 300 1234567", company: "TechVision Pvt Ltd", status: "Active", location: "Karachi, Pakistan", joinedDate: "2024-01-15", totalDeals: 5, totalRevenue: 48000, avatar: "AA" },
+  { id: "C002", name: "Sara Khan", email: "sara.khan@example.com", phone: "+92 321 9876543", company: "Digital Minds", status: "Active", location: "Lahore, Pakistan", joinedDate: "2024-02-20", totalDeals: 3, totalRevenue: 22500, avatar: "SK" },
+  { id: "C003", name: "Bilal Hussain", email: "bilal.h@example.com", phone: "+92 333 4561234", company: "CloudSoft Solutions", status: "Inactive", location: "Islamabad, Pakistan", joinedDate: "2023-11-05", totalDeals: 2, totalRevenue: 9800, avatar: "BH" },
+  { id: "C004", name: "Fatima Noor", email: "fatima.noor@example.com", phone: "+92 345 7890123", company: "Nexus Corp", status: "Active", location: "Peshawar, Pakistan", joinedDate: "2024-03-10", totalDeals: 7, totalRevenue: 67000, avatar: "FN" },
+  { id: "C005", name: "Usman Malik", email: "usman.malik@example.com", phone: "+92 312 6543210", company: "Innovative Tech", status: "Active", location: "Multan, Pakistan", joinedDate: "2024-01-28", totalDeals: 4, totalRevenue: 31200, avatar: "UM" },
+  { id: "C006", name: "Ayesha Siddiqui", email: "ayesha.s@example.com", phone: "+92 322 1122334", company: "BrightEdge Systems", status: "Inactive", location: "Quetta, Pakistan", joinedDate: "2023-09-18", totalDeals: 1, totalRevenue: 5000, avatar: "AS" },
+  { id: "C007", name: "Zain Raza", email: "zain.raza@example.com", phone: "+92 311 9988776", company: "Alpha Dynamics", status: "Active", location: "Lahore, Pakistan", joinedDate: "2024-04-01", totalDeals: 6, totalRevenue: 54300, avatar: "ZR" },
+  { id: "C008", name: "Hina Baig", email: "hina.baig@example.com", phone: "+92 336 4455667", company: "Pixel Works", status: "Active", location: "Karachi, Pakistan", joinedDate: "2024-02-14", totalDeals: 2, totalRevenue: 18700, avatar: "HB" },
+  { id: "C009", name: "Tariq Jameel", email: "tariq.j@example.com", phone: "+92 301 3344556", company: "Data Sphere", status: "Inactive", location: "Faisalabad, Pakistan", joinedDate: "2023-07-22", totalDeals: 0, totalRevenue: 0, avatar: "TJ" },
+  { id: "C010", name: "Nadia Qureshi", email: "nadia.q@example.com", phone: "+92 340 8877665", company: "SkyNet Analytics", status: "Active", location: "Islamabad, Pakistan", joinedDate: "2024-05-03", totalDeals: 8, totalRevenue: 92100, avatar: "NQ" },
+  { id: "C011", name: "Kamran Sheikh", email: "kamran.sheikh@example.com", phone: "+92 315 2233445", company: "WebForce Studio", status: "Active", location: "Lahore, Pakistan", joinedDate: "2024-03-25", totalDeals: 5, totalRevenue: 43500, avatar: "KS" },
+  { id: "C012", name: "Sobia Amin", email: "sobia.amin@example.com", phone: "+92 324 6677889", company: "FutureMark Ltd", status: "Inactive", location: "Rawalpindi, Pakistan", joinedDate: "2023-12-01", totalDeals: 1, totalRevenue: 7200, avatar: "SA" },
+  { id: "C013", name: "Hamid Farooq", email: "hamid.f@example.com", phone: "+92 302 5566778", company: "TechNova Inc", status: "Active", location: "Karachi, Pakistan", joinedDate: "2024-06-10", totalDeals: 3, totalRevenue: 27000, avatar: "HF" },
+  { id: "C014", name: "Amna Riaz", email: "amna.riaz@example.com", phone: "+92 318 9900112", company: "Apex Solutions", status: "Active", location: "Sialkot, Pakistan", joinedDate: "2024-04-18", totalDeals: 4, totalRevenue: 36800, avatar: "AR" },
+  { id: "C015", name: "Fahad Mir", email: "fahad.mir@example.com", phone: "+92 344 1230987", company: "ByteLogic", status: "Inactive", location: "Hyderabad, Pakistan", joinedDate: "2023-08-30", totalDeals: 2, totalRevenue: 11400, avatar: "FM" },
+];
