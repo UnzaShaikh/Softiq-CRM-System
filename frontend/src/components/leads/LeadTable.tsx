@@ -24,6 +24,26 @@ function getAvatarColor(name: string): [string, string] {
   const idx = ((name.charCodeAt(0) || 0) + (name.charCodeAt(1) || 0)) % AVATAR_COLORS.length;
   return AVATAR_COLORS[idx];
 }
+function formatDate(date: string) {
+  const d = new Date(date);
+
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
 
 export default function LeadTable({ leads, onView, onEdit, onDelete }: LeadTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("createdDate");
@@ -34,16 +54,27 @@ export default function LeadTable({ leads, onView, onEdit, onDelete }: LeadTable
     else { setSortKey(key); setSortDir("asc"); }
   }
 
-  const sorted = [...leads].sort((a, b) => {
-    let vA: string | number = a[sortKey] ?? "";
-    let vB: string | number = b[sortKey] ?? "";
-    if (typeof vA === "string") vA = vA.toLowerCase();
-    if (typeof vB === "string") vB = vB.toLowerCase();
-    if (vA < vB) return sortDir === "asc" ? -1 : 1;
-    if (vA > vB) return sortDir === "asc" ? 1 : -1;
-    return 0;
-  });
+const sorted = [...leads].sort((a, b) => {
+  if (sortKey === "createdDate") {
+    const timeA = new Date(a.createdDate).getTime();
+    const timeB = new Date(b.createdDate).getTime();
 
+    return sortDir === "asc"
+      ? timeA - timeB
+      : timeB - timeA;
+  }
+
+  let vA = a[sortKey];
+  let vB = b[sortKey];
+
+  if (typeof vA === "string") vA = vA.toLowerCase();
+  if (typeof vB === "string") vB = vB.toLowerCase();
+
+  if (vA < vB) return sortDir === "asc" ? -1 : 1;
+  if (vA > vB) return sortDir === "asc" ? 1 : -1;
+
+  return 0;
+});
   function SortIcon({ col }: { col: SortKey }) {
     const active = sortKey === col;
     return (
@@ -117,7 +148,7 @@ export default function LeadTable({ leads, onView, onEdit, onDelete }: LeadTable
                 </td>
                 <td style={rowTd}>
                   <span style={{ color: "#475569", fontSize: "0.8125rem" }}>
-                    {new Date(lead.createdDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                    {formatDate(lead.createdDate)}
                   </span>
                 </td>
                 <td style={{ ...rowTd, textAlign: "center" }}>
