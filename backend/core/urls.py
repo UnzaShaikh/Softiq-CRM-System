@@ -40,4 +40,6 @@ urlpatterns = [
     path("api/", include("dashboard.urls")),
     # Customers
     path("api/", include("customers.urls")),
+    # Leads
+    path("api/", include("leads.urls")),
 ]
