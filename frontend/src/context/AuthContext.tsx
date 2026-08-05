@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
+// ---------- Types ----------
 export interface AuthUser {
   firstName: string;
   lastName: string;
@@ -13,57 +14,86 @@ interface AuthContextType {
   user: AuthUser | null;
   accessToken: string | null;
   refreshToken: string | null;
-
-  login: (
-    user: AuthUser,
-    access: string,
-    refresh: string
-  ) => void;
-
+  isAuthenticated: boolean;
+  login: (user: AuthUser, access: string, refresh: string) => void;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  accessToken: null,
-  refreshToken: null,
-  login: () => {},
-  logout: () => {},
-});
+// ---------- Helper to read cookies ----------
+function getCookie(name: string): string | null {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+}
+
+// ---------- Context ----------
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-const [accessToken, setAccessToken] = useState<string | null>(null);
-const [refreshToken, setRefreshToken] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
 
-  // Persist across page refreshes using localStorage
-useEffect(() => {
-  try {
-    const storedUser = localStorage.getItem("crm_user");
-    const storedAccess = localStorage.getItem("access_token");
-    const storedRefresh = localStorage.getItem("refresh_token");
+  // On mount, read from cookies (or localStorage as fallback)
+  useEffect(() => {
+    // Try cookies first (used by middleware)
+    const cookieAccess = getCookie("access_token");
+    const cookieRefresh = getCookie("refresh_token");
 
-    if (storedUser) setUser(JSON.parse(storedUser));
-    if (storedAccess) setAccessToken(storedAccess);
-    if (storedRefresh) setRefreshToken(storedRefresh);
-  } catch {}
-}, []);
+    if (cookieAccess) {
+      setAccessToken(cookieAccess);
+      setRefreshToken(cookieRefresh);
 
-  function login(
-    u: AuthUser,
-    access: string,
-    refresh: string
-) {
-    setUser(u);
+      // Optionally read user from localStorage if stored
+      try {
+        const storedUser = localStorage.getItem("crm_user");
+        if (storedUser) setUser(JSON.parse(storedUser));
+      } catch {
+        // ignore
+      }
+    } else {
+      // Fallback to localStorage
+      try {
+        const storedUser = localStorage.getItem("crm_user");
+        const storedAccess = localStorage.getItem("access_token");
+        const storedRefresh = localStorage.getItem("refresh_token");
+
+        if (storedUser) setUser(JSON.parse(storedUser));
+        if (storedAccess) setAccessToken(storedAccess);
+        if (storedRefresh) setRefreshToken(storedRefresh);
+
+        // Also sync cookies for middleware
+        if (storedAccess) {
+          document.cookie = `access_token=${storedAccess}; path=/; max-age=86400`;
+        }
+        if (storedRefresh) {
+          document.cookie = `refresh_token=${storedRefresh}; path=/; max-age=86400`;
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
+  // ---------- Login ----------
+  function login(userData: AuthUser, access: string, refresh: string) {
+    setUser(userData);
     setAccessToken(access);
     setRefreshToken(refresh);
 
-    localStorage.setItem("crm_user", JSON.stringify(u));
+    // Store in localStorage for persistence
+    localStorage.setItem("crm_user", JSON.stringify(userData));
     localStorage.setItem("access_token", access);
     localStorage.setItem("refresh_token", refresh);
-}
 
- function logout() {
+    // Store in cookies for middleware
+    document.cookie = `access_token=${access}; path=/; max-age=86400`;
+    document.cookie = `refresh_token=${refresh}; path=/; max-age=86400`;
+  }
+
+  // ---------- Logout ----------
+  function logout() {
     setUser(null);
     setAccessToken(null);
     setRefreshToken(null);
@@ -71,23 +101,33 @@ useEffect(() => {
     localStorage.removeItem("crm_user");
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
-}
 
- return (
-  <AuthContext.Provider
-    value={{
-      user,
-      accessToken,
-      refreshToken,
-      login,
-      logout,
-    }}
-  >
-    {children}
-  </AuthContext.Provider>
-);
+    document.cookie = "access_token=; path=/; max-age=0";
+    document.cookie = "refresh_token=; path=/; max-age=0";
+  }
+
+  const isAuthenticated = !!accessToken;
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        accessToken,
+        refreshToken,
+        isAuthenticated,
+        login,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }
