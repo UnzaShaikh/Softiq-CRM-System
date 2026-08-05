@@ -32,9 +32,11 @@ urlpatterns = [
     path("api/auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/auth/verify/", TokenVerifyView.as_view(), name="token_verify"),
     path("api/auth/register/", register_view, name="register"),
-    path("api/users/me/", me_view, name="me"),   # ✅ new endpoint from upstream
-
-    # App includes
-    path("api/", include("dashboard.urls")),   # your 8 dashboard APIs
-    path("api/", include("customers.urls")),   # upstream's customers endpoints
+    path("api/users/me/", me_view, name="me"),
+    # Dashboard
+    path("api/", include("dashboard.urls")),
+    # Customers
+    path("api/", include("customers.urls")),
+    # Leads
+    path("api/", include("leads.urls")),
 ]
