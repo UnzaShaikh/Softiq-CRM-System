@@ -3,14 +3,24 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000
 const ACCESS_KEY = "access_token";
 const REFRESH_KEY = "refresh_token";
 
+function getCookie(name: string): string |null {
+  if (typeof document === "undefined") return null;
+
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+
+  if (parts.length === 2) {
+    return parts.pop()!.split(";").shift()!;
+  }
+
+  return null;
+}
 export function getAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(ACCESS_KEY);
+  return getCookie(ACCESS_KEY) || localStorage.getItem(ACCESS_KEY);
 }
 
 export function getRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(REFRESH_KEY);
+  return getCookie(REFRESH_KEY) || localStorage.getItem(REFRESH_KEY);
 }
 
 export function setTokens(access: string, refresh: string): void {
