@@ -4,6 +4,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import StatCard from "@/components/dashboard/StatCard";
 import RevenueChart from "@/components/dashboard/RevenueChart";
 import DealsPipeline from "@/components/dashboard/DealsPipeline";
+import SalesPipeline from "@/components/dashboard/SalesPipeline";
 import LeadsDonutChart from "@/components/dashboard/LeadsDonutChart";
 import RecentCustomers from "@/components/dashboard/RecentCustomers";
 import RecentLeads from "@/components/dashboard/RecentLeads";
@@ -118,8 +119,9 @@ export default function DashboardPage() {
 
         {/* Top Performers */}
         <TopPerformers />
-
+<SalesPipeline />
       </div>
     </DashboardLayout>
+    
   );
 }
