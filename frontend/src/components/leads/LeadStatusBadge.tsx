@@ -8,9 +8,7 @@ const STATUS_STYLES: Record<LeadStatus, { bg: string; color: string; border: str
   "New":         { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe", dot: "#3b82f6" },
   "Contacted":   { bg: "#fef3c7", color: "#b45309", border: "#fde68a", dot: "#f59e0b" },
   "Qualified":   { bg: "#f0fdf4", color: "#15803d", border: "#bbf7d0", dot: "#22c55e" },
-  "Proposal":    { bg: "#faf5ff", color: "#7c3aed", border: "#e9d5ff", dot: "#a855f7" },
-  "Closed Won":  { bg: "#dcfce7", color: "#15803d", border: "#86efac", dot: "#16a34a" },
-  "Closed Lost": { bg: "#fef2f2", color: "#dc2626", border: "#fca5a5", dot: "#ef4444" },
+  "Lost":        { bg: "#fef2f2", color: "#dc2626", border: "#fca5a5", dot: "#ef4444" },
 };
 
 export default function LeadStatusBadge({ status }: LeadStatusBadgeProps) {
