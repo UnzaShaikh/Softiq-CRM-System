@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     "customers",
     "django_filters",
     "leads",
+    "pipeline",
+
 ]
 
 MIDDLEWARE = [

@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, Plus } from "lucide-react";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { Search, Plus } = require("lucide-react");
 import { STAGES, DEALS, type Deal } from "./data";
 
 
