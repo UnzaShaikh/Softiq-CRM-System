@@ -119,14 +119,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Close mobile sidebar on route change
-  useEffect(() => {
-    // Wrap in a timeout so the state update is deferred past the render cycle
-    const t = setTimeout(() => setMobileOpen(false), 0);
-    return () => clearTimeout(t);
-  }, [pathname]);
+
+
 
   function handleLogout() {
     logout();
@@ -154,35 +149,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc", fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif" }}>
 
-      {/* ── Mobile overlay ── */}
-      {mobileOpen && (
-        <div
-          onClick={() => setMobileOpen(false)}
-          style={{
-            position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
-            zIndex: 40, display: "none",
-          }}
-          className="mobile-overlay"
-        />
-      )}
 
       {/* ── Sidebar ── */}
-      <aside style={{
-        width: sidebarW,
-        minWidth: sidebarW,
-        background: "#ffffff",
-        borderRight: "1px solid #e2e8f0",
-        display: "flex",
-        flexDirection: "column",
-        position: "sticky",
-        top: 0,
-        height: "100vh",
-        overflowY: "auto",
-        overflowX: "hidden",
-        transition: "width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1)",
-        zIndex: 50,
-        flexShrink: 0,
-      }}>
+      <aside
+className={`dashboard-sidebar ${collapsed ? "collapsed" : ""}`}
+style={{
+  width: sidebarW,
+  minWidth: sidebarW,
+}}
+>
 
         {/* Logo */}
         <div style={{
@@ -430,11 +405,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         {/* Top bar */}
         <header style={{
-          height: 64, background: "#fff", borderBottom: "1px solid #e2e8f0",
-          display: "flex", alignItems: "center", padding: "0 24px",
-          justifyContent: "space-between", position: "sticky", top: 0, zIndex: 30,
-          flexShrink: 0,
-        }}>
+  height: 64,
+  background: "#fff",
+  borderBottom: "1px solid #e2e8f0",
+  display: "flex",
+  alignItems: "center",
+  padding: "0 24px",
+  justifyContent: "space-between",
+  position: "sticky",
+  top: 0,
+  zIndex: 30,
+  flexShrink: 0,
+}}>
           {/* Search */}
           <div style={{ position: "relative", maxWidth: 340, flex: 1 }}>
             <svg style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}
@@ -522,9 +504,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Page content */}
-        <main style={{ flex: 1, padding: "28px 28px", overflowY: "auto" }}>
-          {children}
-        </main>
+        {/* Page content */}
+<main
+  className="dashboard-main"
+  style={{
+    flex:1,
+    padding:"28px 28px",
+    overflowY:"auto"
+  }}
+>
+  {children}
+</main>
       </div>
     </div>
   );
