@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import CustomerForm from "@/components/customers/CustomerForm";
+import LeadForm from "@/components/leads/LeadForm";
 
-export default function AddCustomerPage() {
+export default function AddLeadPage() {
   const router = useRouter();
   const [success, setSuccess] = useState(false);
 
@@ -16,7 +16,7 @@ export default function AddCustomerPage() {
         {/* Header */}
         <div style={{ marginBottom: "24px" }}>
           <button
-            onClick={() => router.push("/customers")}
+            onClick={() => router.push("/leads")}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -36,13 +36,13 @@ export default function AddCustomerPage() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Back to Customers
+            Back to Leads
           </button>
           <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>
-            Add Customer
+            Add Lead
           </h1>
           <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.9rem" }}>
-            Fill in the details below to add a new customer.
+            Fill in the details below to add a new lead.
           </p>
         </div>
 
@@ -62,7 +62,7 @@ export default function AddCustomerPage() {
               <polyline points="20 6 9 17 4 12" />
             </svg>
             <p style={{ margin: 0, color: "#15803d", fontWeight: 600, fontSize: "0.9rem" }}>
-              Customer added successfully! Redirecting...
+              Lead added successfully! Redirecting...
             </p>
           </div>
         )}
@@ -77,18 +77,18 @@ export default function AddCustomerPage() {
         }}>
           <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f5f9" }}>
             <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>
-              Customer Information
+              Lead Information
             </h2>
           </div>
 
           <div style={{ padding: "24px" }}>
-            <CustomerForm
-              submitLabel="Add Customer"
+            <LeadForm
+              submitLabel="Add Lead"
               onSuccess={() => {
                 setSuccess(true);
-                setTimeout(() => router.push("/customers"), 1800);
+                setTimeout(() => router.push("/leads"), 1800);
               }}
-              onCancel={() => router.push("/customers")}
+              onCancel={() => router.push("/leads")}
             />
           </div>
         </div>

@@ -11,7 +11,7 @@ interface LeadTableProps {
   onDelete: (lead: Lead) => void;
 }
 
-type SortKey = "name" | "company" | "status" | "value" | "createdDate";
+type SortKey = "name" | "company" | "status" | "score" | "createdDate";
 type SortDir = "asc" | "desc";
 
 const AVATAR_COLORS: [string, string][] = [
@@ -24,25 +24,11 @@ function getAvatarColor(name: string): [string, string] {
   const idx = ((name.charCodeAt(0) || 0) + (name.charCodeAt(1) || 0)) % AVATAR_COLORS.length;
   return AVATAR_COLORS[idx];
 }
-function formatDate(date: string) {
-  const d = new Date(date);
 
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-
-  return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+function scoreColor(score: number): string {
+  if (score >= 85) return "#16a34a";
+  if (score >= 65) return "#d97706";
+  return "#dc2626";
 }
 
 export default function LeadTable({ leads, onView, onEdit, onDelete }: LeadTableProps) {
@@ -54,28 +40,17 @@ export default function LeadTable({ leads, onView, onEdit, onDelete }: LeadTable
     else { setSortKey(key); setSortDir("asc"); }
   }
 
-const sorted = [...leads].sort((a, b) => {
-  if (sortKey === "createdDate") {
-    const timeA = new Date(a.createdDate).getTime();
-    const timeB = new Date(b.createdDate).getTime();
+  const sorted = [...leads].sort((a, b) => {
+    let vA: string | number = a[sortKey] ?? "";
+    let vB: string | number = b[sortKey] ?? "";
+    if (typeof vA === "string") vA = vA.toLowerCase();
+    if (typeof vB === "string") vB = vB.toLowerCase();
+    if (vA < vB) return sortDir === "asc" ? -1 : 1;
+    if (vA > vB) return sortDir === "asc" ? 1 : -1;
+    return 0;
+  });
 
-    return sortDir === "asc"
-      ? timeA - timeB
-      : timeB - timeA;
-  }
-
-  let vA = a[sortKey];
-  let vB = b[sortKey];
-
-  if (typeof vA === "string") vA = vA.toLowerCase();
-  if (typeof vB === "string") vB = vB.toLowerCase();
-
-  if (vA < vB) return sortDir === "asc" ? -1 : 1;
-  if (vA > vB) return sortDir === "asc" ? 1 : -1;
-
-  return 0;
-});
-  function SortIcon({ col }: { col: SortKey }) {
+  function SortIcon(col: SortKey) {
     const active = sortKey === col;
     return (
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={active ? "#4f46e5" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
@@ -104,12 +79,12 @@ const sorted = [...leads].sort((a, b) => {
       <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif" }}>
         <thead>
           <tr>
-            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("name")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Lead <SortIcon col="name" /></span></th>
-            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("company")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Company <SortIcon col="company" /></span></th>
+            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("name")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Lead {SortIcon("name")}</span></th>
+            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("company")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Company {SortIcon("company")}</span></th>
             <th style={thStyle}>Source</th>
-            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("status")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Status <SortIcon col="status" /></span></th>
-            <th style={{ ...thStyle, cursor: "pointer", textAlign: "right" }} onClick={() => handleSort("value")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5, justifyContent: "flex-end" }}>Value <SortIcon col="value" /></span></th>
-            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("createdDate")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Created <SortIcon col="createdDate" /></span></th>
+            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("status")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Status {SortIcon("status")}</span></th>
+            <th style={{ ...thStyle, cursor: "pointer", textAlign: "right" }} onClick={() => handleSort("score")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5, justifyContent: "flex-end" }}>Score {SortIcon("score")}</span></th>
+            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("createdDate")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Created {SortIcon("createdDate")}</span></th>
             <th style={{ ...thStyle, textAlign: "center" }}>Actions</th>
           </tr>
         </thead>
@@ -134,21 +109,20 @@ const sorted = [...leads].sort((a, b) => {
                   </div>
                 </td>
                 <td style={rowTd}>
-                  <span style={{ color: "#374151", fontWeight: 500 }}>{lead.company}</span><br />
-                  <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{lead.location}</span>
+                  <span style={{ color: "#374151", fontWeight: 500 }}>{lead.company}</span>
                 </td>
                 <td style={rowTd}>
                   <span style={{ fontSize: "0.8rem", color: "#475569", background: "#f1f5f9", padding: "3px 8px", borderRadius: "6px", fontWeight: 500 }}>{lead.source}</span>
                 </td>
                 <td style={rowTd}><LeadStatusBadge status={lead.status} /></td>
                 <td style={{ ...rowTd, textAlign: "right" }}>
-                  <span style={{ fontWeight: 700, color: lead.value > 0 ? "#059669" : "#94a3b8" }}>
-                    {lead.value > 0 ? `$${lead.value.toLocaleString()}` : "—"}
+                  <span style={{ fontWeight: 700, color: scoreColor(lead.score), fontSize: "0.875rem" }}>
+                    {lead.score}
                   </span>
                 </td>
                 <td style={rowTd}>
                   <span style={{ color: "#475569", fontSize: "0.8125rem" }}>
-                    {formatDate(lead.createdDate)}
+                    {new Date(lead.createdDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                   </span>
                 </td>
                 <td style={{ ...rowTd, textAlign: "center" }}>
