@@ -53,6 +53,8 @@ INSTALLED_APPS = [
     "django_filters",
     "leads",
     "deals",
+    "pipeline",
+
 ]
 
 MIDDLEWARE = [
