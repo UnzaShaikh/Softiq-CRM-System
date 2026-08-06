@@ -39,4 +39,5 @@ urlpatterns = [
     path("api/", include("customers.urls")),
     # Leads
     path("api/", include("leads.urls")),
+    path("api/", include("pipeline.urls")),
 ]
