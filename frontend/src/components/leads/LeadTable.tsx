@@ -11,7 +11,7 @@ interface LeadTableProps {
   onDelete: (lead: Lead) => void;
 }
 
-type SortKey = "name" | "company" | "status" | "value" | "createdDate";
+type SortKey = "name" | "company" | "status" | "score" | "createdDate";
 type SortDir = "asc" | "desc";
 
 const AVATAR_COLORS: [string, string][] = [
@@ -23,6 +23,12 @@ const AVATAR_COLORS: [string, string][] = [
 function getAvatarColor(name: string): [string, string] {
   const idx = ((name.charCodeAt(0) || 0) + (name.charCodeAt(1) || 0)) % AVATAR_COLORS.length;
   return AVATAR_COLORS[idx];
+}
+
+function scoreColor(score: number): string {
+  if (score >= 85) return "#16a34a";
+  if (score >= 65) return "#d97706";
+  return "#dc2626";
 }
 
 export default function LeadTable({ leads, onView, onEdit, onDelete }: LeadTableProps) {
@@ -44,7 +50,7 @@ export default function LeadTable({ leads, onView, onEdit, onDelete }: LeadTable
     return 0;
   });
 
-  function SortIcon({ col }: { col: SortKey }) {
+  function SortIcon(col: SortKey) {
     const active = sortKey === col;
     return (
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={active ? "#4f46e5" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
@@ -73,12 +79,12 @@ export default function LeadTable({ leads, onView, onEdit, onDelete }: LeadTable
       <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif" }}>
         <thead>
           <tr>
-            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("name")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Lead <SortIcon col="name" /></span></th>
-            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("company")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Company <SortIcon col="company" /></span></th>
+            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("name")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Lead {SortIcon("name")}</span></th>
+            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("company")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Company {SortIcon("company")}</span></th>
             <th style={thStyle}>Source</th>
-            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("status")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Status <SortIcon col="status" /></span></th>
-            <th style={{ ...thStyle, cursor: "pointer", textAlign: "right" }} onClick={() => handleSort("value")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5, justifyContent: "flex-end" }}>Value <SortIcon col="value" /></span></th>
-            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("createdDate")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Created <SortIcon col="createdDate" /></span></th>
+            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("status")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Status {SortIcon("status")}</span></th>
+            <th style={{ ...thStyle, cursor: "pointer", textAlign: "right" }} onClick={() => handleSort("score")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5, justifyContent: "flex-end" }}>Score {SortIcon("score")}</span></th>
+            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("createdDate")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Created {SortIcon("createdDate")}</span></th>
             <th style={{ ...thStyle, textAlign: "center" }}>Actions</th>
           </tr>
         </thead>
@@ -103,16 +109,15 @@ export default function LeadTable({ leads, onView, onEdit, onDelete }: LeadTable
                   </div>
                 </td>
                 <td style={rowTd}>
-                  <span style={{ color: "#374151", fontWeight: 500 }}>{lead.company}</span><br />
-                  <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{lead.location}</span>
+                  <span style={{ color: "#374151", fontWeight: 500 }}>{lead.company}</span>
                 </td>
                 <td style={rowTd}>
                   <span style={{ fontSize: "0.8rem", color: "#475569", background: "#f1f5f9", padding: "3px 8px", borderRadius: "6px", fontWeight: 500 }}>{lead.source}</span>
                 </td>
                 <td style={rowTd}><LeadStatusBadge status={lead.status} /></td>
                 <td style={{ ...rowTd, textAlign: "right" }}>
-                  <span style={{ fontWeight: 700, color: lead.value > 0 ? "#059669" : "#94a3b8" }}>
-                    {lead.value > 0 ? `$${lead.value.toLocaleString()}` : "—"}
+                  <span style={{ fontWeight: 700, color: scoreColor(lead.score), fontSize: "0.875rem" }}>
+                    {lead.score}
                   </span>
                 </td>
                 <td style={rowTd}>

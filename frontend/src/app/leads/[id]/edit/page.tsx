@@ -3,16 +3,16 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import CustomerForm from "@/components/customers/CustomerForm";
-import { ApiCustomer, CustomerFormValues, toFormValues } from "@/data/customers";
+import LeadForm from "@/components/leads/LeadForm";
+import { ApiLead, LeadFormValues, toFormValues } from "@/data/leads";
 import { apiRequest, getAccessToken } from "@/lib/api";
 
-export default function EditCustomerPage() {
+export default function EditLeadPage() {
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
 
-  const [initial, setInitial] = useState<CustomerFormValues | null>(null);
+  const [initial, setInitial] = useState<LeadFormValues | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -21,7 +21,7 @@ export default function EditCustomerPage() {
     let cancelled = false;
     const run = async () => {
       try {
-        const data = await apiRequest<ApiCustomer>(`/api/customers/${id}/`);
+        const data = await apiRequest<ApiLead>(`/api/leads/${id}/`);
         if (cancelled) return;
         setInitial(toFormValues(data));
       } catch (err) {
@@ -45,7 +45,7 @@ export default function EditCustomerPage() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}>
             <path d="M21 12a9 9 0 1 1-6.219-8.56" />
           </svg>
-          Loading customer...
+          Loading lead...
           <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
         </div>
       </DashboardLayout>
@@ -57,13 +57,13 @@ export default function EditCustomerPage() {
       <DashboardLayout>
         <div style={{ textAlign: "center", padding: "60px 20px" }}>
           <p style={{ fontSize: "3rem", margin: "0 0 12px" }}>🔍</p>
-          <h2 style={{ margin: "0 0 8px", color: "#0f172a" }}>Customer Not Found</h2>
-          <p style={{ color: "#64748b", margin: "0 0 20px" }}>No customer found with ID: {id}</p>
+          <h2 style={{ margin: "0 0 8px", color: "#0f172a" }}>Lead Not Found</h2>
+          <p style={{ color: "#64748b", margin: "0 0 20px" }}>No lead found with ID: {id}</p>
           <button
-            onClick={() => router.push("/customers")}
+            onClick={() => router.push("/leads")}
             style={{ padding: "10px 20px", borderRadius: "8px", background: "#4f46e5", color: "#fff", border: "none", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
           >
-            Back to Customers
+            Back to Leads
           </button>
         </div>
       </DashboardLayout>
@@ -77,7 +77,7 @@ export default function EditCustomerPage() {
         {/* Header */}
         <div style={{ marginBottom: "24px" }}>
           <button
-            onClick={() => router.push(`/customers/${id}`)}
+            onClick={() => router.push(`/leads/${id}`)}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -97,13 +97,13 @@ export default function EditCustomerPage() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Back to Customer
+            Back to Lead
           </button>
           <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>
-            Edit Customer
+            Edit Lead
           </h1>
           <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.9rem" }}>
-            Update the customer details below.
+            Update the lead details below.
           </p>
         </div>
 
@@ -138,20 +138,20 @@ export default function EditCustomerPage() {
         }}>
           <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f5f9" }}>
             <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>
-              Customer Information
+              Lead Information
             </h2>
           </div>
 
           <div style={{ padding: "24px" }}>
-            <CustomerForm
-              customerId={id}
+            <LeadForm
+              leadId={id}
               initial={initial}
               submitLabel="Save Changes"
               onSuccess={() => {
                 setSuccess(true);
-                setTimeout(() => router.push(`/customers/${id}`), 1800);
+                setTimeout(() => router.push(`/leads/${id}`), 1800);
               }}
-              onCancel={() => router.push(`/customers/${id}`)}
+              onCancel={() => router.push(`/leads/${id}`)}
             />
           </div>
         </div>
