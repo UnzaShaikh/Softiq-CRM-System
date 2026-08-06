@@ -1,15 +1,59 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import StatCard from "@/components/dashboard/StatCard";
+import RevenueChart from "@/components/dashboard/RevenueChart";
+import DealsPipeline from "@/components/dashboard/DealsPipeline";
+import SalesPipeline from "@/components/dashboard/SalesPipeline";
+import LeadsDonutChart from "@/components/dashboard/LeadsDonutChart";
+import RecentCustomers from "@/components/dashboard/RecentCustomers";
+import RecentLeads from "@/components/dashboard/RecentLeads";
+import TopPerformers from "@/components/dashboard/TopPerformers";
+import ActivityFeed from "@/components/dashboard/ActivityFeed";
 
-type DashboardData = {
+interface DashboardData {
   total_customers: number;
   total_leads: number;
   opportunities: number;
   revenue: number;
   tasks_due: number;
-};
+}
+
+const stats = [
+  {
+    label: "Total Customers",
+    value: "2,491",
+    change: "+12%",
+    up: true,
+    color: "#4f46e5",
+    icon: "👥",
+  },
+  {
+    label: "Active Deals",
+    value: "148",
+    change: "+5%",
+    up: true,
+    color: "#0891b2",
+    icon: "🤝",
+  },
+  {
+    label: "Revenue (MTD)",
+    value: "$84,200",
+    change: "+8.3%",
+    up: true,
+    color: "#16a34a",
+    icon: "💰",
+  },
+  {
+    label: "Open Tickets",
+    value: "23",
+    change: "-4%",
+    up: false,
+    color: "#d97706",
+    icon: "🎫",
+  },
+];
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -102,6 +146,16 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold">Tasks Due</h2>
           <p className="text-2xl">{data.tasks_due}</p>
         </div>
+
+        {/* Recent Customers */}
+        <RecentCustomers />
+
+        {/* Recent Leads */}
+        <RecentLeads />
+
+        {/* Top Performers */}
+        <TopPerformers />
+<SalesPipeline />
       </div>
     </div>
   );
