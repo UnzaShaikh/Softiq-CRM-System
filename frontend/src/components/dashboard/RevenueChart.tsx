@@ -1,15 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import type { SalesOverview } from "@/lib/dashboard";
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-const DATA = {
-  revenue: [42000, 51000, 47000, 63000, 58000, 72000, 68000, 84200, 79000, 91000, 88000, 97000],
-  deals:   [18,    24,    21,    31,    28,    36,    33,    41,    38,    46,    44,    52],
-};
-
-type DataKey = keyof typeof DATA;
+const DEFAULT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const W = 680;
 const H = 220;
@@ -18,6 +12,7 @@ const PAD = { top: 20, right: 20, bottom: 36, left: 56 };
 function normalize(values: number[]): number[] {
   const max = Math.max(...values);
   const min = Math.min(...values) * 0.85;
+  if (max === min) return values.map(() => 0.5);
   return values.map((v) => (v - min) / (max - min));
 }
 
@@ -55,18 +50,31 @@ function buildPoints(normed: number[]): { x: number; y: number }[] {
   }));
 }
 
-function formatValue(key: DataKey, v: number): string {
-  if (key === "revenue") {
+function formatValue(kind: "revenue" | "deals", v: number): string {
+  if (kind === "revenue") {
     return v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`;
   }
   return String(v);
 }
 
-export default function RevenueChart() {
-  const [active, setActive] = useState<DataKey>("revenue");
+interface RevenueChartProps {
+  overview: SalesOverview;
+}
+
+export default function RevenueChart({ overview }: RevenueChartProps) {
+  const [active, setActive] = useState<"revenue" | "deals">("revenue");
   const [hovered, setHovered] = useState<number | null>(null);
 
-  const values = DATA[active];
+  const months =
+    overview.months.length === 12 ? overview.months : DEFAULT_MONTHS;
+  const revenue = overview.revenue.length === 12 ? overview.revenue : Array(12).fill(0);
+  const deals = overview.deals_closed.length === 12 ? overview.deals_closed : Array(12).fill(0);
+
+  const values = active === "revenue" ? revenue : deals;
+  const total = values.reduce((a, b) => a + b, 0);
+  const maxV = Math.max(...values);
+  const minV = Math.min(...values) * 0.85;
+
   const normed = normalize(values);
   const points = buildPoints(normed);
   const fillPath = buildPath(normed, true);
@@ -77,12 +85,12 @@ export default function RevenueChart() {
   const plotW = W - PAD.left - PAD.right;
 
   // Y axis tick labels (4 ticks)
-  const maxV = Math.max(...values);
-  const minV = Math.min(...values) * 0.85;
   const yTicks = [0, 0.33, 0.66, 1].map((t) => ({
     y: PAD.top + (1 - t) * plotH,
     label: formatValue(active, Math.round(minV + t * (maxV - minV))),
   }));
+
+  const hasData = total > 0;
 
   return (
     <div style={{
@@ -100,7 +108,7 @@ export default function RevenueChart() {
         </div>
         {/* Toggle */}
         <div style={{ display: "flex", gap: 4, background: "#f1f5f9", borderRadius: 8, padding: 3 }}>
-          {(["revenue", "deals"] as DataKey[]).map((k) => (
+          {(["revenue", "deals"] as const).map((k) => (
             <button
               key={k}
               onClick={() => setActive(k)}
@@ -127,99 +135,105 @@ export default function RevenueChart() {
 
       {/* Chart */}
       <div style={{ padding: "8px 0 4px", position: "relative" }}>
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          style={{ width: "100%", height: "auto", display: "block", overflow: "visible" }}
-          onMouseLeave={() => setHovered(null)}
-        >
-          <defs>
-            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.01" />
-            </linearGradient>
-          </defs>
+        {!hasData ? (
+          <div style={{ height: H, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: "0.875rem" }}>
+            No closed deals yet — revenue trends will appear here.
+          </div>
+        ) : (
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            style={{ width: "100%", height: "auto", display: "block", overflow: "visible" }}
+            onMouseLeave={() => setHovered(null)}
+          >
+            <defs>
+              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.2" />
+                <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.01" />
+              </linearGradient>
+            </defs>
 
-          {/* Y grid lines */}
-          {yTicks.map((t, i) => (
-            <g key={i}>
-              <line
-                x1={PAD.left} y1={t.y} x2={W - PAD.right} y2={t.y}
-                stroke="#f1f5f9" strokeWidth="1"
-              />
+            {/* Y grid lines */}
+            {yTicks.map((t, i) => (
+              <g key={i}>
+                <line
+                  x1={PAD.left} y1={t.y} x2={W - PAD.right} y2={t.y}
+                  stroke="#f1f5f9" strokeWidth="1"
+                />
+                <text
+                  x={PAD.left - 8} y={t.y + 4}
+                  textAnchor="end"
+                  fontSize="11" fill="#94a3b8" fontFamily="inherit"
+                >
+                  {t.label}
+                </text>
+              </g>
+            ))}
+
+            {/* X axis labels */}
+            {months.map((m, i) => (
               <text
-                x={PAD.left - 8} y={t.y + 4}
-                textAnchor="end"
+                key={m}
+                x={PAD.left + (i / (months.length - 1)) * plotW}
+                y={H - 6}
+                textAnchor="middle"
                 fontSize="11" fill="#94a3b8" fontFamily="inherit"
               >
-                {t.label}
+                {m}
               </text>
-            </g>
-          ))}
+            ))}
 
-          {/* X axis labels */}
-          {MONTHS.map((m, i) => (
-            <text
-              key={m}
-              x={PAD.left + (i / (MONTHS.length - 1)) * plotW}
-              y={H - 6}
-              textAnchor="middle"
-              fontSize="11" fill="#94a3b8" fontFamily="inherit"
-            >
-              {m}
-            </text>
-          ))}
+            {/* Area fill */}
+            <path d={fillPath} fill={`url(#${gradId})`} />
 
-          {/* Area fill */}
-          <path d={fillPath} fill={`url(#${gradId})`} />
+            {/* Line */}
+            <path d={linePath} fill="none" stroke="#4f46e5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
-          {/* Line */}
-          <path d={linePath} fill="none" stroke="#4f46e5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-
-          {/* Hover targets + dots */}
-          {points.map((pt, i) => (
-            <g key={i}>
-              {/* Invisible wide hover target */}
-              <rect
-                x={pt.x - (plotW / MONTHS.length) / 2}
-                y={PAD.top}
-                width={plotW / MONTHS.length}
-                height={plotH}
-                fill="transparent"
-                style={{ cursor: "crosshair" }}
-                onMouseEnter={() => setHovered(i)}
-              />
-              {hovered === i && (
-                <>
-                  {/* Vertical guideline */}
-                  <line
-                    x1={pt.x} y1={PAD.top} x2={pt.x} y2={PAD.top + plotH}
-                    stroke="#4f46e5" strokeWidth="1" strokeDasharray="4,3" opacity="0.5"
-                  />
-                  {/* Dot */}
-                  <circle cx={pt.x} cy={pt.y} r={6} fill="#4f46e5" stroke="#fff" strokeWidth="2.5" />
-                  {/* Tooltip box */}
-                  <g>
-                    <rect
-                      x={pt.x - 38} y={pt.y - 38}
-                      width={76} height={28}
-                      rx={6} fill="#0f172a"
+            {/* Hover targets + dots */}
+            {points.map((pt, i) => (
+              <g key={i}>
+                {/* Invisible wide hover target */}
+                <rect
+                  x={pt.x - (plotW / months.length) / 2}
+                  y={PAD.top}
+                  width={plotW / months.length}
+                  height={plotH}
+                  fill="transparent"
+                  style={{ cursor: "crosshair" }}
+                  onMouseEnter={() => setHovered(i)}
+                />
+                {hovered === i && (
+                  <>
+                    {/* Vertical guideline */}
+                    <line
+                      x1={pt.x} y1={PAD.top} x2={pt.x} y2={PAD.top + plotH}
+                      stroke="#4f46e5" strokeWidth="1" strokeDasharray="4,3" opacity="0.5"
                     />
-                    <text
-                      x={pt.x} y={pt.y - 19}
-                      textAnchor="middle" fontSize="12"
-                      fontWeight="700" fill="#ffffff" fontFamily="inherit"
-                    >
-                      {formatValue(active, values[i])}
-                    </text>
-                  </g>
-                </>
-              )}
-              {hovered !== i && (
-                <circle cx={pt.x} cy={pt.y} r={3} fill="#4f46e5" opacity="0.4" />
-              )}
-            </g>
-          ))}
-        </svg>
+                    {/* Dot */}
+                    <circle cx={pt.x} cy={pt.y} r={6} fill="#4f46e5" stroke="#fff" strokeWidth="2.5" />
+                    {/* Tooltip box */}
+                    <g>
+                      <rect
+                        x={pt.x - 38} y={pt.y - 38}
+                        width={76} height={28}
+                        rx={6} fill="#0f172a"
+                      />
+                      <text
+                        x={pt.x} y={pt.y - 19}
+                        textAnchor="middle" fontSize="12"
+                        fontWeight="700" fill="#ffffff" fontFamily="inherit"
+                      >
+                        {formatValue(active, values[i])}
+                      </text>
+                    </g>
+                  </>
+                )}
+                {hovered !== i && (
+                  <circle cx={pt.x} cy={pt.y} r={3} fill="#4f46e5" opacity="0.4" />
+                )}
+              </g>
+            ))}
+          </svg>
+        )}
       </div>
 
       {/* Summary row */}
@@ -228,9 +242,9 @@ export default function RevenueChart() {
         borderTop: "1px solid #f1f5f9",
       }}>
         {[
-          { label: "Peak Month", value: MONTHS[values.indexOf(Math.max(...values))], icon: "🏆" },
-          { label: "Total", value: active === "revenue" ? `$${(values.reduce((a, b) => a + b, 0) / 1000).toFixed(0)}k` : String(values.reduce((a, b) => a + b, 0)), icon: "📊" },
-          { label: "Avg / Month", value: active === "revenue" ? `$${Math.round(values.reduce((a, b) => a + b, 0) / values.length / 1000)}k` : String(Math.round(values.reduce((a, b) => a + b, 0) / values.length)), icon: "📈" },
+          { label: "Peak Month", value: hasData ? months[values.indexOf(Math.max(...values))] : "—", icon: "🏆" },
+          { label: "Total", value: active === "revenue" ? `$${(total / 1000).toFixed(0)}k` : String(total), icon: "📊" },
+          { label: "Avg / Month", value: active === "revenue" ? `$${Math.round(total / values.length / 1000)}k` : String(Math.round(total / values.length)), icon: "📈" },
         ].map((s, i) => (
           <div key={i} style={{
             flex: 1,

@@ -1,50 +1,33 @@
 "use client";
 
 import { useState } from "react";
+import type { DashboardLead } from "@/lib/dashboard";
 
-interface Lead {
-  name: string;
-  email: string;
-  company: string;
-  source: "Organic" | "Referral" | "Social" | "Email" | "Direct";
-  status: "New" | "Contacted" | "Qualified" | "Lost";
-  score: number;
-  createdAt: string;
-  avatar: string;
-}
+type FilterStatus = "All" | "New" | "Contacted" | "Qualified" | "Lost";
 
-const LEADS: Lead[] = [
-  { name: "David Kim",       email: "d.kim@nexacorp.com",    company: "NexaCorp",     source: "Organic",  status: "New",       score: 88, createdAt: "Today",      avatar: "DK" },
-  { name: "Fatima Al-Hassan",email: "fatima@zenbiz.ae",      company: "ZenBiz",       source: "Referral", status: "Contacted", score: 74, createdAt: "Today",      avatar: "FA" },
-  { name: "Luca Bianchi",    email: "luca.b@italytech.it",   company: "ItalyTech",    source: "Social",   status: "Qualified", score: 91, createdAt: "Yesterday",  avatar: "LB" },
-  { name: "Nadia Osei",      email: "n.osei@springbd.gh",    company: "SpringBD",     source: "Email",    status: "New",       score: 62, createdAt: "Yesterday",  avatar: "NO" },
-  { name: "Carlos Mendoza",  email: "c.mendoza@vmgroup.mx",  company: "VM Group",     source: "Direct",   status: "Contacted", score: 79, createdAt: "2 days ago", avatar: "CM" },
-  { name: "Yuki Tanaka",     email: "y.tanaka@sumitech.jp",  company: "SumiTech",     source: "Organic",  status: "Qualified", score: 95, createdAt: "3 days ago", avatar: "YT" },
-];
-
-const STATUS_STYLE: Record<Lead["status"], { color: string; bg: string }> = {
+const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
   New:       { color: "#4f46e5", bg: "#eef2ff" },
   Contacted: { color: "#0891b2", bg: "#ecfeff" },
   Qualified: { color: "#16a34a", bg: "#f0fdf4" },
   Lost:      { color: "#dc2626", bg: "#fef2f2" },
 };
 
-const SOURCE_ICON: Record<Lead["source"], string> = {
-  Organic:  "🔍",
-  Referral: "🤝",
-  Social:   "📱",
-  Email:    "📧",
-  Direct:   "🎯",
+const SOURCE_ICON: Record<string, string> = {
+  Website:     "🔍",
+  Referral:    "🤝",
+  "Social Media": "📱",
+  Email:       "📧",
+  Other:       "🎯",
 };
 
-const AVATAR_COLORS: Record<string, [string, string]> = {
-  DK: ["#4f46e5", "#7c3aed"],
-  FA: ["#0891b2", "#0e7490"],
-  LB: ["#059669", "#047857"],
-  NO: ["#d97706", "#b45309"],
-  CM: ["#dc2626", "#b91c1c"],
-  YT: ["#ec4899", "#db2777"],
-};
+const AVATAR_COLORS: [string, string][] = [
+  ["#4f46e5", "#7c3aed"],
+  ["#0891b2", "#0e7490"],
+  ["#059669", "#047857"],
+  ["#d97706", "#b45309"],
+  ["#dc2626", "#b91c1c"],
+  ["#ec4899", "#db2777"],
+];
 
 function ScoreDot({ score }: { score: number }) {
   const color = score >= 85 ? "#16a34a" : score >= 65 ? "#d97706" : "#dc2626";
@@ -72,10 +55,14 @@ function ScoreDot({ score }: { score: number }) {
   );
 }
 
-export default function RecentLeads() {
-  const [filter, setFilter] = useState<"All" | Lead["status"]>("All");
+interface RecentLeadsProps {
+  leads: DashboardLead[];
+}
 
-  const filtered = filter === "All" ? LEADS : LEADS.filter((l) => l.status === filter);
+export default function RecentLeads({ leads }: RecentLeadsProps) {
+  const [filter, setFilter] = useState<FilterStatus>("All");
+
+  const filtered = filter === "All" ? leads : leads.filter((l) => l.status === filter);
 
   return (
     <div style={{
@@ -102,7 +89,7 @@ export default function RecentLeads() {
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {/* Filter */}
           <div style={{ display: "flex", gap: 4, background: "#f1f5f9", borderRadius: 8, padding: 3 }}>
-            {(["All", "New", "Contacted", "Qualified"] as const).map((f) => (
+            {(["All", "New", "Contacted", "Qualified", "Lost"] as FilterStatus[]).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -119,97 +106,90 @@ export default function RecentLeads() {
               </button>
             ))}
           </div>
-
-          <button style={{
-            padding: "7px 14px", borderRadius: 7, fontSize: "0.8125rem",
-            fontWeight: 600, color: "#fff",
-            background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-            border: "none", cursor: "pointer", fontFamily: "inherit",
-            boxShadow: "0 2px 8px rgba(79,70,229,0.3)",
-            display: "flex", alignItems: "center", gap: 5,
-          }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Add Lead
-          </button>
         </div>
       </div>
 
       {/* Table */}
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 580 }}>
-          <thead>
-            <tr style={{ background: "#f8fafc" }}>
-              {["Lead", "Company", "Source", "Status", "Score", "Added"].map((col) => (
-                <th key={col} style={{
-                  padding: "10px 16px", textAlign: "left",
-                  fontSize: "0.75rem", fontWeight: 700,
-                  color: "#64748b", textTransform: "uppercase",
-                  letterSpacing: "0.05em", whiteSpace: "nowrap",
-                  borderBottom: "1px solid #f1f5f9",
-                }}>
-                  {col}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((lead, i) => {
-              const st = STATUS_STYLE[lead.status];
-              const [c1, c2] = AVATAR_COLORS[lead.avatar] ?? ["#4f46e5", "#7c3aed"];
-              return (
-                <tr
-                  key={i}
-                  style={{ borderBottom: "1px solid #f1f5f9", transition: "background 0.12s", cursor: "pointer" }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = "#f8fafc")}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = "transparent")}
-                >
-                  <td style={{ padding: "11px 16px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{
-                        width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
-                        background: `linear-gradient(135deg, ${c1}, ${c2})`,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        color: "#fff", fontWeight: 700, fontSize: "0.68rem", userSelect: "none",
+      {leads.length === 0 ? (
+        <div style={{ padding: "2.5rem 1.5rem", textAlign: "center", color: "#94a3b8", fontSize: "0.875rem" }}>
+          No leads yet — add leads to see them here.
+        </div>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 580 }}>
+            <thead>
+              <tr style={{ background: "#f8fafc" }}>
+                {["Lead", "Company", "Source", "Status", "Score", "Added"].map((col) => (
+                  <th key={col} style={{
+                    padding: "10px 16px", textAlign: "left",
+                    fontSize: "0.75rem", fontWeight: 700,
+                    color: "#64748b", textTransform: "uppercase",
+                    letterSpacing: "0.05em", whiteSpace: "nowrap",
+                    borderBottom: "1px solid #f1f5f9",
+                  }}>
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((lead, i) => {
+                const st = STATUS_STYLE[lead.status] ?? STATUS_STYLE.New;
+                const palette = AVATAR_COLORS[i % AVATAR_COLORS.length];
+                const [c1, c2] = palette;
+                return (
+                  <tr
+                    key={i}
+                    style={{ borderBottom: "1px solid #f1f5f9", transition: "background 0.12s", cursor: "pointer" }}
+                    onMouseEnter={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = "#f8fafc")}
+                    onMouseLeave={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = "transparent")}
+                  >
+                    <td style={{ padding: "11px 16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{
+                          width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+                          background: `linear-gradient(135deg, ${c1}, ${c2})`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          color: "#fff", fontWeight: 700, fontSize: "0.68rem", userSelect: "none",
+                        }}>
+                          {lead.avatar}
+                        </div>
+                        <div>
+                          <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#0f172a" }}>{lead.name}</p>
+                          <p style={{ margin: 0, fontSize: "0.72rem", color: "#94a3b8" }}>{lead.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ padding: "11px 16px" }}>
+                      <span style={{ fontSize: "0.875rem", color: "#374151", fontWeight: 500 }}>{lead.company}</span>
+                    </td>
+                    <td style={{ padding: "11px 16px" }}>
+                      <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>
+                        {SOURCE_ICON[lead.source] ?? "🔍"} {lead.source}
+                      </span>
+                    </td>
+                    <td style={{ padding: "11px 16px" }}>
+                      <span style={{
+                        padding: "3px 10px", borderRadius: 9999,
+                        fontSize: "0.75rem", fontWeight: 700,
+                        color: st.color, background: st.bg,
                       }}>
-                        {lead.avatar}
-                      </div>
-                      <div>
-                        <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#0f172a" }}>{lead.name}</p>
-                        <p style={{ margin: 0, fontSize: "0.72rem", color: "#94a3b8" }}>{lead.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: "11px 16px" }}>
-                    <span style={{ fontSize: "0.875rem", color: "#374151", fontWeight: 500 }}>{lead.company}</span>
-                  </td>
-                  <td style={{ padding: "11px 16px" }}>
-                    <span style={{ fontSize: "0.8125rem", color: "#64748b" }}>
-                      {SOURCE_ICON[lead.source]} {lead.source}
-                    </span>
-                  </td>
-                  <td style={{ padding: "11px 16px" }}>
-                    <span style={{
-                      padding: "3px 10px", borderRadius: 9999,
-                      fontSize: "0.75rem", fontWeight: 700,
-                      color: st.color, background: st.bg,
-                    }}>
-                      {lead.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: "11px 16px" }}>
-                    <ScoreDot score={lead.score} />
-                  </td>
-                  <td style={{ padding: "11px 16px" }}>
-                    <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>{lead.createdAt}</span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                        {lead.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: "11px 16px" }}>
+                      <ScoreDot score={lead.score} />
+                    </td>
+                    <td style={{ padding: "11px 16px" }}>
+                      <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>{lead.createdAt}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Footer */}
       <div style={{
@@ -218,14 +198,8 @@ export default function RecentLeads() {
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>
-          Showing {filtered.length} of {LEADS.length} leads
+          Showing {filtered.length} of {leads.length} leads
         </span>
-        <button style={{
-          fontSize: "0.8125rem", fontWeight: 600, color: "#4f46e5",
-          background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
-        }}>
-          View all leads →
-        </button>
       </div>
     </div>
   );

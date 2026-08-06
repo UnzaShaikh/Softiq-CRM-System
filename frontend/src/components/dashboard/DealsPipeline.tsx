@@ -1,43 +1,29 @@
 "use client";
 
-const STAGES = [
-  { id: "lead",       label: "Lead",        color: "#6366f1", bg: "#eef2ff", count: 24, value: "$48k" },
-  { id: "qualified",  label: "Qualified",   color: "#0891b2", bg: "#ecfeff", count: 18, value: "$92k" },
-  { id: "proposal",   label: "Proposal",    color: "#d97706", bg: "#fffbeb", count: 11, value: "$135k" },
-  { id: "negotiation",label: "Negotiation", color: "#7c3aed", bg: "#f5f3ff", count: 7,  value: "$178k" },
-  { id: "closed",     label: "Closed Won",  color: "#16a34a", bg: "#f0fdf4", count: 5,  value: "$214k" },
-];
+import type { DashboardDeal, DashboardStage } from "@/lib/dashboard";
 
-interface Deal {
-  name: string;
-  company: string;
-  value: string;
-  stage: string;
-  avatar: string;
-  daysLeft: number;
+interface DealsPipelineProps {
+  stages: DashboardStage[];
+  deals: DashboardDeal[];
 }
 
-const DEALS: Deal[] = [
-  { name: "Sarah Chen",      company: "Acme Corp",       value: "$24,000", stage: "negotiation", avatar: "SC", daysLeft: 3  },
-  { name: "Marcus Rivera",   company: "TechFlow Inc",    value: "$18,500", stage: "proposal",    avatar: "MR", daysLeft: 7  },
-  { name: "Priya Nair",      company: "CloudBase Ltd",   value: "$41,000", stage: "qualified",   avatar: "PN", daysLeft: 14 },
-  { name: "James O'Brien",   company: "Retail Plus",     value: "$9,200",  stage: "lead",        avatar: "JO", daysLeft: 21 },
-  { name: "Elena Vasquez",   company: "HealthSync",      value: "$67,000", stage: "closed",      avatar: "EV", daysLeft: 0  },
-  { name: "Kwame Asante",    company: "LogiCore",        value: "$33,400", stage: "proposal",    avatar: "KA", daysLeft: 5  },
+const AVATAR_PALETTE: [string, string][] = [
+  ["#4f46e5", "#7c3aed"],
+  ["#0891b2", "#0e7490"],
+  ["#059669", "#047857"],
+  ["#d97706", "#b45309"],
+  ["#dc2626", "#b91c1c"],
+  ["#7c3aed", "#6d28d9"],
 ];
 
-const avatarPalette: Record<string, [string, string]> = {
-  SC: ["#4f46e5", "#7c3aed"],
-  MR: ["#0891b2", "#0e7490"],
-  PN: ["#059669", "#047857"],
-  JO: ["#d97706", "#b45309"],
-  EV: ["#dc2626", "#b91c1c"],
-  KA: ["#7c3aed", "#6d28d9"],
-};
+function colorForAvatar(avatar: string, index: number): [string, string] {
+  const palette = AVATAR_PALETTE[index % AVATAR_PALETTE.length];
+  return [palette[0], palette[1]];
+}
 
-export default function DealsPipeline() {
+export default function DealsPipeline({ stages, deals }: DealsPipelineProps) {
   // Total pipeline value
-  const totalDeals = DEALS.reduce((sum, d) => sum + parseFloat(d.value.replace(/[$,]/g, "")), 0);
+  const totalValue = deals.reduce((sum, d) => sum + parseFloat(d.value.replace(/[$,]/g, "")), 0);
 
   return (
     <div style={{
@@ -52,7 +38,7 @@ export default function DealsPipeline() {
         <div>
           <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>Deals Pipeline</h3>
           <p style={{ margin: "2px 0 0", fontSize: "0.8125rem", color: "#64748b" }}>
-            {DEALS.length} active deals · ${(totalDeals / 1000).toFixed(1)}k total value
+            {deals.length} active deals · ${(totalValue / 1000).toFixed(1)}k total value
           </p>
         </div>
         <button style={{
@@ -71,12 +57,12 @@ export default function DealsPipeline() {
       {/* Stage progress bar */}
       <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid #f1f5f9" }}>
         <div style={{ display: "flex", gap: 3, height: 8, borderRadius: 99, overflow: "hidden" }}>
-          {STAGES.map((s) => (
+          {stages.map((s) => (
             <div
               key={s.id}
               title={`${s.label}: ${s.count} deals`}
               style={{
-                flex: s.count,
+                flex: s.count || 0.001,
                 background: s.color,
                 opacity: 0.85,
                 transition: "flex 0.3s",
@@ -85,7 +71,7 @@ export default function DealsPipeline() {
           ))}
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, gap: 4, flexWrap: "wrap" }}>
-          {STAGES.map((s) => (
+          {stages.map((s) => (
             <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, display: "inline-block", flexShrink: 0 }} />
               <span style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 500 }}>
@@ -97,81 +83,89 @@ export default function DealsPipeline() {
       </div>
 
       {/* Deal rows */}
-      <div style={{ padding: "0.5rem 0" }}>
-        {DEALS.map((deal, i) => {
-          const stage = STAGES.find((s) => s.id === deal.stage)!;
-          const [c1, c2] = avatarPalette[deal.avatar] ?? ["#4f46e5", "#7c3aed"];
-          return (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "10px 1.5rem",
-                transition: "background 0.12s",
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.background = "#f8fafc")}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.background = "transparent")}
-            >
-              {/* Avatar */}
-              <div style={{
-                width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
-                background: `linear-gradient(135deg, ${c1}, ${c2})`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: "#fff", fontWeight: 700, fontSize: "0.75rem", userSelect: "none",
-              }}>
-                {deal.avatar}
-              </div>
-
-              {/* Info */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {deal.name}
-                </p>
-                <p style={{ margin: 0, fontSize: "0.75rem", color: "#64748b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {deal.company}
-                </p>
-              </div>
-
-              {/* Stage badge */}
-              <span style={{
-                padding: "3px 9px",
-                borderRadius: 9999,
-                fontSize: "0.7rem",
-                fontWeight: 700,
-                color: stage.color,
-                background: stage.bg,
-                flexShrink: 0,
-                whiteSpace: "nowrap",
-              }}>
-                {stage.label}
-              </span>
-
-              {/* Days left */}
-              {deal.daysLeft > 0 && (
-                <span style={{
-                  fontSize: "0.7rem", color: deal.daysLeft <= 5 ? "#dc2626" : "#64748b",
-                  fontWeight: 600, flexShrink: 0, minWidth: 48, textAlign: "right",
+      {deals.length === 0 ? (
+        <div style={{ padding: "2rem 1.5rem", textAlign: "center", color: "#94a3b8", fontSize: "0.875rem" }}>
+          No deals yet — create deals to build your pipeline.
+        </div>
+      ) : (
+        <div style={{ padding: "0.5rem 0" }}>
+          {deals.map((deal, i) => {
+            const stage = stages.find((s) => s.id === deal.stage);
+            const [c1, c2] = colorForAvatar(deal.avatar, i);
+            return (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 1.5rem",
+                  transition: "background 0.12s",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.background = "#f8fafc")}
+                onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.background = "transparent")}
+              >
+                {/* Avatar */}
+                <div style={{
+                  width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
+                  background: `linear-gradient(135deg, ${c1}, ${c2})`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "#fff", fontWeight: 700, fontSize: "0.75rem", userSelect: "none",
                 }}>
-                  {deal.daysLeft}d left
-                </span>
-              )}
-              {deal.daysLeft === 0 && (
-                <span style={{ fontSize: "0.7rem", color: "#16a34a", fontWeight: 700, flexShrink: 0, minWidth: 48, textAlign: "right" }}>
-                  ✓ Won
-                </span>
-              )}
+                  {deal.avatar}
+                </div>
 
-              {/* Value */}
-              <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 700, color: "#0f172a", flexShrink: 0, minWidth: 60, textAlign: "right" }}>
-                {deal.value}
-              </p>
-            </div>
-          );
-        })}
-      </div>
+                {/* Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {deal.name}
+                  </p>
+                  <p style={{ margin: 0, fontSize: "0.75rem", color: "#64748b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {deal.company}
+                  </p>
+                </div>
+
+                {/* Stage badge */}
+                <span style={{
+                  padding: "3px 9px",
+                  borderRadius: 9999,
+                  fontSize: "0.7rem",
+                  fontWeight: 700,
+                  color: stage?.color ?? "#64748b",
+                  background: stage?.bg ?? "#f1f5f9",
+                  flexShrink: 0,
+                  whiteSpace: "nowrap",
+                }}>
+                  {stage?.label ?? deal.stage}
+                </span>
+
+                {/* Days left */}
+                {deal.daysLeft > 0 ? (
+                  <span style={{
+                    fontSize: "0.7rem", color: deal.daysLeft <= 5 ? "#dc2626" : "#64748b",
+                    fontWeight: 600, flexShrink: 0, minWidth: 48, textAlign: "right",
+                  }}>
+                    {deal.daysLeft}d left
+                  </span>
+                ) : (
+                  <span style={{
+                    fontSize: "0.7rem", color: deal.stage === "closed_won" ? "#16a34a" : "#94a3b8",
+                    fontWeight: 700, flexShrink: 0, minWidth: 48, textAlign: "right",
+                  }}>
+                    {deal.stage === "closed_won" ? "✓ Won" : "—"}
+                  </span>
+                )}
+
+                {/* Value */}
+                <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 700, color: "#0f172a", flexShrink: 0, minWidth: 60, textAlign: "right" }}>
+                  {deal.value}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

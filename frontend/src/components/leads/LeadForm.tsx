@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { apiRequest } from "@/lib/api";
+import { apiRequest, emitDataChanged } from "@/lib/api";
 import {
   ApiLead,
   LeadFormValues,
@@ -195,6 +195,7 @@ export default function LeadForm({
         method: isEdit ? "PATCH" : "POST",
         body: payload,
       });
+      emitDataChanged();
       onSuccess(lead);
     } catch (err) {
       setGError((err as Error).message || "Something went wrong.");
