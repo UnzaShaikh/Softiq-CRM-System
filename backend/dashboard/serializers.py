@@ -33,6 +33,7 @@ class RecentActivitySerializer(serializers.Serializer):
 class RecentCustomerSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
+    email = serializers.CharField()
     company = serializers.CharField()
     status = serializers.CharField()
     revenue = serializers.DecimalField(max_digits=12, decimal_places=2)
@@ -41,6 +42,7 @@ class RecentCustomerSerializer(serializers.Serializer):
 class RecentLeadSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
+    email = serializers.CharField()
     company = serializers.CharField()
     source = serializers.CharField()
     status = serializers.CharField()
