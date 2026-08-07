@@ -1,10 +1,161 @@
 "use client";
+"use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { Settings, LogOut, ChevronDown } from "lucide-react";
+
+/* ── User Dropdown Component ── */
+interface UserDropdownProps {
+  initials: string;
+  c1: string;
+  c2: string;
+  firstName: string;
+  email: string;
+  onLogout: () => void;
+  onSettings: () => void;
+}
+
+function UserDropdown({ initials, c1, c2, firstName, email, onLogout, onSettings }: UserDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      {/* Pill trigger */}
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          display: "flex", alignItems: "center", gap: "8px",
+          padding: "5px 10px 5px 6px", borderRadius: "9999px",
+          border: `1.5px solid ${open ? "#a5b4fc" : "#e2e8f0"}`,
+          background: "#fff", cursor: "pointer", fontFamily: "inherit",
+          boxShadow: open ? "0 0 0 3px rgba(79,70,229,0.08)" : "none",
+          transition: "border-color 0.15s, box-shadow 0.15s",
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.borderColor = "#a5b4fc";
+          (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 0 3px rgba(79,70,229,0.08)";
+        }}
+        onMouseLeave={(e) => {
+          if (!open) {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "#e2e8f0";
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
+          }
+        }}
+      >
+        {/* Avatar */}
+        <div style={{
+          width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
+          background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: "#fff", fontWeight: 700, fontSize: "0.7rem", userSelect: "none",
+        }}>
+          {initials}
+        </div>
+        <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#0f172a", whiteSpace: "nowrap" }}>
+          Hi, {firstName}
+        </span>
+        <ChevronDown
+          size={14}
+          color="#94a3b8"
+          style={{ transition: "transform 0.2s ease", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+        />
+      </button>
+
+      {/* Dropdown menu */}
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 8px)", right: 0,
+          background: "#fff", border: "1px solid #e2e8f0",
+          borderRadius: "12px", boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+          minWidth: "220px", zIndex: 100, overflow: "hidden",
+          animation: "slideUp 0.15s cubic-bezier(0.16,1,0.3,1)",
+        }}>
+          {/* User info */}
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{
+              width: 38, height: 38, borderRadius: "50%",
+              background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#fff", fontWeight: 700, fontSize: "0.8rem", flexShrink: 0,
+            }}>
+              {initials}
+            </div>
+            <div style={{ overflow: "hidden" }}>
+              <p style={{ margin: 0, fontWeight: 600, fontSize: "0.875rem", color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {firstName}
+              </p>
+              <p style={{ margin: 0, fontSize: "0.75rem", color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {email}
+              </p>
+            </div>
+          </div>
+
+          {/* Menu items */}
+          <div style={{ padding: "6px" }}>
+            <button
+              onClick={() => { setOpen(false); onSettings(); }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                padding: "9px 12px", borderRadius: "8px", border: "none",
+                background: "transparent", cursor: "pointer", fontFamily: "inherit",
+                fontSize: "0.875rem", fontWeight: 500, color: "#374151",
+                transition: "background 0.12s ease",
+                textAlign: "left",
+              }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "#f8fafc")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
+            >
+              <Settings size={16} color="#64748b" />
+              Settings
+            </button>
+
+            <div style={{ height: "1px", background: "#f1f5f9", margin: "4px 0" }} />
+
+            <button
+              onClick={() => { setOpen(false); onLogout(); }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                padding: "9px 12px", borderRadius: "8px", border: "none",
+                background: "transparent", cursor: "pointer", fontFamily: "inherit",
+                fontSize: "0.875rem", fontWeight: 500, color: "#ef4444",
+                transition: "background 0.12s ease",
+                textAlign: "left",
+              }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "#fef2f2")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
+            >
+              <LogOut size={16} color="#ef4444" />
+              Sign Out
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </div>
+  );
+}
 
 const NAV_ITEMS = [
   {
@@ -108,18 +259,7 @@ const NAV_ITEMS = [
   },
 ];
 
-const BOTTOM_ITEMS = [
-  {
-    label: "Settings",
-    href: "/settings",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-      </svg>
-    ),
-  },
-];
+const BOTTOM_ITEMS: { label: string; href: string; icon: React.ReactNode }[] = [];
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -130,9 +270,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-
-
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    const t = setTimeout(() => setMobileOpen(false), 0);
+    return () => clearTimeout(t);
+  }, [pathname]);
 
   function handleLogout() {
     logout();
@@ -160,15 +304,35 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc", fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif" }}>
 
+      {/* ── Mobile overlay ── */}
+      {mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
+            zIndex: 40, display: "none",
+          }}
+          className="mobile-overlay"
+        />
+      )}
 
       {/* ── Sidebar ── */}
-      <aside
-className={`dashboard-sidebar ${collapsed ? "collapsed" : ""}`}
-style={{
-  width: sidebarW,
-  minWidth: sidebarW,
-}}
->
+      <aside style={{
+        width: sidebarW,
+        minWidth: sidebarW,
+        background: "#4f46e5",
+        borderRight: "none",
+        display: "flex",
+        flexDirection: "column",
+        position: "sticky",
+        top: 0,
+        height: "100vh",
+        overflowY: "auto",
+        overflowX: "hidden",
+        transition: "width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1)",
+        zIndex: 50,
+        flexShrink: 0,
+      }}>
 
         {/* Logo */}
         <div style={{
@@ -176,7 +340,7 @@ style={{
           display: "flex",
           alignItems: "center",
           padding: collapsed ? "0 18px" : "0 20px",
-          borderBottom: "1px solid #f1f5f9",
+          borderBottom: "1px solid rgba(255,255,255,0.15)",
           justifyContent: collapsed ? "center" : "space-between",
           flexShrink: 0,
         }}>
@@ -196,8 +360,8 @@ style={{
                 </svg>
               </div>
               <div>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: "0.95rem", color: "#0f172a", lineHeight: 1.2, letterSpacing: "-0.02em" }}>Softiq CRM</p>
-                <p style={{ margin: 0, fontSize: "0.7rem", color: "#94a3b8", fontWeight: 500 }}>Business Suite</p>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: "0.95rem", color: "#ffffff", lineHeight: 1.2, letterSpacing: "-0.02em" }}>Softiq CRM</p>
+                <p style={{ margin: 0, fontSize: "0.7rem", color: "rgba(255,255,255,0.6)", fontWeight: 500 }}>Business Suite</p>
               </div>
             </Link>
           )}
@@ -254,7 +418,7 @@ style={{
         {/* Main Nav */}
         <nav style={{ flex: 1, padding: "12px 10px", display: "flex", flexDirection: "column", gap: 2 }}>
           {!collapsed && (
-            <p style={{ fontSize: "0.7rem", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", padding: "4px 10px 8px" }}>
+            <p style={{ fontSize: "0.7rem", fontWeight: 600, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "4px 10px 8px" }}>
               Main Menu
             </p>
           )}
@@ -273,8 +437,8 @@ style={{
                   padding: collapsed ? "10px 0" : "9px 10px",
                   borderRadius: 8,
                   textDecoration: "none",
-                  color: active ? "#4f46e5" : "#475569",
-                  background: active ? "#eef2ff" : "transparent",
+                  color: active ? "#ffffff" : "rgba(255,255,255,0.75)",
+                  background: active ? "rgba(255,255,255,0.18)" : "transparent",
                   fontWeight: active ? 600 : 500,
                   fontSize: "0.875rem",
                   transition: "background 0.15s ease, color 0.15s ease",
@@ -282,14 +446,14 @@ style={{
                 }}
                 onMouseEnter={(e) => {
                   if (!active) {
-                    (e.currentTarget as HTMLAnchorElement).style.background = "#f8fafc";
-                    (e.currentTarget as HTMLAnchorElement).style.color = "#0f172a";
+                    (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.12)";
+                    (e.currentTarget as HTMLAnchorElement).style.color = "#ffffff";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!active) {
                     (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
-                    (e.currentTarget as HTMLAnchorElement).style.color = "#475569";
+                    (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.75)";
                   }
                 }}
               >
@@ -321,7 +485,7 @@ style={{
         </nav>
 
         {/* Bottom Nav */}
-        <div style={{ padding: "10px 10px", borderTop: "1px solid #f1f5f9" }}>
+        <div style={{ padding: "10px 10px", borderTop: "1px solid rgba(255,255,255,0.15)" }}>
           {BOTTOM_ITEMS.map((item) => {
             const active = pathname === item.href;
             return (
@@ -342,14 +506,14 @@ style={{
                 }}
                 onMouseEnter={(e) => {
                   if (!active) {
-                    (e.currentTarget as HTMLAnchorElement).style.background = "#f8fafc";
-                    (e.currentTarget as HTMLAnchorElement).style.color = "#0f172a";
+                    (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.12)";
+                    (e.currentTarget as HTMLAnchorElement).style.color = "#ffffff";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!active) {
                     (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
-                    (e.currentTarget as HTMLAnchorElement).style.color = "#475569";
+                    (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.75)";
                   }
                 }}
               >
@@ -359,56 +523,7 @@ style={{
             );
           })}
 
-          {/* User avatar row */}
-          <div style={{
-            marginTop: 8,
-            display: "flex",
-            alignItems: "center",
-            gap: collapsed ? 0 : 10,
-            justifyContent: collapsed ? "center" : "flex-start",
-            padding: collapsed ? "8px 0" : "8px 10px",
-            borderRadius: 10,
-            background: "#f8fafc",
-          }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
-              background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#fff", fontWeight: 700, fontSize: "0.75rem", userSelect: "none",
-            }}>
-              {initials}
-            </div>
-            {!collapsed && (
-              <div style={{ flex: 1, overflow: "hidden" }}>
-                <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 600, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {user ? `${user.firstName} ${user.lastName}`.trim() : "Guest"}
-                </p>
-                <p style={{ margin: 0, fontSize: "0.7rem", color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {user?.email ?? ""}
-                </p>
-              </div>
-            )}
-            {!collapsed && (
-              <button
-                onClick={handleLogout}
-                title="Sign out"
-                style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  color: "#94a3b8", padding: 4, borderRadius: 6,
-                  display: "flex", alignItems: "center",
-                  transition: "color 0.15s",
-                }}
-                onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = "#ef4444")}
-                onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = "#94a3b8")}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              </button>
-            )}
-          </div>
+          {/* User avatar row removed - moved to topbar */}
         </div>
       </aside>
 
@@ -416,18 +531,11 @@ style={{
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         {/* Top bar */}
         <header style={{
-  height: 64,
-  background: "#fff",
-  borderBottom: "1px solid #e2e8f0",
-  display: "flex",
-  alignItems: "center",
-  padding: "0 24px",
-  justifyContent: "space-between",
-  position: "sticky",
-  top: 0,
-  zIndex: 30,
-  flexShrink: 0,
-}}>
+          height: 64, background: "#fff", borderBottom: "1px solid #e2e8f0",
+          display: "flex", alignItems: "center", padding: "0 24px",
+          justifyContent: "space-between", position: "sticky", top: 0, zIndex: 30,
+          flexShrink: 0,
+        }}>
           {/* Search */}
           <div style={{ position: "relative", maxWidth: 340, flex: 1 }}>
             <svg style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}
@@ -487,45 +595,22 @@ style={{
               }} />
             </button>
 
-            {/* Add new */}
-            <button style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "8px 14px", borderRadius: 8,
-              background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-              color: "#fff", fontWeight: 600, fontSize: "0.8125rem",
-              border: "none", cursor: "pointer", fontFamily: "inherit",
-              boxShadow: "0 2px 8px rgba(79,70,229,0.35)",
-              transition: "opacity 0.15s, box-shadow 0.15s",
-            }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 16px rgba(79,70,229,0.45)";
-                (e.currentTarget as HTMLButtonElement).style.opacity = "0.92";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 2px 8px rgba(79,70,229,0.35)";
-                (e.currentTarget as HTMLButtonElement).style.opacity = "1";
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              New Record
-            </button>
+            {/* Hi, User + Avatar + Dropdown */}
+            <UserDropdown
+              initials={initials}
+              c1={c1} c2={c2}
+              firstName={user?.firstName ?? "User"}
+              email={user?.email ?? ""}
+              onLogout={handleLogout}
+              onSettings={() => router.push("/settings")}
+            />
           </div>
         </header>
 
         {/* Page content */}
-        {/* Page content */}
-<main
-  className="dashboard-main"
-  style={{
-    flex:1,
-    padding:"28px 28px",
-    overflowY:"auto"
-  }}
->
-  {children}
-</main>
+        <main style={{ flex: 1, padding: "28px 28px", overflowY: "auto" }}>
+          {children}
+        </main>
       </div>
     </div>
   );

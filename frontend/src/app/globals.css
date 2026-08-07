@@ -43,7 +43,8 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
+/* Dark mode disabled - keeping light theme always */
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0f172a;
     --foreground: #f1f5f9;
@@ -56,7 +57,7 @@
     --error-light: #450a0a;
     --success-light: #052e16;
   }
-}
+} */
 
 *,
 *::before,
@@ -1389,4 +1390,125 @@ body {
   .stats-grid { grid-template-columns: 1fr; }
   .page-header { flex-direction: column; }
   .detail-grid { grid-template-columns: 1fr; }
+}
+
+/* ════════════════════════════════════════
+   DASHBOARD STAT CARDS
+════════════════════════════════════════ */
+.stat-card-dashboard {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: default;
+}
+
+.stat-card-dashboard-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 0.625rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-card-dashboard-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.stat-card-dashboard-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.stat-card-dashboard-value {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.stat-card-dashboard-change {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+}
+
+.stat-card-dashboard-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 9999px;
+}
+
+.stat-card-dashboard-since {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .stat-card-dashboard {
+    padding: 0.75rem;
+  }
+  .stat-card-dashboard-value {
+    font-size: 1.25rem;
+  }
+}
+
+/* Dashboard stats grid responsive */
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .stat-card-dashboard-value {
+    font-size: 1.25rem;
+  }
+}
+
+/* ════════════════════════════════════════
+   DASHBOARD CHART GRIDS RESPONSIVE
+════════════════════════════════════════ */
+.dashboard-chart-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-chart-grid {
+    grid-template-columns: 1fr;
+  }
 }
