@@ -320,7 +320,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <aside style={{
         width: sidebarW,
         minWidth: sidebarW,
-        background: "linear-gradient(160deg, #4f46e5 0%, #7c3aed 100%)",
+        background: "#1e1b4b",
         borderRight: "none",
         display: "flex",
         flexDirection: "column",
