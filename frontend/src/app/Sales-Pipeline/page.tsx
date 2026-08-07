@@ -5,6 +5,8 @@ import StatCard from "@/components/dashboard/StatCard";
 import SalesPipelineBoard from "@/components/dashboard/SalesPipelineBoard";
 import { DEALS } from "@/components/dashboard/data";
 
+import { Briefcase, TrendingUp, Handshake, DollarSign } from "lucide-react";
+
 const dealValues = DEALS.map((deal) =>
   Number(deal.value.replace(/[$,]/g, ""))
 );
@@ -49,7 +51,7 @@ const stats = [
     change: "",
     up: true,
     color: "#4f46e5",
-    icon: "💼",
+    icon: <Briefcase size={18} />,
   },
   {
     label: "Weighted Value",
@@ -57,7 +59,7 @@ const stats = [
     change: "",
     up: true,
     color: "#16a34a",
-    icon: "📈",
+    icon: <TrendingUp size={18} />,
   },
   {
     label: "Open Deals",
@@ -65,7 +67,7 @@ const stats = [
     change: "",
     up: true,
     color: "#0891b2",
-    icon: "🤝",
+    icon: <Handshake size={18} />,
   },
   {
     label: "Avg. Deal Size",
@@ -73,7 +75,7 @@ const stats = [
     change: "",
     up: true,
     color: "#d97706",
-    icon: "💰",
+    icon: <DollarSign size={18} />,
   },
 ];
 
@@ -109,9 +111,10 @@ export default function SalesPipelinePage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
-            gap: "20px",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "16px",
           }}
+          className="dashboard-stats-grid"
         >
           {stats.map((item) => (
             <StatCard key={item.label} {...item} />
