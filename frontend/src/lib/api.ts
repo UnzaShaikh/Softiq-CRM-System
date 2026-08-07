@@ -33,6 +33,13 @@ export function clearTokens(): void {
   localStorage.removeItem(REFRESH_KEY);
 }
 
+const DATA_CHANGED_EVENT = "crm:data-changed";
+
+export function emitDataChanged(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(DATA_CHANGED_EVENT));
+}
+
 async function refreshAccessToken(): Promise<string | null> {
   const refresh = getRefreshToken();
   if (!refresh) return null;

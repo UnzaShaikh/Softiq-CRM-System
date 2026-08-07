@@ -1,36 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import PipelineStage from "./PipelineStage";
-import { STAGES, DEALS } from "./data";
+import type { BoardDeal } from "@/lib/dashboard";
 
-export default function SalesPipeline() {
-  const [loading, setLoading] = useState(true);
+interface Stage {
+  id: string;
+  label: string;
+}
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000); // 1 second loading
+interface SalesPipelineProps {
+  stages: Stage[];
+  deals: BoardDeal[];
+}
 
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Loading State
-  if (loading) {
-    return (
-      <div
-        style={{
-          padding: "40px",
-          textAlign: "center",
-          fontSize: "18px",
-          color: "#64748b",
-        }}
-      >
-        Loading Sales Pipeline...
-      </div>
-    );
-  }
-
+export default function SalesPipeline({ stages, deals }: SalesPipelineProps) {
   return (
     <div
       style={{
@@ -61,7 +44,7 @@ export default function SalesPipeline() {
       </div>
 
       {/* Empty State */}
-      {DEALS.length === 0 ? (
+      {deals.length === 0 ? (
         <div
           style={{
             textAlign: "center",
@@ -81,11 +64,11 @@ export default function SalesPipeline() {
             gap: "20px",
           }}
         >
-          {STAGES.map((stage) => (
+          {stages.map((stage) => (
             <PipelineStage
               key={stage.id}
               title={stage.label}
-              deals={DEALS.filter((deal) => deal.stage === stage.id)}
+              deals={deals.filter((deal) => deal.stage === stage.id)}
             />
           ))}
         </div>

@@ -7,7 +7,7 @@ import CustomerTable from "@/components/customers/CustomerTable";
 import SearchBar from "@/components/customers/SearchBar";
 import Pagination from "@/components/customers/Pagination";
 import { Customer, CustomerStatus, ApiCustomerList, toCustomer } from "@/data/customers";
-import { apiRequest, getAccessToken } from "@/lib/api";
+import { apiRequest, getAccessToken, emitDataChanged } from "@/lib/api";
 
 const PAGE_SIZE = 10;
 type FilterStatus = "All" | CustomerStatus;
@@ -94,6 +94,7 @@ export default function CustomersPage() {
     setDeleting(true);
     try {
       await apiRequest(`/api/customers/${deleteModal.id}/`, { method: "DELETE" });
+      emitDataChanged();
       showToast(`"${deleteModal.name}" has been deleted.`);
       setDeleteModal(null);
       setRefreshKey((k) => k + 1);
