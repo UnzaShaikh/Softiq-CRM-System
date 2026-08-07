@@ -505,30 +505,45 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               }} />
             </button>
 
-            {/* Add new */}
-            <button style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "8px 14px", borderRadius: 8,
-              background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-              color: "#fff", fontWeight: 600, fontSize: "0.8125rem",
-              border: "none", cursor: "pointer", fontFamily: "inherit",
-              boxShadow: "0 2px 8px rgba(79,70,229,0.35)",
-              transition: "opacity 0.15s, box-shadow 0.15s",
+            {/* Hi, User + Avatar */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: "8px",
+              padding: "5px 10px 5px 6px",
+              borderRadius: "9999px",
+              border: "1.5px solid #e2e8f0",
+              background: "#fff",
+              cursor: "pointer",
+              transition: "border-color 0.15s, box-shadow 0.15s",
             }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 16px rgba(79,70,229,0.45)";
-                (e.currentTarget as HTMLButtonElement).style.opacity = "0.92";
+                (e.currentTarget as HTMLDivElement).style.borderColor = "#a5b4fc";
+                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 0 3px rgba(79,70,229,0.08)";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 2px 8px rgba(79,70,229,0.35)";
-                (e.currentTarget as HTMLButtonElement).style.opacity = "1";
+                (e.currentTarget as HTMLDivElement).style.borderColor = "#e2e8f0";
+                (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
               }}
+              onClick={handleLogout}
+              title="Click to sign out"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              {/* Avatar */}
+              <div style={{
+                width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
+                background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#fff", fontWeight: 700, fontSize: "0.7rem", userSelect: "none",
+              }}>
+                {initials}
+              </div>
+              {/* Hi, Name */}
+              <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#0f172a", whiteSpace: "nowrap" }}>
+                Hi, {user?.firstName ?? "User"}
+              </span>
+              {/* Dropdown arrow */}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9" />
               </svg>
-              New Record
-            </button>
+            </div>
           </div>
         </header>
 
