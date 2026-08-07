@@ -7,7 +7,7 @@ import CustomerTable from "@/components/customers/CustomerTable";
 import SearchBar from "@/components/customers/SearchBar";
 import Pagination from "@/components/customers/Pagination";
 import { Customer, CustomerStatus, ApiCustomerList, toCustomer } from "@/data/customers";
-import { apiRequest, getAccessToken } from "@/lib/api";
+import { apiRequest, getAccessToken, emitDataChanged } from "@/lib/api";
 import { Users, UserCheck, PauseCircle, Zap } from "lucide-react";
 
 const PAGE_SIZE = 10;
@@ -95,6 +95,7 @@ export default function CustomersPage() {
     setDeleting(true);
     try {
       await apiRequest(`/api/customers/${deleteModal.id}/`, { method: "DELETE" });
+      emitDataChanged();
       showToast(`"${deleteModal.name}" has been deleted.`);
       setDeleteModal(null);
       setRefreshKey((k) => k + 1);
@@ -106,10 +107,10 @@ export default function CustomersPage() {
   }
 
   const STAT_CARDS = [
-    { label: "Total Customers", value: stats.total,    icon: <Users size={20} />,        color: "#4f46e5", bg: "#eef2ff" },
-    { label: "Active",          value: stats.active,   icon: <UserCheck size={20} />,    color: "#16a34a", bg: "#dcfce7" },
-    { label: "Inactive",        value: stats.inactive, icon: <PauseCircle size={20} />,  color: "#64748b", bg: "#f1f5f9" },
-    { label: "Leads",           value: stats.lead,     icon: <Zap size={20} />,          color: "#b45309", bg: "#fef3c7" },
+    { label: "Total Customers", value: stats.total,    icon: <Users size={20} />,       color: "#4f46e5", bg: "#eef2ff" },
+    { label: "Active",          value: stats.active,   icon: <UserCheck size={20} />,   color: "#16a34a", bg: "#dcfce7" },
+    { label: "Inactive",        value: stats.inactive, icon: <PauseCircle size={20} />, color: "#64748b", bg: "#f1f5f9" },
+    { label: "Leads",           value: stats.lead,     icon: <Zap size={20} />,         color: "#b45309", bg: "#fef3c7" },
   ];
 
   return (
@@ -134,7 +135,7 @@ export default function CustomersPage() {
         <div className="stats-grid">
           {STAT_CARDS.map((card) => (
             <div key={card.label} className="stat-card">
-              <div className="stat-card-icon" style={{ background: card.bg }}>
+              <div className="stat-card-icon" style={{ background: card.bg, color: card.color }}>
                 {card.icon}
               </div>
               <div>
@@ -147,8 +148,6 @@ export default function CustomersPage() {
 
         {/* Table Card */}
         <div className="table-card">
-
-          {/* Toolbar */}
           <div className="table-toolbar">
             <div className="table-search-wrap">
               <SearchBar value={search} onChange={handleSearch} resultCount={totalCount} />
@@ -162,7 +161,6 @@ export default function CustomersPage() {
             </div>
           </div>
 
-          {/* Table content */}
           {loading ? (
             <div className="loading-state">Loading customers…</div>
           ) : error ? (
@@ -178,7 +176,6 @@ export default function CustomersPage() {
             <CustomerTable customers={customers} onView={handleView} onEdit={handleEdit} onDelete={confirmDelete} />
           )}
 
-          {/* Pagination */}
           {!loading && !error && totalCount > 0 && (
             <div className="pagination-wrap">
               <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalCount} itemsPerPage={PAGE_SIZE} onPageChange={setCurrentPage} />
