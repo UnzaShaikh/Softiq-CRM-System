@@ -1,16 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import type { DonutSource } from "@/lib/dashboard";
 
-const SOURCES = [
-  { label: "Organic Search", value: 34, color: "#4f46e5" },
-  { label: "Referral",       value: 22, color: "#0891b2" },
-  { label: "Social Media",   value: 18, color: "#7c3aed" },
-  { label: "Email Campaign", value: 14, color: "#d97706" },
-  { label: "Direct",         value: 12, color: "#16a34a" },
-];
-
-const TOTAL = SOURCES.reduce((s, x) => s + x.value, 0);
 const CX = 80, CY = 80, R = 60;
 
 function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
@@ -27,12 +19,18 @@ function describeArc(cx: number, cy: number, r: number, start: number, end: numb
   return `M ${s.x} ${s.y} A ${r} ${r} 0 ${largeArc} 1 ${e.x} ${e.y}`;
 }
 
-export default function LeadsDonutChart() {
+interface LeadsDonutChartProps {
+  sources: DonutSource[];
+}
+
+export default function LeadsDonutChart({ sources }: LeadsDonutChartProps) {
   const [hovered, setHovered] = useState<number | null>(null);
 
+  const TOTAL = sources.reduce((s, x) => s + x.value, 0);
+
   // Build cumulative angles without mutating a variable during render
-  const segments = SOURCES.reduce<
-    Array<(typeof SOURCES)[number] & { startAngle: number; endAngle: number }>
+  const segments = sources.reduce<
+    Array<DonutSource & { startAngle: number; endAngle: number }>
   >((acc, src) => {
     const prev = acc[acc.length - 1];
     const startAngle = prev ? prev.endAngle : 0;
@@ -41,7 +39,7 @@ export default function LeadsDonutChart() {
     return acc;
   }, []);
 
-  const active = hovered !== null ? SOURCES[hovered] : null;
+  const active = hovered !== null ? sources[hovered] : null;
 
   return (
     <div style={{
@@ -59,76 +57,82 @@ export default function LeadsDonutChart() {
         </p>
       </div>
 
-      {/* Chart + legend */}
-      <div style={{ padding: "1.25rem 1.5rem", display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap" }}>
+      {TOTAL === 0 ? (
+        <div style={{ padding: "2.5rem 1.5rem", textAlign: "center", color: "#94a3b8", fontSize: "0.875rem" }}>
+          No leads recorded yet.
+        </div>
+      ) : (
+        /* Chart + legend */
+        <div style={{ padding: "1.25rem 1.5rem", display: "flex", alignItems: "center", gap: "1.5rem", flexWrap: "wrap" }}>
 
-        {/* Donut SVG */}
-        <div style={{ position: "relative", flexShrink: 0 }}>
-          <svg width={160} height={160} viewBox="0 0 160 160">
-            {/* Background track */}
-            <circle cx={CX} cy={CY} r={R} fill="none" stroke="#f1f5f9" strokeWidth={22} />
+          {/* Donut SVG */}
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <svg width={160} height={160} viewBox="0 0 160 160">
+              {/* Background track */}
+              <circle cx={CX} cy={CY} r={R} fill="none" stroke="#f1f5f9" strokeWidth={22} />
 
-            {segments.map((seg, i) => {
-              const isHovered = hovered === i;
-              const outerR = isHovered ? R + 5 : R;
-              return (
-                <path
-                  key={i}
-                  d={describeArc(CX, CY, outerR, seg.startAngle, seg.endAngle)}
-                  fill="none"
-                  stroke={seg.color}
-                  strokeWidth={isHovered ? 26 : 22}
-                  strokeLinecap="butt"
-                  style={{ cursor: "pointer", transition: "stroke-width 0.15s, stroke 0.15s" }}
-                  onMouseEnter={() => setHovered(i)}
-                  onMouseLeave={() => setHovered(null)}
-                />
-              );
-            })}
+              {segments.map((seg, i) => {
+                const isHovered = hovered === i;
+                const outerR = isHovered ? R + 5 : R;
+                return (
+                  <path
+                    key={i}
+                    d={describeArc(CX, CY, outerR, seg.startAngle, seg.endAngle)}
+                    fill="none"
+                    stroke={seg.color}
+                    strokeWidth={isHovered ? 26 : 22}
+                    strokeLinecap="butt"
+                    style={{ cursor: "pointer", transition: "stroke-width 0.15s, stroke 0.15s" }}
+                    onMouseEnter={() => setHovered(i)}
+                    onMouseLeave={() => setHovered(null)}
+                  />
+                );
+              })}
 
-            {/* Inner label */}
-            <text x={CX} y={CY - 8} textAnchor="middle" fontSize="18" fontWeight="800" fill="#0f172a" fontFamily="inherit">
-              {active ? active.value : TOTAL}
-            </text>
-            <text x={CX} y={CY + 10} textAnchor="middle" fontSize="10" fill="#94a3b8" fontFamily="inherit" fontWeight="600">
-              {active ? "leads" : "total leads"}
-            </text>
-            {active && (
-              <text x={CX} y={CY + 24} textAnchor="middle" fontSize="9" fill={active.color} fontFamily="inherit" fontWeight="700">
-                {Math.round((active.value / TOTAL) * 100)}%
+              {/* Inner label */}
+              <text x={CX} y={CY - 8} textAnchor="middle" fontSize="18" fontWeight="800" fill="#0f172a" fontFamily="inherit">
+                {active ? active.value : TOTAL}
               </text>
-            )}
-          </svg>
-        </div>
+              <text x={CX} y={CY + 10} textAnchor="middle" fontSize="10" fill="#94a3b8" fontFamily="inherit" fontWeight="600">
+                {active ? "leads" : "total leads"}
+              </text>
+              {active && (
+                <text x={CX} y={CY + 24} textAnchor="middle" fontSize="9" fill={active.color} fontFamily="inherit" fontWeight="700">
+                  {Math.round((active.value / TOTAL) * 100)}%
+                </text>
+              )}
+            </svg>
+          </div>
 
-        {/* Legend */}
-        <div style={{ flex: 1, minWidth: 140, display: "flex", flexDirection: "column", gap: 8 }}>
-          {SOURCES.map((src, i) => (
-            <div
-              key={i}
-              onMouseEnter={() => setHovered(i)}
-              onMouseLeave={() => setHovered(null)}
-              style={{
-                display: "flex", alignItems: "center", gap: 8,
-                cursor: "pointer", opacity: hovered !== null && hovered !== i ? 0.45 : 1,
-                transition: "opacity 0.15s",
-              }}
-            >
-              <span style={{ width: 10, height: 10, borderRadius: 3, background: src.color, flexShrink: 0 }} />
-              <span style={{ flex: 1, fontSize: "0.8125rem", color: "#374151", fontWeight: 500 }}>{src.label}</span>
-              <span style={{ fontSize: "0.8125rem", fontWeight: 700, color: "#0f172a" }}>{src.value}</span>
-              <span style={{
-                fontSize: "0.72rem", fontWeight: 700,
-                color: src.color,
-                background: `${src.color}15`,
-                padding: "1px 6px", borderRadius: 9999,
-              }}>
-                {Math.round((src.value / TOTAL) * 100)}%
-              </span>
-            </div>
-          ))}
+          {/* Legend */}
+          <div style={{ flex: 1, minWidth: 140, display: "flex", flexDirection: "column", gap: 8 }}>
+            {sources.map((src, i) => (
+              <div
+                key={i}
+                onMouseEnter={() => setHovered(i)}
+                onMouseLeave={() => setHovered(null)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  cursor: "pointer", opacity: hovered !== null && hovered !== i ? 0.45 : 1,
+                  transition: "opacity 0.15s",
+                }}
+              >
+                <span style={{ width: 10, height: 10, borderRadius: 3, background: src.color, flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: "0.8125rem", color: "#374151", fontWeight: 500 }}>{src.label}</span>
+                <span style={{ fontSize: "0.8125rem", fontWeight: 700, color: "#0f172a" }}>{src.value}</span>
+                <span style={{
+                  fontSize: "0.72rem", fontWeight: 700,
+                  color: src.color,
+                  background: `${src.color}15`,
+                  padding: "1px 6px", borderRadius: 9999,
+                }}>
+                  {Math.round((src.value / TOTAL) * 100)}%
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,13 +1,19 @@
+from decimal import Decimal
+
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.contrib.auth import get_user_model
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
-from datetime import timedelta, datetime
+from datetime import timedelta
 from calendar import month_name
 
-from .models import Customer, Lead, Deal, Activity, DealStage, User
+from customers.models import Customer
+from leads.models import Lead
+from deals.models import Deal
+
 from .serializers import (
     DashboardSummarySerializer,
     SalesOverviewSerializer,
@@ -19,42 +25,68 @@ from .serializers import (
     TopPerformerSerializer,
 )
 
+User = get_user_model()
+
+OPEN_DEAL_STAGES = ["lead", "qualified", "proposal", "negotiation", "closed_won"]
+WON_STAGE = "closed_won"
+
+
+def _full_name(first_name, last_name):
+    return f"{first_name} {last_name}".strip()
+
+
+def _relative_time(dt):
+    delta = timezone.now() - dt
+    if delta.days > 0:
+        return f"{delta.days}d ago"
+    if delta.seconds > 3600:
+        return f"{delta.seconds // 3600}h ago"
+    if delta.seconds > 60:
+        return f"{delta.seconds // 60}m ago"
+    return "Just now"
+
+
 # ---------- 1. Dashboard Summary ----------
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dashboard_summary(request):
     """Return summary metrics: total customers, active customers, deals, revenue, recent customers/leads"""
-    days = int(request.query_params.get('days', 30))
-    cutoff_date = timezone.now() - timedelta(days=days)
-    
-    # Real data or placeholders if no data
     total_customers = Customer.objects.count()
-    active_customers = Customer.objects.filter(created_at__gte=cutoff_date).count()
-    total_deals = Deal.objects.filter(status__in=['discovery', 'proposal', 'negotiation', 'won']).count()
-    total_revenue = Deal.objects.filter(status='won').aggregate(total=Sum('value'))['total'] or 0
-    
-    recent_customers = Customer.objects.order_by('-created_at')[:5].values(
-        'id', 'name', 'email', 'created_at', 'phone'
-    )
-    recent_leads = Lead.objects.order_by('-created_at')[:5].values(
-        'id', 'name', 'email', 'status', 'created_at', 'source'
-    )
-    
+    active_customers = Customer.objects.filter(status='active').count()
+    total_deals = Deal.objects.filter(stage__in=OPEN_DEAL_STAGES).count()
+    total_revenue = Deal.objects.filter(stage=WON_STAGE).aggregate(total=Sum('value'))['total'] or Decimal('0.00')
+
+    recent_customers = Customer.objects.order_by('-created_at')[:5]
+    recent_leads = Lead.objects.order_by('-created_at')[:5]
+
     data = {
-        "total_customers": total_customers or 125,  # Placeholder
-        "active_customers": active_customers or 64,
-        "total_deals": total_deals or 18,
-        "total_revenue": round(total_revenue or 24500.00, 2),
-        "recent_customers": list(recent_customers) or [
-            {"id": 1, "name": "Acme Corp", "email": "contact@acme.com", "created_at": timezone.now(), "phone": "123-456-7890"},
-            {"id": 2, "name": "TechStart Inc", "email": "info@techstart.com", "created_at": timezone.now(), "phone": "987-654-3210"},
+        "total_customers": total_customers,
+        "active_customers": active_customers,
+        "total_deals": total_deals,
+        "total_revenue": round(float(total_revenue), 2),
+        "recent_customers": [
+            {
+                "id": customer.id,
+                "name": _full_name(customer.first_name, customer.last_name),
+                "email": customer.email,
+                "created_at": customer.created_at,
+                "phone": customer.phone,
+            }
+            for customer in recent_customers
         ],
-        "recent_leads": list(recent_leads) or [
-            {"id": 1, "name": "New Lead 1", "email": "lead1@example.com", "status": "new", "created_at": timezone.now(), "source": "website"},
-            {"id": 2, "name": "New Lead 2", "email": "lead2@example.com", "status": "contacted", "created_at": timezone.now(), "source": "referral"},
+        "recent_leads": [
+            {
+                "id": lead.id,
+                "name": _full_name(lead.first_name, lead.last_name),
+                "email": lead.email,
+                "status": lead.status,
+                "created_at": lead.created_at,
+                "source": lead.source,
+            }
+            for lead in recent_leads
         ],
     }
-    
+
     serializer = DashboardSummarySerializer(data)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -65,40 +97,31 @@ def dashboard_summary(request):
 def sales_overview(request):
     """Return monthly revenue and deals closed data for chart"""
     year = int(request.query_params.get('year', timezone.now().year))
-    
-    # Try to get real data
+
     monthly_revenue = []
     monthly_deals = []
     months = list(month_name)[1:]  # ['January', 'February', ...]
-    
+
     for month in range(1, 13):
+        won_deals = Deal.objects.filter(
+            stage=WON_STAGE,
+            expected_close_date__year=year,
+            expected_close_date__month=month,
+        )
+
         # Revenue from won deals in this month
-        revenue = Deal.objects.filter(
-            status='won',
-            closed_date__year=year,
-            closed_date__month=month
-        ).aggregate(total=Sum('value'))['total'] or 0
+        revenue = won_deals.aggregate(total=Sum('value'))['total'] or Decimal('0.00')
         monthly_revenue.append(float(revenue))
-        
+
         # Deals closed in this month
-        deals = Deal.objects.filter(
-            status='won',
-            closed_date__year=year,
-            closed_date__month=month
-        ).count()
-        monthly_deals.append(deals)
-    
-    # If no data, use placeholders
-    if all(r == 0 for r in monthly_revenue):
-        monthly_revenue = [40, 52, 47, 63, 58, 71, 68, 82, 78, 89, 86, 97]
-        monthly_deals = [6, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18]
-    
+        monthly_deals.append(won_deals.count())
+
     data = {
         "months": [month[:3] for month in months],  # Jan, Feb, Mar...
         "revenue": monthly_revenue,
         "deals_closed": monthly_deals
     }
-    
+
     serializer = SalesOverviewSerializer(data)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -109,28 +132,19 @@ def sales_overview(request):
 def lead_sources(request):
     """Return lead distribution by source"""
     lead_counts = Lead.objects.values('source').annotate(count=Count('id')).order_by('-count')
-    
-    if not lead_counts:
-        # Placeholder data
-        lead_counts = [
-            {"source": "Organic Search", "count": 34},
-            {"source": "Referral", "count": 22},
-            {"source": "Social Media", "count": 18},
-            {"source": "Email Campaign", "count": 15},
-            {"source": "Website", "count": 11},
-        ]
-    
+    source_labels = dict(Lead.SOURCE_CHOICES)
+
     total = sum(item['count'] for item in lead_counts)
-    
+
     result = []
     for item in lead_counts:
         percentage = round((item['count'] / total) * 100) if total > 0 else 0
         result.append({
-            "source": dict(Lead.SOURCE_CHOICES).get(item['source'], item['source']) if hasattr(Lead, 'SOURCE_CHOICES') else item['source'],
+            "source": source_labels.get(item['source'], item['source']),
             "count": item['count'],
             "percentage": percentage
         })
-    
+
     serializer = LeadSourceSerializer(result, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -140,51 +154,34 @@ def lead_sources(request):
 @permission_classes([IsAuthenticated])
 def deals_pipeline(request):
     """Return pipeline stages with deals info"""
-    stages = DealStage.objects.all().order_by('order')
-    
-    if not stages:
-        # Create default stages for placeholder
-        stages = [
-            {"name": "Discovery", "order": 1},
-            {"name": "Proposal", "order": 2},
-            {"name": "Negotiation", "order": 3},
-            {"name": "Won", "order": 4},
-            {"name": "Lost", "order": 5},
-        ]
-    
+    stage_choices = Deal.STAGE_CHOICES
+
     result = []
-    for stage_data in stages:
-        if isinstance(stage_data, dict):
-            name = stage_data['name']
-            deals = Deal.objects.filter(status=name.lower())
-        else:
-            name = stage_data.name
-            deals = stage_data.deals.all()
-        
+    for stage_value, stage_label in stage_choices:
+        stage_deals = Deal.objects.filter(stage=stage_value).select_related('customer').order_by('-created_at')
+
+        stage_total = stage_deals.aggregate(total=Sum('value'))['total'] or Decimal('0.00')
+        stage_count = stage_deals.count()
+
         deals_list = []
-        for deal in deals[:5]:  # Limit to 5 deals per stage
+        for deal in stage_deals[:5]:  # Limit to 5 deals per stage
             deals_list.append({
                 "name": deal.name,
                 "value": float(deal.value),
-                "customer": deal.customer.name if deal.customer else "Unknown",
-                "status": deal.status,
-                "remaining_days": (deal.expected_close_date - timezone.now().date()).days if deal.expected_close_date else None
+                "customer": _full_name(deal.customer.first_name, deal.customer.last_name) if deal.customer else "Unknown",
+                "company": deal.customer.company if deal.customer else "",
+                "status": deal.stage,
+                "remaining_days": (deal.expected_close_date - timezone.now().date()).days if deal.expected_close_date else None,
+                "expected_close_date": deal.expected_close_date,
             })
-        
-        # Placeholder if no deals
-        if not deals_list:
-            deals_list = [
-                {"name": f"Sample {name} Deal 1", "value": 15000, "customer": "Sample Corp", "status": name.lower(), "remaining_days": 15},
-                {"name": f"Sample {name} Deal 2", "value": 8500, "customer": "Test Inc", "status": name.lower(), "remaining_days": 30},
-            ]
-        
+
         result.append({
-            "stage": name,
-            "count": len(deals_list),
-            "total_value": sum(d['value'] for d in deals_list),
+            "stage": stage_value,
+            "count": stage_count,
+            "total_value": float(stage_total),
             "deals": deals_list
         })
-    
+
     serializer = DealsPipelineSerializer(result, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -193,42 +190,44 @@ def deals_pipeline(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def recent_activities(request):
-    """Return latest CRM activities"""
+    """Return latest CRM activities synthesized from customers, leads and deals"""
     limit = int(request.query_params.get('limit', 10))
-    
-    activities = Activity.objects.all().order_by('-created_at')[:limit]
-    
-    if not activities:
-        # Placeholder activities
-        activities = [
-            {"type": "Deal Closed", "customer": "HealthSync", "time": "2m ago"},
-            {"type": "Customer Added", "customer": "FinWave", "time": "18m ago"},
-            {"type": "Lead Added", "customer": "TechStart", "time": "1h ago"},
-            {"type": "Deal Updated", "customer": "Acme Corp", "time": "3h ago"},
-            {"type": "Customer Added", "customer": "DataFlow", "time": "5h ago"},
-        ]
-        return Response(activities, status=status.HTTP_200_OK)
-    
-    result = []
-    for activity in activities:
-        customer_name = activity.customer.name if activity.customer else "Unknown"
-        time_ago = timezone.now() - activity.created_at
-        
-        if time_ago.days > 0:
-            time_str = f"{time_ago.days}d ago"
-        elif time_ago.seconds > 3600:
-            time_str = f"{time_ago.seconds // 3600}h ago"
-        elif time_ago.seconds > 60:
-            time_str = f"{time_ago.seconds // 60}m ago"
-        else:
-            time_str = "Just now"
-        
-        result.append({
-            "type": activity.get_type_display(),
-            "customer": customer_name,
-            "time": time_str
+
+    events = []
+
+    for customer in Customer.objects.order_by('-created_at')[:limit]:
+        events.append({
+            "created_at": customer.created_at,
+            "type": "Customer Added",
+            "customer": _full_name(customer.first_name, customer.last_name),
         })
-    
+
+    for lead in Lead.objects.order_by('-created_at')[:limit]:
+        events.append({
+            "created_at": lead.created_at,
+            "type": "Lead Added",
+            "customer": _full_name(lead.first_name, lead.last_name),
+        })
+
+    for deal in Deal.objects.select_related('customer').order_by('-created_at')[:limit]:
+        customer_name = _full_name(deal.customer.first_name, deal.customer.last_name) if deal.customer else "Unknown"
+        events.append({
+            "created_at": deal.created_at,
+            "type": "Deal Won" if deal.stage == WON_STAGE else "Deal Created",
+            "customer": customer_name,
+        })
+
+    events.sort(key=lambda e: e['created_at'], reverse=True)
+
+    result = [
+        {
+            "type": event["type"],
+            "customer": event["customer"],
+            "time": _relative_time(event["created_at"]),
+        }
+        for event in events[:limit]
+    ]
+
     serializer = RecentActivitySerializer(result, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -239,29 +238,23 @@ def recent_activities(request):
 def recent_customers(request):
     """Return recent customers with details"""
     limit = int(request.query_params.get('limit', 10))
-    
-    customers = Customer.objects.all().order_by('-created_at')[:limit]
-    
-    if not customers:
-        # Placeholder customers
-        customers = [
-            {"id": 1, "name": "Acme Corp", "company": "Acme Inc", "status": "active", "revenue": 45000, "joined_date": timezone.now().date()},
-            {"id": 2, "name": "TechStart", "company": "TechStart LLC", "status": "active", "revenue": 28000, "joined_date": timezone.now().date()},
-            {"id": 3, "name": "FinWave", "company": "FinWave Solutions", "status": "inactive", "revenue": 0, "joined_date": timezone.now().date()},
-        ]
-        return Response(customers, status=status.HTTP_200_OK)
-    
+
+    customers = Customer.objects.annotate(
+        revenue=Sum('deals__value', filter=Q(deals__stage=WON_STAGE))
+    ).order_by('-created_at')[:limit]
+
     result = []
     for customer in customers:
         result.append({
             "id": customer.id,
-            "name": customer.name,
+            "name": _full_name(customer.first_name, customer.last_name),
+            "email": customer.email,
             "company": customer.company or "N/A",
             "status": customer.status,
-            "revenue": float(customer.revenue),
+            "revenue": float(customer.revenue or 0),
             "joined_date": customer.created_at.date()
         })
-    
+
     serializer = RecentCustomerSerializer(result, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -272,30 +265,22 @@ def recent_customers(request):
 def recent_leads(request):
     """Return recent leads with details"""
     limit = int(request.query_params.get('limit', 10))
-    
-    leads = Lead.objects.all().order_by('-created_at')[:limit]
-    
-    if not leads:
-        # Placeholder leads
-        leads = [
-            {"id": 1, "name": "Lead Alpha", "company": "Alpha Corp", "source": "website", "status": "new", "score": 85, "date_added": timezone.now().date()},
-            {"id": 2, "name": "Lead Beta", "company": "Beta Solutions", "source": "referral", "status": "contacted", "score": 70, "date_added": timezone.now().date()},
-            {"id": 3, "name": "Lead Gamma", "company": "Gamma Tech", "source": "social", "status": "qualified", "score": 95, "date_added": timezone.now().date()},
-        ]
-        return Response(leads, status=status.HTTP_200_OK)
-    
+
+    leads = Lead.objects.order_by('-created_at')[:limit]
+
     result = []
     for lead in leads:
         result.append({
             "id": lead.id,
-            "name": lead.name,
+            "name": _full_name(lead.first_name, lead.last_name),
+            "email": lead.email,
             "company": lead.company or "N/A",
             "source": lead.source or "N/A",
             "status": lead.status,
             "score": lead.score,
             "date_added": lead.created_at.date()
         })
-    
+
     serializer = RecentLeadSerializer(result, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -306,29 +291,19 @@ def recent_leads(request):
 def top_performers(request):
     """Return top performing users"""
     limit = int(request.query_params.get('limit', 5))
-    
-    # Get users with deal counts and revenue
-    users = User.objects.filter(deals__status='won').annotate(
-        closed_deals=Count('deals'),
-        total_revenue=Sum('deals__value')
+
+    # Get users with won-deal counts and revenue
+    users = User.objects.filter(created_deals__stage=WON_STAGE).annotate(
+        closed_deals=Count('created_deals'),
+        total_revenue=Sum('created_deals__value'),
     ).order_by('-total_revenue')[:limit]
-    
-    if not users:
-        # Placeholder top performers
-        users = [
-            {"name": "Alice Johnson", "role": "Sales Manager", "revenue": 125000, "closed_deals": 24, "performance_percentage": 110},
-            {"name": "Bob Smith", "role": "Sales Rep", "revenue": 98000, "closed_deals": 19, "performance_percentage": 95},
-            {"name": "Carol White", "role": "Sales Rep", "revenue": 87000, "closed_deals": 16, "performance_percentage": 85},
-            {"name": "Dave Brown", "role": "Sales Rep", "revenue": 65000, "closed_deals": 12, "performance_percentage": 75},
-        ]
-        return Response(users, status=status.HTTP_200_OK)
-    
+
     # Calculate max revenue for performance percentage
-    max_revenue = users[0].total_revenue if users else 1
-    
+    max_revenue = float(users[0].total_revenue or 0) if users else 1
+
     result = []
     for user in users:
-        performance = round((user.total_revenue / max_revenue) * 100) if max_revenue > 0 else 0
+        performance = round((float(user.total_revenue or 0) / max_revenue) * 100) if max_revenue > 0 else 0
         result.append({
             "name": user.get_full_name() or user.username,
             "role": user.groups.first().name if user.groups.exists() else "Sales Rep",
@@ -336,13 +311,6 @@ def top_performers(request):
             "closed_deals": user.closed_deals,
             "performance_percentage": performance
         })
-    
-    # If no real data, use placeholders
-    if not result:
-        result = [
-            {"name": "Alice Johnson", "role": "Sales Manager", "revenue": 125000, "closed_deals": 24, "performance_percentage": 110},
-            {"name": "Bob Smith", "role": "Sales Rep", "revenue": 98000, "closed_deals": 19, "performance_percentage": 95},
-        ]
-    
+
     serializer = TopPerformerSerializer(result, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)

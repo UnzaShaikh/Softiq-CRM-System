@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { apiRequest } from "@/lib/api";
+import { apiRequest, emitDataChanged } from "@/lib/api";
 import {
   ApiCustomer,
   CustomerFormValues,
@@ -183,6 +183,7 @@ export default function CustomerForm({
         method: isEdit ? "PATCH" : "POST",
         body: payload,
       });
+      emitDataChanged();
       onSuccess(customer);
     } catch (err) {
       setGError((err as Error).message || "Something went wrong.");

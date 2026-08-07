@@ -1,25 +1,8 @@
 "use client";
 
-interface Activity {
-  type: "deal" | "customer" | "task" | "note" | "call";
-  title: string;
-  subtitle: string;
-  time: string;
-  avatar?: string;
-}
+import type { FeedActivity } from "@/lib/dashboard";
 
-const ACTIVITIES: Activity[] = [
-  { type: "deal",     title: "Deal closed — HealthSync",     subtitle: "Elena Vasquez · $67,000",         time: "2m ago",  avatar: "EV" },
-  { type: "customer", title: "New customer added",           subtitle: "Aisha Patel · FinWave",            time: "18m ago", avatar: "AP" },
-  { type: "call",     title: "Call logged",                  subtitle: "Marcus Rivera · 24 min",           time: "1h ago",  avatar: "MR" },
-  { type: "task",     title: "Follow-up task completed",     subtitle: "Proposal sent to CloudBase Ltd",   time: "2h ago",  avatar: "PN" },
-  { type: "note",     title: "Note added to deal",           subtitle: "Retail Plus — negotiation update", time: "3h ago",  avatar: "JO" },
-  { type: "deal",     title: "Deal stage updated",           subtitle: "LogiCore → Negotiation",           time: "5h ago",  avatar: "KA" },
-  { type: "customer", title: "Customer profile updated",     subtitle: "Tom Lindqvist · NordicOps",        time: "Yesterday", avatar: "TL" },
-  { type: "task",     title: "Reminder triggered",           subtitle: "Q3 review call — Acme Corp",       time: "Yesterday", avatar: "SC" },
-];
-
-const TYPE_META: Record<Activity["type"], { icon: React.ReactNode; color: string; bg: string }> = {
+const TYPE_META: Record<FeedActivity["type"], { icon: React.ReactNode; color: string; bg: string }> = {
   deal: {
     color: "#16a34a", bg: "#f0fdf4",
     icon: (
@@ -69,18 +52,22 @@ const TYPE_META: Record<Activity["type"], { icon: React.ReactNode; color: string
   },
 };
 
-const AVATAR_COLORS: Record<string, [string, string]> = {
-  EV: ["#dc2626", "#b91c1c"],
-  AP: ["#ec4899", "#db2777"],
-  MR: ["#0891b2", "#0e7490"],
-  PN: ["#059669", "#047857"],
-  JO: ["#d97706", "#b45309"],
-  KA: ["#7c3aed", "#6d28d9"],
-  TL: ["#0ea5e9", "#0284c7"],
-  SC: ["#4f46e5", "#7c3aed"],
-};
+const AVATAR_COLORS: [string, string][] = [
+  ["#dc2626", "#b91c1c"],
+  ["#ec4899", "#db2777"],
+  ["#0891b2", "#0e7490"],
+  ["#059669", "#047857"],
+  ["#d97706", "#b45309"],
+  ["#7c3aed", "#6d28d9"],
+  ["#0ea5e9", "#0284c7"],
+  ["#4f46e5", "#7c3aed"],
+];
 
-export default function ActivityFeed() {
+interface ActivityFeedProps {
+  activities: FeedActivity[];
+}
+
+export default function ActivityFeed({ activities }: ActivityFeedProps) {
   return (
     <div style={{
       background: "#ffffff",
@@ -112,58 +99,65 @@ export default function ActivityFeed() {
 
       {/* Feed */}
       <div style={{ flex: 1, padding: "0.75rem 0", overflowY: "auto" }}>
-        {ACTIVITIES.map((a, i) => {
-          const meta = TYPE_META[a.type];
-          const [c1, c2] = AVATAR_COLORS[a.avatar ?? ""] ?? ["#4f46e5", "#7c3aed"];
-          return (
-            <div
-              key={i}
-              style={{
-                display: "flex", alignItems: "flex-start", gap: 12,
-                padding: "10px 1.5rem",
-                transition: "background 0.12s", cursor: "pointer",
-              }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.background = "#f8fafc")}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.background = "transparent")}
-            >
-              {/* Avatar with type badge */}
-              <div style={{ position: "relative", flexShrink: 0 }}>
-                <div style={{
-                  width: 34, height: 34, borderRadius: "50%",
-                  background: `linear-gradient(135deg, ${c1}, ${c2})`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "#fff", fontWeight: 700, fontSize: "0.72rem", userSelect: "none",
-                }}>
-                  {a.avatar}
+        {activities.length === 0 ? (
+          <div style={{ padding: "2rem 1.5rem", textAlign: "center", color: "#94a3b8", fontSize: "0.875rem" }}>
+            No activity yet — updates will appear here.
+          </div>
+        ) : (
+          activities.map((a, i) => {
+            const meta = TYPE_META[a.type];
+            const palette = AVATAR_COLORS[i % AVATAR_COLORS.length];
+            const [c1, c2] = palette;
+            return (
+              <div
+                key={i}
+                style={{
+                  display: "flex", alignItems: "flex-start", gap: 12,
+                  padding: "10px 1.5rem",
+                  transition: "background 0.12s", cursor: "pointer",
+                }}
+                onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.background = "#f8fafc")}
+                onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.background = "transparent")}
+              >
+                {/* Avatar with type badge */}
+                <div style={{ position: "relative", flexShrink: 0 }}>
+                  <div style={{
+                    width: 34, height: 34, borderRadius: "50%",
+                    background: `linear-gradient(135deg, ${c1}, ${c2})`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#fff", fontWeight: 700, fontSize: "0.72rem", userSelect: "none",
+                  }}>
+                    {a.avatar}
+                  </div>
+                  <div style={{
+                    position: "absolute", bottom: -2, right: -2,
+                    width: 16, height: 16, borderRadius: "50%",
+                    background: meta.bg, border: `1.5px solid #fff`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: meta.color,
+                  }}>
+                    {meta.icon}
+                  </div>
                 </div>
-                <div style={{
-                  position: "absolute", bottom: -2, right: -2,
-                  width: 16, height: 16, borderRadius: "50%",
-                  background: meta.bg, border: `1.5px solid #fff`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: meta.color,
-                }}>
-                  {meta.icon}
+
+                {/* Text */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: "0.8375rem", fontWeight: 600, color: "#0f172a", lineHeight: 1.35 }}>
+                    {a.title}
+                  </p>
+                  <p style={{ margin: "2px 0 0", fontSize: "0.78rem", color: "#64748b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {a.subtitle}
+                  </p>
                 </div>
-              </div>
 
-              {/* Text */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: "0.8375rem", fontWeight: 600, color: "#0f172a", lineHeight: 1.35 }}>
-                  {a.title}
-                </p>
-                <p style={{ margin: "2px 0 0", fontSize: "0.78rem", color: "#64748b", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {a.subtitle}
-                </p>
+                {/* Time */}
+                <span style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 500, flexShrink: 0, whiteSpace: "nowrap" }}>
+                  {a.time}
+                </span>
               </div>
-
-              {/* Time */}
-              <span style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 500, flexShrink: 0, whiteSpace: "nowrap" }}>
-                {a.time}
-              </span>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
       {/* Footer CTA */}
