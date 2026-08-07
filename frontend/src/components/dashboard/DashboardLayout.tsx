@@ -320,8 +320,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <aside style={{
         width: sidebarW,
         minWidth: sidebarW,
-        background: "#1e1b4b",
-        borderRight: "none",
+        background: "#ffffff",
+        borderRight: "1px solid #e2e8f0",
         display: "flex",
         flexDirection: "column",
         position: "sticky",
@@ -340,7 +340,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           display: "flex",
           alignItems: "center",
           padding: collapsed ? "0 18px" : "0 20px",
-          borderBottom: "1px solid rgba(255,255,255,0.1)",
+          borderBottom: "1px solid #f1f5f9",
           justifyContent: collapsed ? "center" : "space-between",
           flexShrink: 0,
         }}>
@@ -360,8 +360,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </svg>
               </div>
               <div>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: "0.95rem", color: "#ffffff", lineHeight: 1.2, letterSpacing: "-0.02em" }}>Softiq CRM</p>
-                <p style={{ margin: 0, fontSize: "0.7rem", color: "rgba(255,255,255,0.6)", fontWeight: 500 }}>Business Suite</p>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: "0.95rem", color: "#0f172a", lineHeight: 1.2, letterSpacing: "-0.02em" }}>Softiq CRM</p>
+                <p style={{ margin: 0, fontSize: "0.7rem", color: "#94a3b8", fontWeight: 500 }}>Business Suite</p>
               </div>
             </Link>
           )}
@@ -418,7 +418,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Main Nav */}
         <nav style={{ flex: 1, padding: "12px 10px", display: "flex", flexDirection: "column", gap: 2 }}>
           {!collapsed && (
-            <p style={{ fontSize: "0.7rem", fontWeight: 600, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em", padding: "4px 10px 8px" }}>
+            <p style={{ fontSize: "0.7rem", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", padding: "4px 10px 8px" }}>
               Main Menu
             </p>
           )}
@@ -437,8 +437,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   padding: collapsed ? "10px 0" : "9px 10px",
                   borderRadius: 8,
                   textDecoration: "none",
-                  color: active ? "#ffffff" : "rgba(255,255,255,0.7)",
-                  background: active ? "rgba(255,255,255,0.2)" : "transparent",
+                  color: active ? "#4f46e5" : "#475569",
+                  background: active ? "#eef2ff" : "transparent",
                   fontWeight: active ? 600 : 500,
                   fontSize: "0.875rem",
                   transition: "background 0.15s ease, color 0.15s ease",
@@ -485,7 +485,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </nav>
 
         {/* Bottom Nav */}
-        <div style={{ padding: "10px 10px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+        <div style={{ padding: "10px 10px", borderTop: "1px solid #f1f5f9" }}>
           {BOTTOM_ITEMS.map((item) => {
             const active = pathname === item.href;
             return (
