@@ -19,7 +19,7 @@ const stats = [
     change: "+12%",
     up: true,
     color: "#4f46e5",
-    icon: <Users size={22} />,
+    icon: <Users size={18} />,
   },
   {
     label: "Active Deals",
@@ -27,7 +27,7 @@ const stats = [
     change: "+5%",
     up: true,
     color: "#0891b2",
-    icon: <Handshake size={22} />,
+    icon: <Handshake size={18} />,
   },
   {
     label: "Revenue (MTD)",
@@ -35,7 +35,7 @@ const stats = [
     change: "+8.3%",
     up: true,
     color: "#16a34a",
-    icon: <DollarSign size={22} />,
+    icon: <DollarSign size={18} />,
   },
   {
     label: "Open Tickets",
@@ -43,7 +43,7 @@ const stats = [
     change: "-4%",
     up: false,
     color: "#d97706",
-    icon: <Ticket size={22} />,
+    icon: <Ticket size={18} />,
   },
 ];
 
