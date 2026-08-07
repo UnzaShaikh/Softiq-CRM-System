@@ -1,11 +1,12 @@
 "use client";
+"use client";
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Settings, LogOut, ChevronDown, User } from "lucide-react";
+import { Settings, LogOut, ChevronDown } from "lucide-react";
 
 /* ── User Dropdown Component ── */
 interface UserDropdownProps {
@@ -273,7 +274,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   // Close mobile sidebar on route change
   useEffect(() => {
-    // Wrap in a timeout so the state update is deferred past the render cycle
     const t = setTimeout(() => setMobileOpen(false), 0);
     return () => clearTimeout(t);
   }, [pathname]);
