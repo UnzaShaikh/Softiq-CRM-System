@@ -1,10 +1,160 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { Settings, LogOut, ChevronDown, User } from "lucide-react";
+
+/* ── User Dropdown Component ── */
+interface UserDropdownProps {
+  initials: string;
+  c1: string;
+  c2: string;
+  firstName: string;
+  email: string;
+  onLogout: () => void;
+  onSettings: () => void;
+}
+
+function UserDropdown({ initials, c1, c2, firstName, email, onLogout, onSettings }: UserDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      {/* Pill trigger */}
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          display: "flex", alignItems: "center", gap: "8px",
+          padding: "5px 10px 5px 6px", borderRadius: "9999px",
+          border: `1.5px solid ${open ? "#a5b4fc" : "#e2e8f0"}`,
+          background: "#fff", cursor: "pointer", fontFamily: "inherit",
+          boxShadow: open ? "0 0 0 3px rgba(79,70,229,0.08)" : "none",
+          transition: "border-color 0.15s, box-shadow 0.15s",
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.borderColor = "#a5b4fc";
+          (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 0 0 3px rgba(79,70,229,0.08)";
+        }}
+        onMouseLeave={(e) => {
+          if (!open) {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "#e2e8f0";
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
+          }
+        }}
+      >
+        {/* Avatar */}
+        <div style={{
+          width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
+          background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: "#fff", fontWeight: 700, fontSize: "0.7rem", userSelect: "none",
+        }}>
+          {initials}
+        </div>
+        <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#0f172a", whiteSpace: "nowrap" }}>
+          Hi, {firstName}
+        </span>
+        <ChevronDown
+          size={14}
+          color="#94a3b8"
+          style={{ transition: "transform 0.2s ease", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+        />
+      </button>
+
+      {/* Dropdown menu */}
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 8px)", right: 0,
+          background: "#fff", border: "1px solid #e2e8f0",
+          borderRadius: "12px", boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+          minWidth: "220px", zIndex: 100, overflow: "hidden",
+          animation: "slideUp 0.15s cubic-bezier(0.16,1,0.3,1)",
+        }}>
+          {/* User info */}
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{
+              width: 38, height: 38, borderRadius: "50%",
+              background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#fff", fontWeight: 700, fontSize: "0.8rem", flexShrink: 0,
+            }}>
+              {initials}
+            </div>
+            <div style={{ overflow: "hidden" }}>
+              <p style={{ margin: 0, fontWeight: 600, fontSize: "0.875rem", color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {firstName}
+              </p>
+              <p style={{ margin: 0, fontSize: "0.75rem", color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {email}
+              </p>
+            </div>
+          </div>
+
+          {/* Menu items */}
+          <div style={{ padding: "6px" }}>
+            <button
+              onClick={() => { setOpen(false); onSettings(); }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                padding: "9px 12px", borderRadius: "8px", border: "none",
+                background: "transparent", cursor: "pointer", fontFamily: "inherit",
+                fontSize: "0.875rem", fontWeight: 500, color: "#374151",
+                transition: "background 0.12s ease",
+                textAlign: "left",
+              }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "#f8fafc")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
+            >
+              <Settings size={16} color="#64748b" />
+              Settings
+            </button>
+
+            <div style={{ height: "1px", background: "#f1f5f9", margin: "4px 0" }} />
+
+            <button
+              onClick={() => { setOpen(false); onLogout(); }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                padding: "9px 12px", borderRadius: "8px", border: "none",
+                background: "transparent", cursor: "pointer", fontFamily: "inherit",
+                fontSize: "0.875rem", fontWeight: 500, color: "#ef4444",
+                transition: "background 0.12s ease",
+                textAlign: "left",
+              }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "#fef2f2")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
+            >
+              <LogOut size={16} color="#ef4444" />
+              Sign Out
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </div>
+  );
+}
 
 const NAV_ITEMS = [
   {
@@ -384,56 +534,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             );
           })}
 
-          {/* User avatar row */}
-          <div style={{
-            marginTop: 8,
-            display: "flex",
-            alignItems: "center",
-            gap: collapsed ? 0 : 10,
-            justifyContent: collapsed ? "center" : "flex-start",
-            padding: collapsed ? "8px 0" : "8px 10px",
-            borderRadius: 10,
-            background: "#f8fafc",
-          }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
-              background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#fff", fontWeight: 700, fontSize: "0.75rem", userSelect: "none",
-            }}>
-              {initials}
-            </div>
-            {!collapsed && (
-              <div style={{ flex: 1, overflow: "hidden" }}>
-                <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 600, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {user ? `${user.firstName} ${user.lastName}`.trim() : "Guest"}
-                </p>
-                <p style={{ margin: 0, fontSize: "0.7rem", color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {user?.email ?? ""}
-                </p>
-              </div>
-            )}
-            {!collapsed && (
-              <button
-                onClick={handleLogout}
-                title="Sign out"
-                style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  color: "#94a3b8", padding: 4, borderRadius: 6,
-                  display: "flex", alignItems: "center",
-                  transition: "color 0.15s",
-                }}
-                onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = "#ef4444")}
-                onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = "#94a3b8")}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              </button>
-            )}
-          </div>
+          {/* User avatar row removed - moved to topbar */}
         </div>
       </aside>
 
@@ -505,45 +606,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               }} />
             </button>
 
-            {/* Hi, User + Avatar */}
-            <div style={{
-              display: "flex", alignItems: "center", gap: "8px",
-              padding: "5px 10px 5px 6px",
-              borderRadius: "9999px",
-              border: "1.5px solid #e2e8f0",
-              background: "#fff",
-              cursor: "pointer",
-              transition: "border-color 0.15s, box-shadow 0.15s",
-            }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = "#a5b4fc";
-                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 0 3px rgba(79,70,229,0.08)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = "#e2e8f0";
-                (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
-              }}
-              onClick={handleLogout}
-              title="Click to sign out"
-            >
-              {/* Avatar */}
-              <div style={{
-                width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
-                background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: "#fff", fontWeight: 700, fontSize: "0.7rem", userSelect: "none",
-              }}>
-                {initials}
-              </div>
-              {/* Hi, Name */}
-              <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#0f172a", whiteSpace: "nowrap" }}>
-                Hi, {user?.firstName ?? "User"}
-              </span>
-              {/* Dropdown arrow */}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </div>
+            {/* Hi, User + Avatar + Dropdown */}
+            <UserDropdown
+              initials={initials}
+              c1={c1} c2={c2}
+              firstName={user?.firstName ?? "User"}
+              email={user?.email ?? ""}
+              onLogout={handleLogout}
+              onSettings={() => router.push("/settings")}
+            />
           </div>
         </header>
 
