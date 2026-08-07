@@ -79,8 +79,8 @@ export default function DashboardPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
-            gap: "20px",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "16px",
           }}
         >
           {stats.map((item) => (
