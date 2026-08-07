@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import StatusBadge from "@/components/customers/StatusBadge";
 import { customers as customersData, Customer } from "@/data/customers";
+import { Mail, Phone, MapPin, Building2, Tag, Calendar } from "lucide-react";
 
 const AVATAR_COLORS: [string, string][] = [
   ["#4f46e5", "#7c3aed"], ["#0891b2", "#0e7490"], ["#059669", "#047857"],
@@ -90,9 +91,9 @@ export default function CustomerDetailPage() {
           <div className="detail-info-card">
             <h3 className="detail-info-title">Contact Information</h3>
             {[
-              { label: "Email",    value: customer!.email,    icon: "✉️" },
-              { label: "Phone",    value: customer!.phone,    icon: "📞" },
-              { label: "Location", value: customer!.location, icon: "📍" },
+              { label: "Email",    value: customer!.email,    icon: <Mail size={15} color="#64748b" /> },
+              { label: "Phone",    value: customer!.phone,    icon: <Phone size={15} color="#64748b" /> },
+              { label: "Location", value: customer!.location, icon: <MapPin size={15} color="#64748b" /> },
             ].map((item) => (
               <div key={item.label} className="detail-info-row">
                 <span className="detail-info-icon">{item.icon}</span>
@@ -106,9 +107,9 @@ export default function CustomerDetailPage() {
           <div className="detail-info-card">
             <h3 className="detail-info-title">Business Details</h3>
             {[
-              { label: "Company",      value: customer!.company, icon: "🏢" },
-              { label: "Customer ID",  value: customer!.id,      icon: "🔖" },
-              { label: "Joined Date",  value: new Date(customer!.joinedDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), icon: "📅" },
+              { label: "Company",      value: customer!.company, icon: <Building2 size={15} color="#64748b" /> },
+              { label: "Customer ID",  value: customer!.id,      icon: <Tag size={15} color="#64748b" /> },
+              { label: "Joined Date",  value: new Date(customer!.joinedDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), icon: <Calendar size={15} color="#64748b" /> },
             ].map((item) => (
               <div key={item.label} className="detail-info-row">
                 <span className="detail-info-icon">{item.icon}</span>

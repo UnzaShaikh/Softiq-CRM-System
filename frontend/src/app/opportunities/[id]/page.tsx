@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { OpportunityStageBadge, OpportunityStatusBadge } from "@/components/opportunities/OpportunityStageBadge";
 import { opportunities as oppData, Opportunity } from "@/data/opportunities";
+import { DollarSign, BarChart2, Calendar, User, Building2, Tag, FileText } from "lucide-react";
 
 const AVATAR_COLORS: [string, string][] = [
   ["#4f46e5", "#7c3aed"], ["#0891b2", "#0e7490"], ["#059669", "#047857"],
@@ -89,10 +90,10 @@ export default function OpportunityDetailPage() {
           <div className="detail-info-card">
             <h3 className="detail-info-title">Deal Information</h3>
             {[
-              { label: "Deal Value",     value: `$${opp!.dealValue.toLocaleString()}`, icon: "💰" },
-              { label: "Probability",    value: `${opp!.probability}%`,                icon: "📊" },
-              { label: "Expected Close", value: new Date(opp!.expectedCloseDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), icon: "📅" },
-              { label: "Assigned To",    value: opp!.assignedTo || "—",               icon: "👤" },
+              { label: "Deal Value",     value: `$${opp!.dealValue.toLocaleString()}`, icon: <DollarSign size={15} color="#64748b" /> },
+              { label: "Probability",    value: `${opp!.probability}%`,                icon: <BarChart2 size={15} color="#64748b" /> },
+              { label: "Expected Close", value: new Date(opp!.expectedCloseDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), icon: <Calendar size={15} color="#64748b" /> },
+              { label: "Assigned To",    value: opp!.assignedTo || "—",               icon: <User size={15} color="#64748b" /> },
             ].map((item) => (
               <div key={item.label} className="detail-info-row">
                 <span className="detail-info-icon">{item.icon}</span>
@@ -106,10 +107,10 @@ export default function OpportunityDetailPage() {
           <div className="detail-info-card">
             <h3 className="detail-info-title">Customer & Company</h3>
             {[
-              { label: "Customer",        value: opp!.customerName, icon: "👤" },
-              { label: "Company",         value: opp!.company,      icon: "🏢" },
-              { label: "Opportunity ID",  value: opp!.id,           icon: "🔖" },
-              { label: "Created Date",    value: new Date(opp!.createdDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), icon: "📅" },
+              { label: "Customer",        value: opp!.customerName, icon: <User size={15} color="#64748b" /> },
+              { label: "Company",         value: opp!.company,      icon: <Building2 size={15} color="#64748b" /> },
+              { label: "Opportunity ID",  value: opp!.id,           icon: <Tag size={15} color="#64748b" /> },
+              { label: "Created Date",    value: new Date(opp!.createdDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), icon: <Calendar size={15} color="#64748b" /> },
             ].map((item) => (
               <div key={item.label} className="detail-info-row">
                 <span className="detail-info-icon">{item.icon}</span>
@@ -136,7 +137,9 @@ export default function OpportunityDetailPage() {
         {/* Notes */}
         {opp!.notes && (
           <div className="detail-info-card" style={{ marginTop: "1rem" }}>
-            <h3 className="detail-info-title">📝 Notes</h3>
+            <h3 className="detail-info-title" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <FileText size={16} color="#64748b" /> Notes
+            </h3>
             <p style={{ margin: 0, color: "#475569", fontSize: "0.9rem", lineHeight: 1.7 }}>{opp!.notes}</p>
           </div>
         )}

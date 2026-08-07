@@ -7,6 +7,7 @@ import OpportunityTable from "@/components/opportunities/OpportunityTable";
 import SearchBar from "@/components/customers/SearchBar";
 import Pagination from "@/components/customers/Pagination";
 import opportunitiesData, { Opportunity, OpportunityStage, OpportunityStatus } from "@/data/opportunities";
+import { Target, CheckCircle, Trophy, DollarSign, BarChart2 } from "lucide-react";
 
 const ITEMS_PER_PAGE = 8;
 type FilterStage = "All" | OpportunityStage;
@@ -57,11 +58,11 @@ export default function OpportunitiesPage() {
   const avgProbability = opportunities.length > 0 ? Math.round(opportunities.reduce((s, o) => s + o.probability, 0) / opportunities.length) : 0;
 
   const STAT_CARDS = [
-    { label: "Total Opportunities", value: opportunities.length,           icon: "🎯", color: "#4f46e5", bg: "#eef2ff" },
-    { label: "Active",              value: activeCount,                    icon: "✅", color: "#16a34a", bg: "#dcfce7" },
-    { label: "Closed Won",          value: closedWon,                      icon: "🏆", color: "#d97706", bg: "#fef3c7" },
-    { label: "Pipeline Value",      value: `$${totalValue.toLocaleString()}`, icon: "💰", color: "#0891b2", bg: "#ecfeff" },
-    { label: "Avg Probability",     value: `${avgProbability}%`,           icon: "📊", color: "#7c3aed", bg: "#faf5ff" },
+    { label: "Total Opportunities", value: opportunities.length,              icon: <Target size={20} />,      color: "#4f46e5", bg: "#eef2ff" },
+    { label: "Active",              value: activeCount,                       icon: <CheckCircle size={20} />, color: "#16a34a", bg: "#dcfce7" },
+    { label: "Closed Won",          value: closedWon,                         icon: <Trophy size={20} />,      color: "#d97706", bg: "#fef3c7" },
+    { label: "Pipeline Value",      value: `$${totalValue.toLocaleString()}`, icon: <DollarSign size={20} />,  color: "#0891b2", bg: "#ecfeff" },
+    { label: "Avg Probability",     value: `${avgProbability}%`,              icon: <BarChart2 size={20} />,   color: "#7c3aed", bg: "#faf5ff" },
   ];
 
   return (

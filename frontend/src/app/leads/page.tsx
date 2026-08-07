@@ -7,6 +7,7 @@ import LeadTable from "@/components/leads/LeadTable";
 import SearchBar from "@/components/customers/SearchBar";
 import Pagination from "@/components/customers/Pagination";
 import { leads as leadsData, Lead, LeadStatus } from "@/data/leads";
+import { Target, Sparkles, Trophy, BarChart2 } from "lucide-react";
 
 const ITEMS_PER_PAGE = 8;
 type FilterStatus = "All" | LeadStatus;
@@ -56,10 +57,10 @@ export default function LeadsPage() {
   const newLeads = leads.filter((l) => l.status === "New").length;
 
   const STAT_CARDS = [
-    { label: "Total Leads",    value: leads.length, icon: "🎯", color: "#4f46e5", bg: "#eef2ff" },
-    { label: "New Leads",      value: newLeads,     icon: "✨", color: "#0891b2", bg: "#ecfeff" },
-    { label: "Qualified",      value: closedWon,    icon: "🏆", color: "#16a34a", bg: "#dcfce7" },
-    { label: "Avg Score",      value: leads.length > 0 ? Math.round(totalValue / leads.length) : 0, icon: "💯", color: "#d97706", bg: "#fef3c7" },
+    { label: "Total Leads",  value: leads.length, icon: <Target size={20} />,   color: "#4f46e5", bg: "#eef2ff" },
+    { label: "New Leads",    value: newLeads,      icon: <Sparkles size={20} />, color: "#0891b2", bg: "#ecfeff" },
+    { label: "Qualified",    value: closedWon,     icon: <Trophy size={20} />,   color: "#16a34a", bg: "#dcfce7" },
+    { label: "Avg Score",    value: leads.length > 0 ? Math.round(totalValue / leads.length) : 0, icon: <BarChart2 size={20} />, color: "#d97706", bg: "#fef3c7" },
   ];
 
   return (

@@ -10,6 +10,7 @@ import RecentCustomers from "@/components/dashboard/RecentCustomers";
 import RecentLeads from "@/components/dashboard/RecentLeads";
 import TopPerformers from "@/components/dashboard/TopPerformers";
 import ActivityFeed from "@/components/dashboard/ActivityFeed";
+import { Users, Handshake, DollarSign, Ticket } from "lucide-react";
 
 const stats = [
   {
@@ -18,7 +19,7 @@ const stats = [
     change: "+12%",
     up: true,
     color: "#4f46e5",
-    icon: "👥",
+    icon: <Users size={22} />,
   },
   {
     label: "Active Deals",
@@ -26,7 +27,7 @@ const stats = [
     change: "+5%",
     up: true,
     color: "#0891b2",
-    icon: "🤝",
+    icon: <Handshake size={22} />,
   },
   {
     label: "Revenue (MTD)",
@@ -34,7 +35,7 @@ const stats = [
     change: "+8.3%",
     up: true,
     color: "#16a34a",
-    icon: "💰",
+    icon: <DollarSign size={22} />,
   },
   {
     label: "Open Tickets",
@@ -42,7 +43,7 @@ const stats = [
     change: "-4%",
     up: false,
     color: "#d97706",
-    icon: "🎫",
+    icon: <Ticket size={22} />,
   },
 ];
 

@@ -8,6 +8,7 @@ import SearchBar from "@/components/customers/SearchBar";
 import Pagination from "@/components/customers/Pagination";
 import { Customer, CustomerStatus, ApiCustomerList, toCustomer } from "@/data/customers";
 import { apiRequest, getAccessToken } from "@/lib/api";
+import { Users, UserCheck, PauseCircle, Zap } from "lucide-react";
 
 const PAGE_SIZE = 10;
 type FilterStatus = "All" | CustomerStatus;
@@ -105,10 +106,10 @@ export default function CustomersPage() {
   }
 
   const STAT_CARDS = [
-    { label: "Total Customers", value: stats.total, icon: "👥", color: "#4f46e5", bg: "#eef2ff" },
-    { label: "Active",          value: stats.active,   icon: "✅", color: "#16a34a", bg: "#dcfce7" },
-    { label: "Inactive",        value: stats.inactive, icon: "⏸️", color: "#64748b", bg: "#f1f5f9" },
-    { label: "Leads",           value: stats.lead,     icon: "⚡", color: "#b45309", bg: "#fef3c7" },
+    { label: "Total Customers", value: stats.total,    icon: <Users size={20} />,        color: "#4f46e5", bg: "#eef2ff" },
+    { label: "Active",          value: stats.active,   icon: <UserCheck size={20} />,    color: "#16a34a", bg: "#dcfce7" },
+    { label: "Inactive",        value: stats.inactive, icon: <PauseCircle size={20} />,  color: "#64748b", bg: "#f1f5f9" },
+    { label: "Leads",           value: stats.lead,     icon: <Zap size={20} />,          color: "#b45309", bg: "#fef3c7" },
   ];
 
   return (
