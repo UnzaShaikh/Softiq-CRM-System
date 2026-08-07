@@ -1497,3 +1497,18 @@ body {
     font-size: 1.25rem;
   }
 }
+
+/* ════════════════════════════════════════
+   DASHBOARD CHART GRIDS RESPONSIVE
+════════════════════════════════════════ */
+.dashboard-chart-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -95,13 +95,13 @@ export default function DashboardPage() {
         </div>
 
         {/* Revenue + Donut */}
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "24px" }}>
+        <div className="dashboard-chart-grid">
           <RevenueChart overview={salesOverview} />
           <LeadsDonutChart sources={donutSources} />
         </div>
 
         {/* Pipeline + Activity */}
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "24px" }}>
+        <div className="dashboard-chart-grid">
           <DealsPipeline stages={pipeline.stages} deals={pipeline.deals} />
           <ActivityFeed activities={feedActivities} />
         </div>
