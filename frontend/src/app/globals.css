@@ -437,9 +437,6 @@ body {
   }
 }
 
- /* =========================
-   Dashboard Layout
-========================= */
 /* =========================
    Dashboard Layout
 ========================= */
@@ -1460,26 +1457,6 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-/* ════════════════════════════════════════
-   DASHBOARD STAT CARDS
-════════════════════════════════════════ */
-.stat-card-dashboard {
-  background: #ffffff;
-  border-radius: 0.75rem;
-  padding: 0.875rem 1rem;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-  cursor: default;
-}
-
-.stat-card-dashboard-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 0.625rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1532,9 +1509,6 @@ body {
 
 
 /* Header */
-
-
-
 
 .company-page-header {
   display: flex;
@@ -1868,6 +1842,7 @@ body {
 }
 .company-detail-card {
   background: white;
+  padding-bottom: 40px;
   border-radius: 16px;
   padding: 30px;
   box-shadow: 0 8px 25px rgba(0,0,0,0.06);
@@ -1909,6 +1884,7 @@ body {
   grid-template-columns: repeat(2, 1fr);
   gap: 25px;
 }
+
 @media(max-width:640px){
 
 .company-detail-card{
@@ -1945,6 +1921,7 @@ body {
 }
 /* ==========================================
    Company Search Toolbar
+========================================== */
 
 .company-toolbar {
   display: flex;
@@ -2013,6 +1990,7 @@ body {
 }
 /* ==========================================
    Company Filters
+========================================== */
 
 .filter-group {
   display: flex;
@@ -2062,6 +2040,7 @@ body {
 }
 /* ================================
    Company Pagination
+================================ */
 
 .company-pagination {
   margin-top: 20px;
@@ -2139,6 +2118,7 @@ body {
 }
 /* ================================
    Company Form Validation
+================================ */
 
 .form-field-error {
   display: block;
@@ -2160,6 +2140,7 @@ body {
 
 /* ================================
    Company Form Loading
+================================ */
 
 .save-company-btn:disabled {
   opacity: 0.65;
@@ -2308,11 +2289,40 @@ padding:12px;
 }
 
 }
+
 /* Stat icon variants — reused colors, no new hex codes */
 .stat-icon-purple { background: #F0EDFF; color: #6C5DD3; }
 .stat-icon-teal   { background: #E6FBFC; color: #0891B2; }
 .stat-icon-green  { background: #F0FDF4; color: #16A34A; }
 .stat-icon-orange { background: #FEF3C7; color: #F59E0B; }
+
+/* ════════════════════════════════════════
+   DASHBOARD STAT CARDS
+════════════════════════════════════════ */
+.stat-card-dashboard {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: default;
+}
+
+.stat-card-dashboard-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 0.625rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 20px;
+  background: #f0edff;
+  color: #6c5dd3;
 }
 
 .stat-card-dashboard-content {
@@ -2408,4 +2418,62 @@ padding:12px;
   .dashboard-chart-grid {
     grid-template-columns: 1fr;
   }
+}
+/* ════════════════════════════════════════
+   COMPANY DETAIL — refined info grid
+════════════════════════════════════════ */
+.company-page > .page-header {
+  margin-bottom: 24px;
+  align-items: center;
+}
+
+.company-detail-card {
+  transition: box-shadow 0.15s ease;
+}
+
+.company-profile h2 {
+  margin: 0 0 8px;
+}
+
+.company-info-item {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #FAFAFC;
+  border: 1px solid #F0F0F5;
+}
+
+.company-info-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6B7280;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.company-info-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.company-info-item p {
+  margin: 8px 0 0;
+  color: #1F2937;
+  font-size: 15px;
+}
+
+.company-info-item p a {
+  color: #6C5DD3;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.company-info-item p a:hover {
+  text-decoration: underline;
+}
+
+.company-info-grid {
+  gap: 14px;
 }

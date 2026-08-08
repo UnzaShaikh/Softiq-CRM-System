@@ -1,5 +1,4 @@
 "use client";
-"use client";
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -23,7 +22,6 @@ function UserDropdown({ initials, c1, c2, firstName, email, onLogout, onSettings
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -36,7 +34,6 @@ function UserDropdown({ initials, c1, c2, firstName, email, onLogout, onSettings
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      {/* Pill trigger */}
       <button
         onClick={() => setOpen((o) => !o)}
         style={{
@@ -58,7 +55,6 @@ function UserDropdown({ initials, c1, c2, firstName, email, onLogout, onSettings
           }
         }}
       >
-        {/* Avatar */}
         <div style={{
           width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
           background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`,
@@ -77,7 +73,6 @@ function UserDropdown({ initials, c1, c2, firstName, email, onLogout, onSettings
         />
       </button>
 
-      {/* Dropdown menu */}
       {open && (
         <div style={{
           position: "absolute", top: "calc(100% + 8px)", right: 0,
@@ -86,7 +81,6 @@ function UserDropdown({ initials, c1, c2, firstName, email, onLogout, onSettings
           minWidth: "220px", zIndex: 100, overflow: "hidden",
           animation: "slideUp 0.15s cubic-bezier(0.16,1,0.3,1)",
         }}>
-          {/* User info */}
           <div style={{ padding: "14px 16px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: "10px" }}>
             <div style={{
               width: 38, height: 38, borderRadius: "50%",
@@ -106,7 +100,6 @@ function UserDropdown({ initials, c1, c2, firstName, email, onLogout, onSettings
             </div>
           </div>
 
-          {/* Menu items */}
           <div style={{ padding: "6px" }}>
             <button
               onClick={() => { setOpen(false); onSettings(); }}
@@ -226,6 +219,23 @@ const NAV_ITEMS = [
     ),
   },
   {
+  label: "Companies",
+  href: "/company",
+  icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="2" width="16" height="20" rx="1" />
+      <line x1="9" y1="6" x2="9" y2="6.01" />
+      <line x1="15" y1="6" x2="15" y2="6.01" />
+      <line x1="9" y1="10" x2="9" y2="10.01" />
+      <line x1="15" y1="10" x2="15" y2="10.01" />
+      <line x1="9" y1="14" x2="9" y2="14.01" />
+      <line x1="15" y1="14" x2="15" y2="14.01" />
+      <line x1="10" y1="22" x2="10" y2="18" />
+      <line x1="14" y1="22" x2="14" y2="18" />
+    </svg>
+  ),
+},
+  {
     label: "Reports",
     href: "/reports",
     icon: (
@@ -275,12 +285,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   // Route change hone par mobile sidebar apne aap band ho jaye
   useEffect(() => {
     setIsMobileOpen(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  // Close mobile sidebar on route change
-  useEffect(() => {
-    const t = setTimeout(() => setMobileOpen(false), 0);
-    return () => clearTimeout(t);
   }, [pathname]);
 
   function handleLogout() {
@@ -309,7 +313,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc", fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif" }}>
 
-      {/* ── Mobile overlay (sidebar band karne ke liye click) ── */}
+      {/* ── Mobile overlay ── */}
       <div
         className={`sidebar-overlay ${isMobileOpen ? "active" : ""}`}
         onClick={() => setIsMobileOpen(false)}
@@ -321,37 +325,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         style={{
           width: sidebarW,
           minWidth: sidebarW,
+          background: "#4f46e5",
+          borderRight: "none",
+          display: "flex",
+          flexDirection: "column",
+          position: "sticky",
+          top: 0,
+          height: "100vh",
+          overflowY: "auto",
+          overflowX: "hidden",
+          transition: "width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1)",
+          zIndex: 50,
+          flexShrink: 0,
         }}
       >
-      {/* ── Mobile overlay ── */}
-      {mobileOpen && (
-        <div
-          onClick={() => setMobileOpen(false)}
-          style={{
-            position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
-            zIndex: 40, display: "none",
-          }}
-          className="mobile-overlay"
-        />
-      )}
-
-      {/* ── Sidebar ── */}
-      <aside style={{
-        width: sidebarW,
-        minWidth: sidebarW,
-        background: "#4f46e5",
-        borderRight: "none",
-        display: "flex",
-        flexDirection: "column",
-        position: "sticky",
-        top: 0,
-        height: "100vh",
-        overflowY: "auto",
-        overflowX: "hidden",
-        transition: "width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1)",
-        zIndex: 50,
-        flexShrink: 0,
-      }}>
 
         {/* Logo */}
         <div style={{
@@ -404,7 +391,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               onClick={() => setCollapsed(true)}
               style={{
                 background: "none", border: "none", cursor: "pointer",
-                padding: 4, color: "#94a3b8", borderRadius: 6,
+                padding: 4, color: "rgba(255,255,255,0.7)", borderRadius: 6,
                 display: "flex", alignItems: "center", transition: "color 0.15s, background 0.15s",
               }}
               title="Collapse sidebar"
@@ -541,8 +528,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </Link>
             );
           })}
-
-          {/* User avatar row removed - moved to topbar */}
         </div>
       </aside>
 
@@ -579,12 +564,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </svg>
           </button>
 
-        <header style={{
-          height: 64, background: "#fff", borderBottom: "1px solid #e2e8f0",
-          display: "flex", alignItems: "center", padding: "0 24px",
-          justifyContent: "space-between", position: "sticky", top: 0, zIndex: 30,
-          flexShrink: 0,
-        }}>
           {/* Search */}
           <div style={{ position: "relative", maxWidth: 340, flex: 1 }}>
             <svg style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}
@@ -616,7 +595,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Right actions */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {/* Notification bell */}
             <button style={{
               position: "relative", background: "none", border: "1.5px solid #e2e8f0",
               borderRadius: 8, width: 38, height: 38, display: "flex",
@@ -644,7 +622,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               }} />
             </button>
 
-            {/* Hi, User + Avatar + Dropdown */}
             <UserDropdown
               initials={initials}
               c1={c1} c2={c2}
@@ -665,7 +642,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             overflowY: "auto",
           }}
         >
-        <main style={{ flex: 1, padding: "28px 28px", overflowY: "auto" }}>
           {children}
         </main>
       </div>

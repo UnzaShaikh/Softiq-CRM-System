@@ -11,6 +11,7 @@ export interface Company {
   email: string;
   address: string;
   size: string;
+   description?: string; 
 }
 
 export const companies: Company[] = [
