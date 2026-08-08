@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import StatCard from "@/components/dashboard/StatCard";
 import RevenueChart from "@/components/dashboard/RevenueChart";
@@ -12,189 +10,113 @@ import RecentCustomers from "@/components/dashboard/RecentCustomers";
 import RecentLeads from "@/components/dashboard/RecentLeads";
 import TopPerformers from "@/components/dashboard/TopPerformers";
 import ActivityFeed from "@/components/dashboard/ActivityFeed";
-import { STAGES } from "@/components/dashboard/data";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import {
-  salesOverviewToChart,
-  leadSourcesToDonut,
   dealsPipelineToWidget,
-  dealsPipelineToBoardDeals,
+  leadSourcesToDonut,
   activitiesToFeed,
   recentCustomersToWidget,
   recentLeadsToWidget,
   topPerformersToWidget,
-  formatCurrency,
+  salesOverviewToChart,
 } from "@/lib/dashboard";
-import { useDashboardData } from "@/hooks/useDashboardData";
-import { getAccessToken } from "@/lib/api";
+import { Users, Handshake, DollarSign, UserCheck } from "lucide-react";
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const { data, loading, error, refresh } = useDashboardData();
+  const { data, loading } = useDashboardData();
 
-  useEffect(() => {
-    if (error && !getAccessToken()) {
-      router.push("/login");
-    }
-  }, [error, router]);
+  const stats = [
+    {
+      label: "Total Customers",
+      value: loading ? "..." : String(data?.summary?.total_customers ?? 0),
+      change: "+12%",
+      up: true,
+      color: "#4f46e5",
+      icon: <Users size={18} />,
+    },
+    {
+      label: "Active Customers",
+      value: loading ? "..." : String(data?.summary?.active_customers ?? 0),
+      change: "+5%",
+      up: true,
+      color: "#0891b2",
+      icon: <UserCheck size={18} />,
+    },
+    {
+      label: "Revenue (MTD)",
+      value: loading ? "..." : `$${Number(data?.summary?.total_revenue ?? 0).toLocaleString()}`,
+      change: "+8.3%",
+      up: true,
+      color: "#16a34a",
+      icon: <DollarSign size={18} />,
+    },
+    {
+      label: "Total Deals",
+      value: loading ? "..." : String(data?.summary?.total_deals ?? 0),
+      change: "+4%",
+      up: true,
+      color: "#d97706",
+      icon: <Handshake size={18} />,
+    },
+  ];
 
-  const stats = data
-    ? [
-        {
-          label: "Total Customers",
-          value: data.summary.total_customers.toLocaleString(),
-          change: "—",
-          up: true,
-          color: "#4f46e5",
-          icon: "👥",
-        },
-        {
-          label: "Active Customers",
-          value: String(data.summary.active_customers),
-          change: "—",
-          up: true,
-          color: "#16a34a",
-          icon: "✅",
-        },
-        {
-          label: "Active Deals",
-          value: String(data.summary.total_deals),
-          change: "—",
-          up: true,
-          color: "#0891b2",
-          icon: "🤝",
-        },
-        {
-          label: "Revenue",
-          value: formatCurrency(data.summary.total_revenue),
-          change: "—",
-          up: true,
-          color: "#d97706",
-          icon: "💰",
-        },
-      ]
-    : [];
+  const pipeline = dealsPipelineToWidget(data?.dealsPipeline ?? []);
+  const donutSources = leadSourcesToDonut(data?.leadSources ?? []);
+  const feedActivities = activitiesToFeed(data?.activities ?? []);
+  const widgetCustomers = recentCustomersToWidget(data?.recentCustomers ?? []);
+  const widgetLeads = recentLeadsToWidget(data?.recentLeads ?? []);
+  const widgetPerformers = topPerformersToWidget(data?.topPerformers ?? []);
+  const salesOverview = salesOverviewToChart(
+    data?.salesOverview ?? { months: [], revenue: [], deals_closed: [] }
+  );
 
   return (
     <DashboardLayout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
 
         {/* Page Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: "2rem",
-                fontWeight: 700,
-                color: "#0f172a",
-              }}
-            >
-              Dashboard
-            </h1>
-
-            <p
-              style={{
-                marginTop: 6,
-                color: "#64748b",
-              }}
-            >
-              Here&apos;s what&apos;s happening today.
-            </p>
-          </div>
-          <button
-            onClick={refresh}
-            disabled={loading}
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "8px 14px", borderRadius: 8,
-              border: "1px solid #e2e8f0", background: "#fff",
-              color: "#475569", fontWeight: 600, fontSize: "0.8125rem",
-              cursor: loading ? "default" : "pointer", fontFamily: "inherit",
-              transition: "border-color 0.15s, background 0.15s",
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={loading ? { animation: "spin 1s linear infinite" } : undefined}>
-              <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-              <polyline points="21 3 21 9 15 9" />
-            </svg>
-            {loading ? "Refreshing…" : "Refresh"}
-          </button>
+        <div>
+          <h1 style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "#0f172a" }}>
+            Dashboard
+          </h1>
+          <p style={{ marginTop: 6, color: "#64748b" }}>
+            Here&apos;s what&apos;s happening today.
+          </p>
         </div>
 
-        {loading && !data ? (
-          <div style={{ padding: "60px", textAlign: "center", color: "#64748b", fontSize: "0.95rem" }}>
-            Loading dashboard…
-          </div>
-        ) : error && !data ? (
-          <div style={{
-            background: "#fff", borderRadius: "1rem", border: "1px solid #fecaca",
-            padding: "40px", textAlign: "center",
-          }}>
-            <p style={{ margin: "0 0 8px", fontSize: "1rem", fontWeight: 700, color: "#dc2626" }}>Failed to load dashboard</p>
-            <p style={{ margin: "0 0 20px", fontSize: "0.875rem", color: "#64748b" }}>{error}</p>
-            <button
-              onClick={refresh}
-              style={{
-                padding: "8px 18px", borderRadius: 8, border: "none",
-                background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-                color: "#fff", fontWeight: 600, fontSize: "0.8125rem",
-                cursor: "pointer", fontFamily: "inherit",
-              }}
-            >
-              Try again
-            </button>
-          </div>
-        ) : data ? (
-          <>
-            {/* KPI Cards */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
-                gap: "20px",
-              }}
-            >
-              {stats.map((item) => (
-                <StatCard key={item.label} {...item} />
-              ))}
-            </div>
+        {/* KPI Cards */}
+        <div
+          style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}
+          className="dashboard-stats-grid"
+        >
+          {stats.map((item) => (
+            <StatCard key={item.label} {...item} />
+          ))}
+        </div>
 
-            {/* Revenue + Donut */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "2fr 1fr",
-                gap: "24px",
-              }}
-            >
-              <RevenueChart overview={salesOverviewToChart(data.salesOverview)} />
-              <LeadsDonutChart sources={leadSourcesToDonut(data.leadSources)} />
-            </div>
+        {/* Revenue + Donut */}
+        <div className="dashboard-chart-grid">
+          <RevenueChart overview={salesOverview} />
+          <LeadsDonutChart sources={donutSources} />
+        </div>
 
-            {/* Pipeline + Activity */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "2fr 1fr",
-                gap: "24px",
-              }}
-            >
-              <DealsPipeline {...dealsPipelineToWidget(data.dealsPipeline)} />
-              <ActivityFeed activities={activitiesToFeed(data.activities)} />
-            </div>
+        {/* Pipeline + Activity */}
+        <div className="dashboard-chart-grid">
+          <DealsPipeline stages={pipeline.stages} deals={pipeline.deals} />
+          <ActivityFeed activities={feedActivities} />
+        </div>
 
-            {/* Recent Customers */}
-            <RecentCustomers customers={recentCustomersToWidget(data.recentCustomers)} />
+        {/* Recent Customers */}
+        <RecentCustomers customers={widgetCustomers} />
 
-            {/* Recent Leads */}
-            <RecentLeads leads={recentLeadsToWidget(data.recentLeads)} />
+        {/* Recent Leads */}
+        <RecentLeads leads={widgetLeads} />
 
-            {/* Top Performers */}
-            <TopPerformers performers={topPerformersToWidget(data.topPerformers)} />
+        {/* Top Performers */}
+        <TopPerformers performers={widgetPerformers} />
 
-            <SalesPipeline stages={STAGES} deals={dealsPipelineToBoardDeals(data.dealsPipeline)} />
-          </>
-        ) : null}
+        <SalesPipeline stages={pipeline.stages} deals={[]} />
+
       </div>
     </DashboardLayout>
   );

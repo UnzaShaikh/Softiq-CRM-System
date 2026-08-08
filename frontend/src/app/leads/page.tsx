@@ -7,7 +7,8 @@ import LeadTable from "@/components/leads/LeadTable";
 import SearchBar from "@/components/customers/SearchBar";
 import Pagination from "@/components/customers/Pagination";
 import { ApiLeadList, toLead, Lead, LeadStatus } from "@/data/leads";
-import { apiRequest, getAccessToken, emitDataChanged } from "@/lib/api";
+import { apiRequest, getAccessToken } from "@/lib/api";
+import { Target, Phone, Trophy, Sparkles } from "lucide-react";
 
 const PAGE_SIZE = 10;
 type FilterStatus = "All" | LeadStatus;
@@ -16,11 +17,7 @@ const STATUS_COLORS: Record<LeadStatus, string> = {
   "New": "#3b82f6", "Contacted": "#f59e0b", "Qualified": "#22c55e", "Lost": "#ef4444",
 };
 const STATUS_QUERY: Record<FilterStatus, string | undefined> = {
-  All: undefined,
-  New: "new",
-  Contacted: "contacted",
-  Qualified: "qualified",
-  Lost: "lost",
+  All: undefined, New: "new", Contacted: "contacted", Qualified: "qualified", Lost: "lost",
 };
 
 export default function LeadsPage() {
@@ -80,15 +77,8 @@ export default function LeadsPage() {
           apiRequest<ApiLeadList>("/api/leads/?status=contacted"),
         ]);
         if (cancelled) return;
-        setStats({
-          total: all.count,
-          new: newLeads.count,
-          qualified: qualified.count,
-          contacted: contacted.count,
-        });
-      } catch {
-        // stats are secondary; keep last known values
-      }
+        setStats({ total: all.count, new: newLeads.count, qualified: qualified.count, contacted: contacted.count });
+      } catch { /* keep last known values */ }
     };
     void fetchStats();
     return () => { cancelled = true; };
@@ -107,7 +97,6 @@ export default function LeadsPage() {
     setDeleting(true);
     try {
       await apiRequest(`/api/leads/${deleteModal.id}/`, { method: "DELETE" });
-      emitDataChanged();
       showToast(`"${deleteModal.name}" has been deleted.`);
       setDeleteModal(null);
       setRefreshKey((k) => k + 1);
@@ -119,10 +108,10 @@ export default function LeadsPage() {
   }
 
   const STAT_CARDS = [
-    { label: "Total Leads",    value: stats.total,     icon: "🎯", color: "#4f46e5", bg: "#eef2ff" },
-    { label: "New Leads",      value: stats.new,       icon: "✨", color: "#0891b2", bg: "#ecfeff" },
-    { label: "Qualified",      value: stats.qualified, icon: "🏆", color: "#16a34a", bg: "#dcfce7" },
-    { label: "Contacted",      value: stats.contacted, icon: "📞", color: "#d97706", bg: "#fef3c7" },
+    { label: "Total Leads",  value: stats.total,     icon: <Target size={20} />,   color: "#4f46e5", bg: "#eef2ff" },
+    { label: "New Leads",    value: stats.new,        icon: <Sparkles size={20} />, color: "#0891b2", bg: "#ecfeff" },
+    { label: "Qualified",    value: stats.qualified,  icon: <Trophy size={20} />,   color: "#16a34a", bg: "#dcfce7" },
+    { label: "Contacted",    value: stats.contacted,  icon: <Phone size={20} />,    color: "#d97706", bg: "#fef3c7" },
   ];
 
   return (
@@ -147,7 +136,7 @@ export default function LeadsPage() {
         <div className="stats-grid">
           {STAT_CARDS.map((card) => (
             <div key={card.label} className="stat-card">
-              <div className="stat-card-icon" style={{ background: card.bg }}>{card.icon}</div>
+              <div className="stat-card-icon" style={{ background: card.bg, color: card.color }}>{card.icon}</div>
               <div>
                 <p className="stat-card-value" style={{ color: card.color }}>{card.value}</p>
                 <p className="stat-card-label">{card.label}</p>
@@ -174,7 +163,6 @@ export default function LeadsPage() {
             </div>
           </div>
 
-          {/* Table content */}
           {loading ? (
             <div className="loading-state">Loading leads…</div>
           ) : error ? (
@@ -190,7 +178,6 @@ export default function LeadsPage() {
             <LeadTable leads={leads} onView={(l) => router.push(`/leads/${l.id}`)} onEdit={(l) => router.push(`/leads/${l.id}/edit`)} onDelete={setDeleteModal} />
           )}
 
-          {/* Pagination */}
           {!loading && !error && totalCount > 0 && (
             <div className="pagination-wrap">
               <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalCount} itemsPerPage={PAGE_SIZE} onPageChange={setCurrentPage} />

@@ -4,24 +4,26 @@ A modern **Customer Relationship Management (CRM)** system built using **Next.js
 
 ---
 
-# Project Status
+# 🚀 Project Status
 
-**Current Progress:** ✅ Day 6 Completed
+**Current Progress:** ✅ **Day 7 Completed**
 
-Completed Modules
+## Completed Modules
 
-- Authentication
-- Dashboard
-- Customer Management
-- Lead Management
-- Deal / Sales Pipeline Management
-- Opportunity Management UI
-- Contact Management UI
-- Dashboard API Integration (Partial)
+- ✅ Authentication
+- ✅ Dashboard
+- ✅ Customer Management
+- ✅ Lead Management
+- ✅ Deal Management
+- ✅ Sales Pipeline Analytics APIs
+- ✅ Opportunity Management UI
+- ✅ Contact Management UI
+- ✅ Company Management UI
+- 🟡 Dashboard API Integration (Partial)
 
 ---
 
-# Tech Stack
+# 🛠 Tech Stack
 
 ## Frontend
 
@@ -44,11 +46,11 @@ Completed Modules
 - Git
 - GitHub
 - Postman
-- VS Code
+- Visual Studio Code
 
 ---
 
-# Project Structure
+# 📁 Project Structure
 
 ```text
 crm-system/
@@ -60,14 +62,15 @@ crm-system/
 │   ├── leads/
 │   ├── deals/
 │   ├── dashboard/
+│   ├── pipeline/
 │   └── manage.py
 │
 ├── frontend/
 │   ├── app/
 │   ├── components/
 │   ├── context/
-│   ├── services/
 │   ├── hooks/
+│   ├── services/
 │   └── public/
 │
 └── README.md
@@ -75,9 +78,9 @@ crm-system/
 
 ---
 
-# Features
+# ✨ Features
 
-## Authentication
+## 🔐 Authentication
 
 - User Registration
 - User Login
@@ -91,9 +94,9 @@ crm-system/
 
 ---
 
-## Dashboard
+# 📊 Dashboard
 
-### Completed
+## Completed
 
 - Dashboard Summary API
 - JWT Protected Endpoint
@@ -107,7 +110,7 @@ crm-system/
 - Recent Customers
 - Recent Leads
 
-### In Progress
+## In Progress
 
 - Sales Overview
 - Lead Sources
@@ -117,7 +120,7 @@ crm-system/
 
 ---
 
-# Customer Management
+# 👥 Customer Management
 
 ## Backend
 
@@ -144,7 +147,7 @@ crm-system/
 
 ---
 
-# Lead Management
+# 🎯 Lead Management
 
 ## Backend
 
@@ -171,21 +174,19 @@ crm-system/
 
 ---
 
-# Deals / Sales Pipeline
+# 💼 Deal Management
 
 ## Backend
 
-Completed complete Deal Management module.
-
-### Features
+### CRUD Features
 
 - Deal Model
 - Deal Serializer
 - Create Deal
-- Get All Deals
-- Get Deal by ID
 - Update Deal
 - Delete Deal
+- Get Deal by ID
+- Get All Deals
 - Search
 - Filtering
 - Ordering
@@ -208,11 +209,86 @@ Completed complete Deal Management module.
 
 ---
 
-# Opportunity Management
+# 📈 Sales Pipeline Analytics
+
+## Backend
+
+### Completed APIs
+
+#### Pipeline Summary API
+
+Returns:
+
+- Total Deals
+- Total Pipeline Value
+- Active Deals
+- Closed Won
+- Closed Lost
+
+#### Stage Distribution API
+
+Returns:
+
+- Pipeline Stage
+- Deal Count
+- Total Value
+- Percentage Distribution
+
+#### Recent Deals API
+
+Returns:
+
+- Customer
+- Company
+- Deal Value
+- Pipeline Stage
+- Expected Closing Date
+
+#### Pipeline Performance API
+
+Returns Monthly Analytics:
+
+- Deals Created
+- Deals Closed
+- Revenue Generated
+
+#### Pipeline Trend Comparison API
+
+Provides:
+
+- Current Month Statistics
+- Previous Month Statistics
+- Growth Percentage
+
+#### Pipeline Export API
+
+Supports:
+
+- CSV Export
+- Excel Export
+- PDF Export
+
+#### Stage Drill-down API
+
+Returns all deals belonging to a selected pipeline stage.
+
+### Features
+
+- Date Range Filtering
+- Monthly Analytics
+- Yearly Analytics
+- Aggregation Queries
+- JWT Authentication
+- Serializer Validation
+- Live Database Data
+- RESTful API Design
+- Postman API Testing
+
+---
+
+# 💡 Opportunity Management
 
 ## Frontend
-
-Completed
 
 - Opportunity Listing
 - Add Opportunity
@@ -224,11 +300,9 @@ Completed
 
 ---
 
-# Contact Management
+# 📇 Contact Management
 
 ## Frontend
-
-Completed
 
 - Contact Listing
 - Add Contact
@@ -241,7 +315,24 @@ Completed
 
 ---
 
-# API Endpoints
+# 🏢 Company Management
+
+## Frontend
+
+- Company Listing
+- Add Company
+- Edit Company
+- Company Details
+- Search Companies
+- Company Filters
+- Pagination
+- Responsive Design
+- Loading States
+- Client-side Validation
+
+---
+
+# 🌐 API Endpoints
 
 ## Authentication
 
@@ -256,9 +347,9 @@ Completed
 
 ## Dashboard
 
-| Method | Endpoint | Authentication |
-|---------|----------|----------------|
-| GET | `/api/dashboard-summary/` | Required |
+| Method | Endpoint |
+|---------|----------|
+| GET | `/api/dashboard-summary/` |
 
 ---
 
@@ -319,24 +410,23 @@ Supports:
 
 ---
 
-# Sample Dashboard Response
+## Sales Pipeline
 
-```json
-{
-  "total_customers": 125,
-  "active_customers": 64,
-  "total_deals": 18,
-  "total_revenue": "24500.00",
-  "recent_customers": [],
-  "recent_leads": []
-}
-```
+| Method | Endpoint |
+|---------|----------|
+| GET | `/api/pipeline/summary/` |
+| GET | `/api/pipeline/stages/` |
+| GET | `/api/pipeline/recent-deals/` |
+| GET | `/api/pipeline/performance/` |
+| GET | `/api/pipeline/trends/` |
+| GET | `/api/pipeline/export/` |
+| GET | `/api/pipeline/stages/{stage}/deals/` |
 
 ---
 
-# Authentication
+# 🔒 Authentication
 
-Protected endpoints require a JWT access token.
+Protected endpoints require a JWT Access Token.
 
 Example:
 
@@ -346,7 +436,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-# Backend Modules
+# 📦 Backend Modules
 
 ```text
 backend/
@@ -357,11 +447,12 @@ backend/
 ├── customers/
 ├── leads/
 ├── deals/
+├── pipeline/
 ```
 
 ---
 
-# Frontend Modules
+# 🎨 Frontend Modules
 
 ```text
 frontend/
@@ -374,11 +465,15 @@ frontend/
 │   ├── Customers
 │   ├── Leads
 │   ├── Deals
+│   ├── Sales Pipeline
 │   ├── Opportunities
-│   └── Contacts
+│   ├── Contacts
+│   └── Company Management
 │
 ├── context/
 │   └── AuthContext
+│
+├── hooks/
 │
 ├── services/
 │   └── API Services
@@ -386,7 +481,7 @@ frontend/
 
 ---
 
-# Authentication Flow
+# 🔄 Authentication Flow
 
 1. User submits login credentials.
 2. Backend validates the credentials.
@@ -398,7 +493,7 @@ frontend/
 
 ---
 
-# Running the Project
+# ▶️ Running the Project
 
 ## Backend
 
@@ -444,9 +539,9 @@ http://localhost:3000/
 
 ---
 
-# Testing
+# 🧪 Testing
 
-API testing has been completed using **Postman**.
+API testing completed using **Postman**.
 
 ### Authentication
 
@@ -479,56 +574,73 @@ API testing has been completed using **Postman**.
 - Ordering
 - Pagination
 
-### Dashboard
+### Sales Pipeline APIs
 
-- Dashboard Summary API
-- JWT Authorization
-- Serializer Validation
+- Pipeline Summary API
+- Stage Distribution API
+- Recent Deals API
+- Pipeline Performance API
+- Pipeline Trends API
+- Pipeline Export API
+- Stage Drill-down API
+- JWT Authentication
+- Date Filters
+- Response Validation
 
 ---
 
-# Development Progress
+# 📅 Development Progress
 
 ## Day 1
 
-- Project setup
-- Authentication module
-- JWT configuration
+- Project Setup
+- Authentication Module
+- JWT Configuration
 
 ## Day 2
 
-- Customer Backend
+### Backend
+
 - Customer CRUD APIs
 
 ## Day 3
 
-- Customer UI
+### Frontend
+
+- Customer Management UI
 - Dashboard UI
 
 ## Day 4
 
-- Dashboard Backend APIs
-- Customer Integration
+### Backend
+
+- Dashboard APIs
+
+### Integration
+
+- Customer Module Integration
 
 ## Day 5
 
-Completed
+### Backend
 
-- Lead Backend
 - Lead CRUD APIs
 - Dashboard Statistics APIs
+
+### Frontend
+
 - Customer Forms
 - Customer Details
 - Lead Management UI
+
+### Integration
+
 - Dashboard Statistics Integration
 
 ## Day 6
 
-Completed
-
 ### Backend
 
-- Deals Module
 - Deal CRUD APIs
 - Search
 - Filtering
@@ -551,9 +663,42 @@ Completed
 - JWT Authentication Fixes
 - Live Database Integration
 
+## Day 7
+
+### Backend
+
+- Sales Pipeline Summary API
+- Stage Distribution API
+- Recent Deals API
+- Pipeline Performance API
+- Pipeline Trends API
+- Pipeline Export API
+- Stage Drill-down API
+- Date Filters
+- Aggregation Queries
+- JWT Authentication
+- Serializer Validation
+- API Validation
+- Backend Debugging
+- Postman Testing
+
+### Frontend
+
+- Sales Pipeline UI Improvements
+- Company Management UI
+- Dashboard Cards Review
+- Leads Page UI Improvements
+- Navigation Bar Review
+
+### Integration
+
+- Backend API Preparation
+- API Contract Review
+- Frontend Integration Support
+
 ---
 
-# Current Status
+# 📌 Current Status
 
 | Module | Status |
 |---------|--------|
@@ -563,17 +708,19 @@ Completed
 | Customers | ✅ Completed |
 | Leads | ✅ Completed |
 | Deals | ✅ Completed |
+| Sales Pipeline APIs | ✅ Completed |
 | Opportunity UI | ✅ Completed |
 | Contact UI | ✅ Completed |
+| Company Management UI | ✅ Completed |
 | Dashboard Integration | 🟡 In Progress |
 
 ---
 
-# Future Modules
+# 🚀 Future Modules
 
 - Opportunity Backend
+- Company Backend
 - Contact Backend
-- Company Management
 - Task Management
 - Reports & Analytics
 - Notifications
@@ -583,7 +730,7 @@ Completed
 
 ---
 
-# Git Workflow
+# 🌿 Git Workflow
 
 - Feature Branch Development
 - Pull Requests
@@ -592,14 +739,16 @@ Completed
 
 ---
 
-# Repository
+# 📂 Repository
 
 **GitHub Repository**
 
+```
 https://github.com/UnzaShaikh/crm-system
+```
 
 ---
 
-# License
+# 📄 License
 
 This project is developed as part of the **SoftiqTech Internship Program** for educational and internship purposes.
