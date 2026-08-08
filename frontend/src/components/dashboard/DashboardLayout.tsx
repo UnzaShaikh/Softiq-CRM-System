@@ -270,6 +270,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  // Route change hone par mobile sidebar apne aap band ho jaye
+  useEffect(() => {
+    setIsMobileOpen(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Close mobile sidebar on route change
@@ -304,6 +309,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc", fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif" }}>
 
+      {/* ── Mobile overlay (sidebar band karne ke liye click) ── */}
+      <div
+        className={`sidebar-overlay ${isMobileOpen ? "active" : ""}`}
+        onClick={() => setIsMobileOpen(false)}
+      />
+
+      {/* ── Sidebar ── */}
+      <aside
+        className={`dashboard-sidebar ${collapsed ? "collapsed" : ""} ${isMobileOpen ? "mobile-open" : ""}`}
+        style={{
+          width: sidebarW,
+          minWidth: sidebarW,
+        }}
+      >
       {/* ── Mobile overlay ── */}
       {mobileOpen && (
         <div
@@ -530,6 +549,36 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* ── Main content ── */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         {/* Top bar */}
+        <header
+          className="dashboard-header"
+          style={{
+            height: 64,
+            background: "#fff",
+            borderBottom: "1px solid #e2e8f0",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 24px",
+            justifyContent: "space-between",
+            position: "sticky",
+            top: 0,
+            zIndex: 30,
+            flexShrink: 0,
+            gap: 12,
+          }}
+        >
+          {/* Hamburger — sirf mobile pe dikhega */}
+          <button
+            className="mobile-menu-button"
+            onClick={() => setIsMobileOpen((v) => !v)}
+            aria-label="Toggle menu"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+
         <header style={{
           height: 64, background: "#fff", borderBottom: "1px solid #e2e8f0",
           display: "flex", alignItems: "center", padding: "0 24px",
@@ -608,6 +657,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Page content */}
+        <main
+          className="dashboard-main"
+          style={{
+            flex: 1,
+            padding: "28px 28px",
+            overflowY: "auto",
+          }}
+        >
         <main style={{ flex: 1, padding: "28px 28px", overflowY: "auto" }}>
           {children}
         </main>
