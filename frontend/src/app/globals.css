@@ -365,7 +365,7 @@ body {
 }
 /* =========================
    Contacts Responsive
-
+========================= */
 .contacts-actions {
   display: flex;
   justify-content: space-between;
@@ -436,9 +436,10 @@ body {
     width: 100%;
   }
 }
-/* =========================
- Dashboard Responsive
 
+/* =========================
+   Dashboard Layout
+========================= */
 .dashboard-sidebar {
   height:100vh;
   background:#ffffff;
@@ -453,19 +454,27 @@ body {
 
 .mobile-menu-button {
   display: none;
+  background: none;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
-.dashboard-sidebar {
-  height:100vh;
-  background:#ffffff;
-  border-right:1px solid #e2e8f0;
-  display:flex;
-  flex-direction:column;
-  position:sticky;
-  top:0;
-  transition: width .3s ease, left .3s ease;
-  flex-shrink:0;
+.mobile-menu-button:hover {
+  border-color: #c7d2fe;
+  background: #f8fafc;
 }
+
+.sidebar-overlay {
+  display: none;
+}
+
 .dashboard-main {
   flex:1;
   padding:28px;
@@ -489,25 +498,39 @@ body {
 
 @media(max-width:768px){
 
-
 .dashboard-sidebar {
-  height:100vh;
-  background:var(--surface);
-  border-right:1px solid var(--border);
-  display:flex;
-  flex-direction:column;
-  position:sticky;
-  top:0;
-  transition:left .3s ease;
-  flex-shrink:0;
+  position: fixed !important;
+  top: 0;
+  left: -260px !important;
+  width: 240px !important;
+  min-width: 240px !important;
+  height: 100vh;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  transition: left .3s ease;
+  z-index: 200;
+  box-shadow: 0 0 0 rgba(0,0,0,0);
 }
+
 .dashboard-sidebar.mobile-open {
- left: 0 !important;
+  left: 0 !important;
+  box-shadow: 8px 0 24px rgba(0,0,0,0.15);
 }
 
 .mobile-menu-button {
  display: flex;
  cursor: pointer;
+}
+
+.sidebar-overlay.active {
+  display: block;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 150;
+  animation: fadeIn 0.15s ease;
 }
 
 .dashboard-header{
@@ -563,7 +586,6 @@ body {
 
 
 }
-
 /* ════════════════════════════════════════
    PAGE LAYOUT
 ════════════════════════════════════════ */
@@ -1392,126 +1414,6 @@ body {
   .detail-grid { grid-template-columns: 1fr; }
 }
 
-/* ════════════════════════════════════════
-   DASHBOARD STAT CARDS
-════════════════════════════════════════ */
-.stat-card-dashboard {
-  background: #ffffff;
-  border-radius: 0.75rem;
-  padding: 0.875rem 1rem;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-  cursor: default;
-}
-
-.stat-card-dashboard-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 0.625rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-card-dashboard-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
-}
-
-.stat-card-dashboard-label {
-  margin: 0;
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-}
-
-.stat-card-dashboard-value {
-  margin: 0;
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-}
-
-.stat-card-dashboard-change {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin-top: 0.2rem;
-}
-
-.stat-card-dashboard-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 9999px;
-}
-
-.stat-card-dashboard-since {
-  font-size: 0.7rem;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-@media (max-width: 640px) {
-  .stat-card-dashboard {
-    padding: 0.75rem;
-  }
-  .stat-card-dashboard-value {
-    font-size: 1.25rem;
-  }
-}
-
-/* Dashboard stats grid responsive */
-.dashboard-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-
-@media (max-width: 1024px) {
-  .dashboard-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .dashboard-stats-grid {
-    grid-template-columns: 1fr;
-  }
-  .stat-card-dashboard-value {
-    font-size: 1.25rem;
-  }
-}
-
-/* ════════════════════════════════════════
-   DASHBOARD CHART GRIDS RESPONSIVE
-════════════════════════════════════════ */
-.dashboard-chart-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 24px;
-}
-
-@media (max-width: 1024px) {
-  .dashboard-chart-grid {
-    grid-template-columns: 1fr;
-  }
-}
 
 /* ============================= */
 /* Company Page CRM UI */
@@ -1555,29 +1457,14 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-/* ════════════════════════════════════════
-   DASHBOARD STAT CARDS
-════════════════════════════════════════ */
-/* .stat-card-dashboard {
-  background: #ffffff;
-  border-radius: 0.75rem;
-  padding: 0.875rem 1rem;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.stat-card-dashboard-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 0.625rem;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-} */
+  font-size: 20px;
+  background: #f0edff;
+  color: #6c5dd3;
+}
 
 .company-stat-content {
   display: flex;
@@ -1622,6 +1509,7 @@ body {
 
 
 /* Header */
+
 .company-page-header {
   display: flex;
   justify-content: space-between;
@@ -1954,6 +1842,7 @@ body {
 }
 .company-detail-card {
   background: white;
+  padding-bottom: 40px;
   border-radius: 16px;
   padding: 30px;
   box-shadow: 0 8px 25px rgba(0,0,0,0.06);
@@ -1995,6 +1884,7 @@ body {
   grid-template-columns: repeat(2, 1fr);
   gap: 25px;
 }
+
 @media(max-width:640px){
 
 .company-detail-card{
@@ -2031,6 +1921,7 @@ body {
 }
 /* ==========================================
    Company Search Toolbar
+========================================== */
 
 .company-toolbar {
   display: flex;
@@ -2099,6 +1990,7 @@ body {
 }
 /* ==========================================
    Company Filters
+========================================== */
 
 .filter-group {
   display: flex;
@@ -2148,6 +2040,7 @@ body {
 }
 /* ================================
    Company Pagination
+================================ */
 
 .company-pagination {
   margin-top: 20px;
@@ -2225,6 +2118,7 @@ body {
 }
 /* ================================
    Company Form Validation
+================================ */
 
 .form-field-error {
   display: block;
@@ -2246,6 +2140,7 @@ body {
 
 /* ================================
    Company Form Loading
+================================ */
 
 .save-company-btn:disabled {
   opacity: 0.65;
@@ -2394,9 +2289,191 @@ padding:12px;
 }
 
 }
+
 /* Stat icon variants — reused colors, no new hex codes */
 .stat-icon-purple { background: #F0EDFF; color: #6C5DD3; }
 .stat-icon-teal   { background: #E6FBFC; color: #0891B2; }
 .stat-icon-green  { background: #F0FDF4; color: #16A34A; }
 .stat-icon-orange { background: #FEF3C7; color: #F59E0B; }
+
+/* ════════════════════════════════════════
+   DASHBOARD STAT CARDS
+════════════════════════════════════════ */
+.stat-card-dashboard {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: default;
+}
+
+.stat-card-dashboard-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 0.625rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 20px;
+  background: #f0edff;
+  color: #6c5dd3;
+}
+
+.stat-card-dashboard-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.stat-card-dashboard-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.stat-card-dashboard-value {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.stat-card-dashboard-change {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+}
+
+.stat-card-dashboard-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 9999px;
+}
+
+.stat-card-dashboard-since {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .stat-card-dashboard {
+    padding: 0.75rem;
+  }
+  .stat-card-dashboard-value {
+    font-size: 1.25rem;
+  }
+}
+
+/* Dashboard stats grid responsive */
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .stat-card-dashboard-value {
+    font-size: 1.25rem;
+  }
+}
+
+/* ════════════════════════════════════════
+   DASHBOARD CHART GRIDS RESPONSIVE
+════════════════════════════════════════ */
+.dashboard-chart-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+/* ════════════════════════════════════════
+   COMPANY DETAIL — refined info grid
+════════════════════════════════════════ */
+.company-page > .page-header {
+  margin-bottom: 24px;
+  align-items: center;
+}
+
+.company-detail-card {
+  transition: box-shadow 0.15s ease;
+}
+
+.company-profile h2 {
+  margin: 0 0 8px;
+}
+
+.company-info-item {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #FAFAFC;
+  border: 1px solid #F0F0F5;
+}
+
+.company-info-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6B7280;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.company-info-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.company-info-item p {
+  margin: 8px 0 0;
+  color: #1F2937;
+  font-size: 15px;
+}
+
+.company-info-item p a {
+  color: #6C5DD3;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.company-info-item p a:hover {
+  text-decoration: underline;
+}
+
+.company-info-grid {
+  gap: 14px;
 }
