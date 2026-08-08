@@ -115,7 +115,7 @@ export default function DashboardPage() {
         {/* Top Performers */}
         <TopPerformers performers={widgetPerformers} />
 
-        <SalesPipeline stages={pipeline.stages} deals={[]} />
+        
 
       </div>
     </DashboardLayout>
