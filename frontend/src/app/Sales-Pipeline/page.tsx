@@ -1,19 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import * as XLSX from "xlsx";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import {
-  fetchPipelinePerformance,
-  fetchPipelineStageDeals,
-  fetchPipelineStages,
-  fetchPipelineSummary,
-  pipelineStageConfig,
-  PipelinePerformance,
-  PipelineStageDeal,
-  PipelineSummary,
-  StageDistribution,
-} from "@/lib/dashboard";
 import { 
   PieChart, 
   Pie, 
@@ -40,67 +29,68 @@ import {
   X,
   TrendingUp
 } from "lucide-react";
-import ThemeLoader from "@/components/ui/ThemeLoader";
 
-const DEAL_STAGES = [
-  "lead",
-  "qualified",
-  "proposal",
-  "negotiation",
-  "closed_won",
-  "closed_lost",
+// --- Stages Configuration ---
+const stagesConfig = [
+  { name: "Prospecting", color: "bg-purple-500", hex: "#a855f7", stageBg: "bg-purple-100 text-purple-700" },
+  { name: "Qualification", color: "bg-blue-500", hex: "#3b82f6", stageBg: "bg-blue-100 text-blue-700" },
+  { name: "Proposal", color: "bg-sky-400", hex: "#38bdf8", stageBg: "bg-sky-100 text-sky-700" },
+  { name: "Negotiation", color: "bg-amber-500", hex: "#f59e0b", stageBg: "bg-amber-100 text-amber-700" },
+  { name: "Closed Won", color: "bg-emerald-500", hex: "#10b981", stageBg: "bg-emerald-100 text-emerald-700" },
+  { name: "Closed Lost", color: "bg-rose-500", hex: "#f43f5e", stageBg: "bg-rose-100 text-rose-700" },
+];
+
+// --- Dynamic 48 Deals Mock Data Generation ---
+const customersList = [
+  { name: "Zain Raza", company: "Alpha Dynamics", dealName: "ERP Implementation" },
+  { name: "Fatima Noor", company: "TechVision Pvt Ltd", dealName: "Data Analytics Suite" },
+  { name: "Ayesha Siddiqui", company: "BrightEdge Systems", dealName: "Security Audit" },
+  { name: "Sara Khan", company: "Global Enterprises", dealName: "Enterprise Solution" },
+  { name: "Ahmed Ali", company: "Nexus Corp", dealName: "Cloud Migration" },
+];
+
+const initialDeals = Array.from({ length: 48 }, (_, i) => {
+  const baseCustomer = customersList[i % customersList.length];
+  const stg = stagesConfig[i % stagesConfig.length];
+  const day = (i % 28) + 1;
+  const month = i % 2 === 0 ? "05" : "06";
+  const closeDate = `2024-${month}-${day < 10 ? "0" + day : day}`;
+  const value = (i + 1) * 3500 + 5000;
+
+  return {
+    id: i + 1,
+    name: i < 5 ? baseCustomer.dealName : `${baseCustomer.dealName} #${Math.floor(i / 5) + 1}`,
+    customer: baseCustomer.name,
+    company: baseCustomer.company,
+    value: value,
+    stage: stg.name,
+    stageBg: stg.stageBg,
+    closeDate: closeDate,
+    avatarBg: i % 2 === 0 ? "bg-indigo-600" : "bg-blue-600",
+  };
+});
+
+// Monthly Performance Graph Data
+const monthlyPerformanceData = [
+  { month: "Jan", created: 25, closed: 12, revenue: 50000 },
+  { month: "Feb", created: 30, closed: 18, revenue: 75000 },
+  { month: "Mar", created: 42, closed: 25, revenue: 110000 },
+  { month: "Apr", created: 48, closed: 30, revenue: 135000 },
+  { month: "May", created: 58, closed: 38, revenue: 180000 },
+  { month: "Jun", created: 50, closed: 32, revenue: 230000 },
 ];
 
 export default function SalesPipelinePage() {
-  const [deals, setDeals] = useState<PipelineStageDeal[]>([]);
-  const [summary, setSummary] = useState<PipelineSummary | null>(null);
-  const [stageData, setStageData] = useState<StageDistribution[]>([]);
-  const [performance, setPerformance] = useState<PipelinePerformance | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [deals] = useState(initialDeals);
+  const [startDate, setStartDate] = useState("2024-05-01");
+  const [endDate, setEndDate] = useState("2024-05-31");
   const [isFiltered, setIsFiltered] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showAllDeals, setShowAllDeals] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const appliedStart = isFiltered ? startDate : "";
-  const appliedEnd = isFiltered ? endDate : "";
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [summaryRes, stagesRes, perfRes, ...stageDealRes] = await Promise.all([
-          fetchPipelineSummary(appliedStart || undefined, appliedEnd || undefined),
-          fetchPipelineStages(appliedStart || undefined, appliedEnd || undefined),
-          fetchPipelinePerformance(new Date().getFullYear()),
-          ...DEAL_STAGES.map((stage) => fetchPipelineStageDeals(stage)),
-        ]);
-        if (cancelled) return;
-        setSummary(summaryRes);
-        setStageData(stagesRes);
-        setPerformance(perfRes);
-        setDeals(stageDealRes.flat());
-      } catch (err) {
-        if (!cancelled) setError((err as Error).message);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [appliedStart, appliedEnd, refreshKey]);
 
   const filteredDeals = deals.filter((deal) => {
     if (!isFiltered || !startDate || !endDate) return true;
-    const close = deal.expected_close_date || "";
-    return close >= startDate && close <= endDate;
+    return deal.closeDate >= startDate && deal.closeDate <= endDate;
   });
 
   const formatDateLabel = (dateStr: string) => {
@@ -109,68 +99,70 @@ export default function SalesPipelinePage() {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
-  const dateButtonLabel = isFiltered && startDate && endDate
-    ? `${formatDateLabel(startDate)} – ${formatDateLabel(endDate)}, ${endDate.slice(0, 4)}`
-    : "All Deals";
+  const dateButtonLabel = isFiltered && startDate && endDate 
+    ? `${formatDateLabel(startDate)} – ${formatDateLabel(endDate)}, 2024`
+    : "May 1 – May 31, 2024";
 
-  const totalPipelineValue = Number(summary?.total_pipeline_value ?? 0);
-  const totalDealsCount = summary?.total_deals ?? 0;
-  const activeDealsCount = summary?.active_deals ?? 0;
-  const closedWonCount = summary?.closed_won ?? 0;
-  const closedLostCount = summary?.closed_lost ?? 0;
+  const totalPipelineValue = filteredDeals.reduce((sum, d) => sum + d.value, 0);
+  const totalDealsCount = filteredDeals.length;
+  const activeDealsCount = filteredDeals.filter(d => d.stage !== "Closed Won" && d.stage !== "Closed Lost").length;
+  const closedWonCount = filteredDeals.filter(d => d.stage === "Closed Won").length;
+  const closedLostCount = filteredDeals.filter(d => d.stage === "Closed Lost").length;
 
   const stats = [
-    {
-      label: "TOTAL DEALS",
-      value: totalDealsCount.toString(),
-      change: "+14.3%",
-      up: true,
-      icon: Users,
-      iconColor: "text-indigo-600 bg-indigo-50/80",
+    { 
+      label: "TOTAL DEALS", 
+      value: totalDealsCount.toString(), 
+      change: "+14.3%", 
+      up: true, 
+      icon: Users, 
+      iconColor: "text-indigo-600 bg-indigo-50/80" 
     },
-    {
-      label: "TOTAL PIPELINE VALUE",
-      value: `$${totalPipelineValue.toLocaleString()}`,
-      change: "+12.5%",
-      up: true,
-      icon: DollarSign,
-      iconColor: "text-emerald-600 bg-emerald-50/80",
+    { 
+      label: "TOTAL PIPELINE VALUE", 
+      value: `$${totalPipelineValue.toLocaleString()}`, 
+      change: "+12.5%", 
+      up: true, 
+      icon: DollarSign, 
+      iconColor: "text-emerald-600 bg-emerald-50/80" 
     },
-    {
-      label: "ACTIVE DEALS",
-      value: activeDealsCount.toString(),
-      change: "+7.8%",
-      up: true,
-      icon: UserCheck,
-      iconColor: "text-sky-600 bg-sky-50/80",
+    { 
+      label: "ACTIVE DEALS", 
+      value: activeDealsCount.toString(), 
+      change: "+7.8%", 
+      up: true, 
+      icon: UserCheck, 
+      iconColor: "text-sky-600 bg-sky-50/80" 
     },
-    {
-      label: "CLOSED WON",
-      value: closedWonCount.toString(),
-      change: "+16.7%",
-      up: true,
-      icon: Handshake,
-      iconColor: "text-amber-600 bg-amber-50/80",
+    { 
+      label: "CLOSED WON", 
+      value: closedWonCount.toString(), 
+      change: "+16.7%", 
+      up: true, 
+      icon: Handshake, 
+      iconColor: "text-amber-600 bg-amber-50/80" 
     },
-    {
-      label: "CLOSED LOST",
-      value: closedLostCount.toString(),
-      change: "-4.8%",
-      up: false,
-      icon: XCircle,
-      iconColor: "text-rose-600 bg-rose-50/80",
+    { 
+      label: "CLOSED LOST", 
+      value: closedLostCount.toString(), 
+      change: "-4.8%", 
+      up: false, 
+      icon: XCircle, 
+      iconColor: "text-rose-600 bg-rose-50/80" 
     },
   ];
 
-  const stages = stageData.map((s) => {
-    const config = pipelineStageConfig(s.stage);
-    const valueNum = Number(s.total_value);
+  const stages = stagesConfig.map((stg) => {
+    const stageDeals = filteredDeals.filter(d => d.stage === stg.name);
+    const count = stageDeals.length;
+    const valueNum = stageDeals.reduce((sum, d) => sum + d.value, 0);
+    const percentage = totalPipelineValue > 0 ? ((valueNum / totalPipelineValue) * 100).toFixed(1) + "%" : "0.0%";
     return {
-      ...config,
-      count: s.deal_count,
+      ...stg,
+      count,
       value: `$${valueNum.toLocaleString()}`,
-      percentage: s.percentage + "%",
-      rawVal: valueNum,
+      percentage,
+      rawVal: valueNum
     };
   });
 
@@ -179,19 +171,6 @@ export default function SalesPipelinePage() {
     value: stg.rawVal > 0 ? stg.rawVal : 1,
     color: stg.hex,
   }));
-
-  const monthlyPerformanceData = performance
-    ? performance.months.map((m, i) => ({
-        month: m,
-        created: performance.deals_created[i] ?? 0,
-        closed: performance.deals_closed[i] ?? 0,
-        revenue: performance.revenue_generated[i] ?? 0,
-      }))
-    : [];
-
-  const totalCreated = monthlyPerformanceData.reduce((sum, m) => sum + m.created, 0);
-  const totalClosed = monthlyPerformanceData.reduce((sum, m) => sum + m.closed, 0);
-  const totalRevenue = monthlyPerformanceData.reduce((sum, m) => sum + m.revenue, 0);
 
   const handleShowAll = () => {
     setIsFiltered(false);
@@ -208,9 +187,9 @@ export default function SalesPipelinePage() {
       "Deal Name": deal.name,
       "Customer": deal.customer,
       "Company": deal.company,
-      "Deal Value ($)": Number(deal.value),
+      "Deal Value ($)": deal.value,
       "Stage": deal.stage,
-      "Expected Close Date": deal.expected_close_date,
+      "Expected Close Date": deal.closeDate,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -222,39 +201,7 @@ export default function SalesPipelinePage() {
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-6 p-6 bg-slate-50 min-h-screen relative">
-
-        {loading && !summary && (
-          <ThemeLoader label="Loading pipeline data..." minHeight={260} />
-        )}
-
-        {error && !summary && (
-          <div className="not-found-state">
-            <p style={{ fontSize: "3rem", margin: "0 0 12px" }}>⚠️</p>
-            <h2>Pipeline unavailable</h2>
-            <p>{error}</p>
-            <button className="btn-primary" onClick={() => setRefreshKey((k) => k + 1)}>Retry</button>
-          </div>
-        )}
-
-        {(summary || (!loading && !error)) && (
-          <>
-
-        {loading && (
-          <div className="text-sm text-slate-500 animate-pulse">Refreshing pipeline data…</div>
-        )}
-
-        {error && (
-          <div className="flex items-center justify-between gap-4 text-sm text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">
-            <span>Failed to refresh pipeline data: {error}</span>
-            <button
-              onClick={() => setRefreshKey((k) => k + 1)}
-              className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-100"
-            >
-              Retry
-            </button>
-          </div>
-        )}
-
+        
         {/* Header Section */}
         <div className="flex justify-between items-center">
           <div>
@@ -449,20 +396,20 @@ export default function SalesPipelinePage() {
                     filteredDeals.map((deal) => (
                       <tr key={deal.id} className="hover:bg-slate-50/50">
                         <td className="py-3 font-semibold text-slate-800 flex items-center gap-2">
-                          <span className={`w-6 h-6 text-[10px] font-bold text-white rounded-full flex items-center justify-center shrink-0 ${deal.id % 2 === 0 ? "bg-indigo-600" : "bg-blue-600"}`}>
+                          <span className={`w-6 h-6 text-[10px] font-bold text-white rounded-full flex items-center justify-center shrink-0 ${deal.avatarBg}`}>
                             {deal.customer.split(' ').map(n => n[0]).join('')}
                           </span>
                           {deal.name}
                         </td>
                         <td className="py-3 text-slate-600">{deal.customer}</td>
                         <td className="py-3 text-slate-500">{deal.company}</td>
-                        <td className="py-3 font-bold text-slate-800">${Number(deal.value).toLocaleString()}</td>
+                        <td className="py-3 font-bold text-slate-800">${deal.value.toLocaleString()}</td>
                         <td className="py-3">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-medium ${pipelineStageConfig(deal.stage).stageBg}`}>
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-medium ${deal.stageBg}`}>
                             {deal.stage}
                           </span>
                         </td>
-                        <td className="py-3 text-right text-slate-500">{deal.expected_close_date}</td>
+                        <td className="py-3 text-right text-slate-500">{deal.closeDate}</td>
                       </tr>
                     ))
                   ) : (
@@ -531,7 +478,7 @@ export default function SalesPipelinePage() {
             <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
               <div>
                 <span className="text-xs text-slate-500 font-medium">Deals Created</span>
-                <div className="text-xl font-bold text-slate-800 mt-1">{totalCreated.toLocaleString()}</div>
+                <div className="text-xl font-bold text-slate-800 mt-1">129</div>
                 <span className="text-xs text-emerald-600 font-semibold">▲ 18.2% <span className="text-[10px] text-slate-400 font-normal">vs last year</span></span>
               </div>
               <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600">
@@ -542,7 +489,7 @@ export default function SalesPipelinePage() {
             <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
               <div>
                 <span className="text-xs text-slate-500 font-medium">Deals Closed</span>
-                <div className="text-xl font-bold text-slate-800 mt-1">{totalClosed.toLocaleString()}</div>
+                <div className="text-xl font-bold text-slate-800 mt-1">93</div>
                 <span className="text-xs text-emerald-600 font-semibold">▲ 15.4% <span className="text-[10px] text-slate-400 font-normal">vs last year</span></span>
               </div>
               <div className="p-3 bg-sky-50 rounded-xl text-sky-600">
@@ -553,7 +500,7 @@ export default function SalesPipelinePage() {
             <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
               <div>
                 <span className="text-xs text-slate-500 font-medium">Revenue Generated</span>
-                <div className="text-xl font-bold text-slate-800 mt-1">${totalRevenue.toLocaleString()}</div>
+                <div className="text-xl font-bold text-slate-800 mt-1">$679,000</div>
                 <span className="text-xs text-emerald-600 font-semibold">▲ 22.7% <span className="text-[10px] text-slate-400 font-normal">vs last year</span></span>
               </div>
               <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600">
@@ -563,9 +510,6 @@ export default function SalesPipelinePage() {
           </div>
 
         </div>
-
-          </>
-        )}
 
       </div>
     </DashboardLayout>
