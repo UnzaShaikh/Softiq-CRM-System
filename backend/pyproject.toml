@@ -20,4 +20,6 @@ dependencies = [
     "i>=2.1.0",
     "django-filter==25.1",
     "dj-database-url>=3.1.2",
+    "openpyxl>=3.1.5",
+    "reportlab>=5.0.0",
 ]

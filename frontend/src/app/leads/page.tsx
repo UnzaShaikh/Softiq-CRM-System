@@ -9,6 +9,7 @@ import Pagination from "@/components/customers/Pagination";
 import { ApiLeadList, toLead, Lead, LeadStatus } from "@/data/leads";
 import { apiRequest, getAccessToken } from "@/lib/api";
 import { Target, Phone, Trophy, Sparkles } from "lucide-react";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 
 const PAGE_SIZE = 10;
 type FilterStatus = "All" | LeadStatus;
@@ -164,7 +165,7 @@ export default function LeadsPage() {
           </div>
 
           {loading ? (
-            <div className="loading-state">Loading leads…</div>
+            <ThemeLoader label="Loading leads..." minHeight={220} />
           ) : error ? (
             <div className="empty-state">
               <p className="empty-state-title" style={{ color: "var(--error)" }}>{error}</p>

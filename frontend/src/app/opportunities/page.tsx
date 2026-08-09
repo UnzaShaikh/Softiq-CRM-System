@@ -1,68 +1,143 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import OpportunityTable from "@/components/opportunities/OpportunityTable";
 import SearchBar from "@/components/customers/SearchBar";
 import Pagination from "@/components/customers/Pagination";
-import opportunitiesData, { Opportunity, OpportunityStage, OpportunityStatus } from "@/data/opportunities";
+import {
+  ApiOpportunityList,
+  Opportunity,
+  OpportunityStage,
+  OpportunityStatus,
+  toOpportunity,
+  STAGE_TO_API,
+  STATUS_TO_API,
+} from "@/data/opportunities";
+import { apiRequest, getAccessToken, emitDataChanged } from "@/lib/api";
 import { Target, CheckCircle, Trophy, DollarSign, BarChart2 } from "lucide-react";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 
-const ITEMS_PER_PAGE = 8;
+const PAGE_SIZE = 10;
 type FilterStage = "All" | OpportunityStage;
 type FilterStatus = "All" | OpportunityStatus;
 const ALL_STAGES: OpportunityStage[] = ["Prospecting", "Qualification", "Proposal", "Negotiation", "Closed Won", "Closed Lost"];
 const ALL_STATUSES: OpportunityStatus[] = ["Active", "On Hold", "Inactive"];
 
+interface OpportunityStats {
+  total: number;
+  active: number;
+  closedWon: number;
+  pipelineValue: number;
+  avgProbability: number;
+}
+
 export default function OpportunitiesPage() {
   const router = useRouter();
-  const [opportunities, setOpportunities] = useState<Opportunity[]>(opportunitiesData);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [stats, setStats] = useState<OpportunityStats>({ total: 0, active: 0, closedWon: 0, pipelineValue: 0, avgProbability: 0 });
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState<FilterStage>("All");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [deleteModal, setDeleteModal] = useState<Opportunity | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    return opportunities.filter((o) => {
-      const matchSearch = !q || o.name.toLowerCase().includes(q) || o.customerName.toLowerCase().includes(q) || o.company.toLowerCase().includes(q);
-      const matchStage = stageFilter === "All" || o.stage === stageFilter;
-      const matchStatus = statusFilter === "All" || o.status === statusFilter;
-      return matchSearch && matchStage && matchStatus;
-    });
-  }, [opportunities, search, stageFilter, statusFilter]);
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginated = useMemo(() => filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [filtered, currentPage]);
+  useEffect(() => {
+    let cancelled = false;
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    const stageQ = stageFilter === "All" ? undefined : STAGE_TO_API[stageFilter];
+    const statusQ = statusFilter === "All" ? undefined : STATUS_TO_API[statusFilter];
+    if (stageQ) params.set("stage", stageQ);
+    if (statusQ) params.set("status", statusQ);
+    params.set("page", String(currentPage));
+
+    const run = async () => {
+      try {
+        const data = await apiRequest<ApiOpportunityList>(`/api/opportunities/?${params.toString()}`);
+        if (cancelled) return;
+        setOpportunities(data.results.map(toOpportunity));
+        setTotalCount(data.count);
+        setError(null);
+        const maxPage = Math.max(1, Math.ceil(data.count / PAGE_SIZE));
+        if (currentPage > maxPage) setCurrentPage(maxPage);
+      } catch (err) {
+        if (cancelled) return;
+        setError((err as Error).message);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void run();
+    return () => { cancelled = true; };
+  }, [search, stageFilter, statusFilter, currentPage, refreshKey, router]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchStats = async () => {
+      try {
+        const s = await apiRequest<{
+          total_opportunities: number;
+          active_opportunities: number;
+          closed_won: number;
+          pipeline_value: string;
+          average_probability: number;
+        }>("/api/opportunities/statistics/");
+        if (cancelled) return;
+        setStats({
+          total: s.total_opportunities,
+          active: s.active_opportunities,
+          closedWon: s.closed_won,
+          pipelineValue: Number(s.pipeline_value),
+          avgProbability: s.average_probability,
+        });
+      } catch { /* keep last known values */ }
+    };
+    void fetchStats();
+    return () => { cancelled = true; };
+  }, [refreshKey]);
 
   function handleSearch(val: string) { setSearch(val); setCurrentPage(1); }
+  function handleStageFilter(val: FilterStage) { setStageFilter(val); setCurrentPage(1); }
+  function handleStatusFilter(val: FilterStatus) { setStatusFilter(val); setCurrentPage(1); }
 
   function showToast(msg: string) {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 3000);
   }
 
-  function handleDeleteConfirmed() {
+  async function handleDeleteConfirmed() {
     if (!deleteModal) return;
-    setOpportunities((prev) => prev.filter((o) => o.id !== deleteModal.id));
-    showToast(`"${deleteModal.name}" has been deleted.`);
-    setDeleteModal(null);
+    setDeleting(true);
+    try {
+      await apiRequest(`/api/opportunities/${deleteModal.id}/`, { method: "DELETE" });
+      emitDataChanged();
+      showToast(`"${deleteModal.name}" has been deleted.`);
+      setDeleteModal(null);
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      showToast(`Failed to delete: ${(err as Error).message}`);
+    } finally {
+      setDeleting(false);
+    }
   }
 
-  const totalValue = opportunities.reduce((s, o) => s + o.dealValue, 0);
-  const activeCount = opportunities.filter((o) => o.status === "Active").length;
-  const closedWon = opportunities.filter((o) => o.stage === "Closed Won").length;
-  const avgProbability = opportunities.length > 0 ? Math.round(opportunities.reduce((s, o) => s + o.probability, 0) / opportunities.length) : 0;
-
   const STAT_CARDS = [
-    { label: "Total Opportunities", value: opportunities.length,              icon: <Target size={20} />,      color: "#4f46e5", bg: "#eef2ff" },
-    { label: "Active",              value: activeCount,                       icon: <CheckCircle size={20} />, color: "#16a34a", bg: "#dcfce7" },
-    { label: "Closed Won",          value: closedWon,                         icon: <Trophy size={20} />,      color: "#d97706", bg: "#fef3c7" },
-    { label: "Pipeline Value",      value: `$${totalValue.toLocaleString()}`, icon: <DollarSign size={20} />,  color: "#0891b2", bg: "#ecfeff" },
-    { label: "Avg Probability",     value: `${avgProbability}%`,              icon: <BarChart2 size={20} />,   color: "#7c3aed", bg: "#faf5ff" },
+    { label: "Total Opportunities", value: String(stats.total),              icon: <Target size={20} />,      color: "#4f46e5", bg: "#eef2ff" },
+    { label: "Active",              value: String(stats.active),             icon: <CheckCircle size={20} />, color: "#16a34a", bg: "#dcfce7" },
+    { label: "Closed Won",          value: String(stats.closedWon),          icon: <Trophy size={20} />,      color: "#d97706", bg: "#fef3c7" },
+    { label: "Pipeline Value",      value: `$${stats.pipelineValue.toLocaleString()}`, icon: <DollarSign size={20} />, color: "#0891b2", bg: "#ecfeff" },
+    { label: "Avg Probability",     value: `${stats.avgProbability}%`,       icon: <BarChart2 size={20} />,   color: "#7c3aed", bg: "#faf5ff" },
   ];
 
   return (
@@ -83,13 +158,26 @@ export default function OpportunitiesPage() {
           </button>
         </div>
 
+        {/* Error banner */}
+        {error && (
+          <div className="msg-error" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+            <span>Failed to load opportunities: {error}</span>
+            <button
+              onClick={() => setRefreshKey((k) => k + 1)}
+              style={{ flexShrink: 0, padding: "6px 14px", borderRadius: "8px", border: "1px solid rgba(239,68,68,0.3)", background: "#fff", color: "#b91c1c", fontWeight: 600, fontSize: "0.8125rem", cursor: "pointer", fontFamily: "inherit" }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="stats-grid">
           {STAT_CARDS.map((card) => (
             <div key={card.label} className="stat-card">
               <div className="stat-card-icon" style={{ background: card.bg }}>{card.icon}</div>
               <div>
-                <p className="stat-card-value" style={{ color: card.color }}>{card.value}</p>
+                <p className="stat-card-value" style={{ color: card.color }}>{loading && !error ? "…" : card.value}</p>
                 <p className="stat-card-label">{card.label}</p>
               </div>
             </div>
@@ -101,11 +189,11 @@ export default function OpportunitiesPage() {
           <div className="table-toolbar" style={{ flexDirection: "column", alignItems: "stretch" }}>
             <div className="table-toolbar-row">
               <div className="table-search-wrap">
-                <SearchBar value={search} onChange={handleSearch} placeholder="Search by name, customer, or company…" resultCount={filtered.length} />
+                <SearchBar value={search} onChange={handleSearch} placeholder="Search by name, customer, or company…" resultCount={totalCount} />
               </div>
               <div className="filter-tabs">
                 {(["All", ...ALL_STATUSES] as FilterStatus[]).map((tab) => (
-                  <button key={tab} className={`filter-tab${statusFilter === tab ? " active" : ""}`} onClick={() => { setStatusFilter(tab); setCurrentPage(1); }}>
+                  <button key={tab} className={`filter-tab${statusFilter === tab ? " active" : ""}`} onClick={() => handleStatusFilter(tab)}>
                     {tab}
                   </button>
                 ))}
@@ -114,24 +202,30 @@ export default function OpportunitiesPage() {
             <div className="stage-filters">
               <span className="stage-filter-label">Stage:</span>
               {(["All", ...ALL_STAGES] as FilterStage[]).map((tab) => (
-                <button key={tab} className={`stage-tab${stageFilter === tab ? " active" : ""}`} onClick={() => { setStageFilter(tab); setCurrentPage(1); }}>
+                <button key={tab} className={`stage-tab${stageFilter === tab ? " active" : ""}`} onClick={() => handleStageFilter(tab)}>
                   {tab}
                 </button>
               ))}
             </div>
           </div>
 
-          <OpportunityTable
-            opportunities={paginated}
-            onView={(o) => router.push(`/opportunities/${o.id}`)}
-            onEdit={(o) => router.push(`/opportunities/${o.id}/edit`)}
-            onDelete={setDeleteModal}
-          />
+          {loading && !error ? (
+            <ThemeLoader label="Loading opportunities..." minHeight={200} />
+          ) : (
+            <>
+              <OpportunityTable
+                opportunities={opportunities}
+                onView={(o) => router.push(`/opportunities/${o.id}`)}
+                onEdit={(o) => router.push(`/opportunities/${o.id}/edit`)}
+                onDelete={setDeleteModal}
+              />
 
-          {filtered.length > 0 && (
-            <div className="pagination-wrap">
-              <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={filtered.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setCurrentPage} />
-            </div>
+              {totalCount > 0 && (
+                <div className="pagination-wrap">
+                  <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalCount} itemsPerPage={PAGE_SIZE} onPageChange={setCurrentPage} />
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -149,8 +243,10 @@ export default function OpportunitiesPage() {
             <h2 className="modal-title">Delete Opportunity</h2>
             <p className="modal-text">Are you sure you want to delete <strong style={{ color: "var(--foreground)" }}>{deleteModal.name}</strong>? This cannot be undone.</p>
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => setDeleteModal(null)}>Cancel</button>
-              <button className="btn-danger" onClick={handleDeleteConfirmed}>Delete</button>
+              <button className="btn-secondary" onClick={() => setDeleteModal(null)} disabled={deleting}>Cancel</button>
+              <button className="btn-danger" onClick={handleDeleteConfirmed} disabled={deleting}>
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
             </div>
           </div>
         </div>

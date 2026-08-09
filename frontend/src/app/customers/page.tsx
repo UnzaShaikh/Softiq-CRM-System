@@ -9,6 +9,7 @@ import Pagination from "@/components/customers/Pagination";
 import { Customer, CustomerStatus, ApiCustomerList, toCustomer } from "@/data/customers";
 import { apiRequest, getAccessToken, emitDataChanged } from "@/lib/api";
 import { Users, UserCheck, PauseCircle, Zap } from "lucide-react";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 
 const PAGE_SIZE = 10;
 type FilterStatus = "All" | CustomerStatus;
@@ -162,7 +163,7 @@ export default function CustomersPage() {
           </div>
 
           {loading ? (
-            <div className="loading-state">Loading customers…</div>
+            <ThemeLoader label="Loading customers..." minHeight={220} />
           ) : error ? (
             <div className="empty-state">
               <p className="empty-state-title" style={{ color: "var(--error)" }}>{error}</p>

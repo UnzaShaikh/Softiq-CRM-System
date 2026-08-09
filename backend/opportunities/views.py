@@ -1,10 +1,16 @@
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Sum, Avg, Count
 
-from deals.models import Deal
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, status, viewsets
+from rest_framework.decorators import (
+    api_view,
+    permission_classes,
+)
+
+from .models import Opportunity
+
 from customers.models import Customer
 from .serializers import (
     OpportunityStatisticsSerializer,
@@ -12,6 +18,7 @@ from .serializers import (
     CustomerDropdownSerializer,
     CompanyDropdownSerializer,
     OpportunitySummarySerializer,
+    OpportunitySerializer,
 )
 
 
@@ -20,6 +27,8 @@ ACTIVE_STAGES = ["lead", "qualified", "proposal", "negotiation"]
 
 STATUS_OPTIONS = [
     {"value": "active", "label": "Active"},
+    {"value": "on_hold", "label": "On Hold"},
+    {"value": "inactive", "label": "Inactive"},
     {"value": "closed_won", "label": "Closed Won"},
     {"value": "closed_lost", "label": "Closed Lost"},
 ]
@@ -27,21 +36,32 @@ STATUS_OPTIONS = [
 
 def _build_stats():
     """Shared aggregation logic used by both statistics and summary endpoints."""
-    total = Deal.objects.count()
+    total = Opportunity.objects.count()
 
     if not total:
         return {
-            "total_opportunities": 15,
-            "active_opportunities": 10,
-            "closed_won": 2,
-            "pipeline_value": 1473000,
-            "average_probability": 55,
+            "total_opportunities": 0,
+            "active_opportunities": 0,
+            "closed_won": 0,
+            "pipeline_value": 0,
+            "average_probability": 0,
         }
 
-    active = Deal.objects.filter(stage__in=ACTIVE_STAGES).count()
-    closed_won = Deal.objects.filter(stage="closed_won").count()
-    pipeline_value = Deal.objects.aggregate(total=Sum("value"))["total"] or 0
-    avg_probability = Deal.objects.aggregate(avg=Avg("probability"))["avg"] or 0
+    active = Opportunity.objects.filter(
+        status="active"
+    ).count()
+
+    closed_won = Opportunity.objects.filter(
+        stage="closed_won"
+    ).count()
+
+    pipeline_value = Opportunity.objects.aggregate(
+        total=Sum("value")
+    )["total"] or 0
+
+    avg_probability = Opportunity.objects.aggregate(
+        avg=Avg("probability")
+    )["avg"] or 0
 
     return {
         "total_opportunities": total,
@@ -83,12 +103,9 @@ def opportunity_filters(request):
     total record count for filtering the Opportunity list.
     Falls back to placeholder data if no deals exist.
     """
-    total_records = Deal.objects.count()
+    total_records = Opportunity.objects.count()
 
-    if not total_records:
-        total_records = 15
-
-    stages = [{"value": v, "label": l} for v, l in Deal.STAGE_CHOICES]
+    stages = [{"value": v, "label": l} for v, l in Opportunity.STAGE_CHOICES]
 
     data = {
         "statuses": STATUS_OPTIONS,
@@ -109,10 +126,7 @@ def customers_dropdown(request):
     queryset = Customer.objects.all().order_by("first_name")
 
     if not queryset:
-        data = [
-            {"id": 1, "name": "Sarah Khan", "company": "Global Solutions"},
-            {"id": 2, "name": "Ali Raza", "company": "Innovatech Ltd"},
-        ]
+        data = [{"company": name} for name in queryset]
     else:
         data = [
             {
@@ -148,3 +162,54 @@ def companies_dropdown(request):
 
     serializer = CompanyDropdownSerializer(data, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+class OpportunityViewSet(viewsets.ModelViewSet):
+    """
+    CRUD API for Opportunities.
+    """
+
+    queryset = Opportunity.objects.select_related(
+        "customer",
+        "created_by",
+    ).all()
+
+    serializer_class = OpportunitySerializer
+
+    permission_classes = [IsAuthenticated]
+
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    ]
+
+    filterset_fields = [
+        "status",
+        "stage",
+        "customer",
+    ]
+
+    search_fields = [
+        "name",
+        "customer__first_name",
+        "customer__last_name",
+        "customer__company",
+    ]
+
+    ordering_fields = [
+        "name",
+        "value",
+        "stage",
+        "status",
+        "probability",
+        "expected_close_date",
+        "created_at",
+        "updated_at",
+    ]
+
+    ordering = ["-created_at"]
+
+    def perform_create(self, serializer):
+        serializer.save(
+            created_by=self.request.user
+        )

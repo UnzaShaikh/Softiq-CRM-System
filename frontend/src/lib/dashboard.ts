@@ -431,3 +431,106 @@ export function dealsPipelineToBoardDeals(stages: PipelineStageApi[]): BoardDeal
   }
   return deals;
 }
+
+// ---------------------------------------------------------------------------
+// Sales Pipeline API (used by /Sales-Pipeline)
+// ---------------------------------------------------------------------------
+
+export interface PipelineSummary {
+  total_deals: number;
+  total_pipeline_value: number | string;
+  active_deals: number;
+  closed_won: number;
+  closed_lost: number;
+}
+
+export interface StageDistribution {
+  stage: string;
+  deal_count: number;
+  total_value: number | string;
+  percentage: number;
+}
+
+export interface PipelinePerformance {
+  months: string[];
+  deals_created: number[];
+  deals_closed: number[];
+  revenue_generated: number[];
+}
+
+export interface PipelineStageDeal {
+  id: number;
+  name: string;
+  customer: string;
+  company: string;
+  value: number | string;
+  stage: string;
+  expected_close_date: string;
+  probability: number;
+}
+
+function buildQuery(params: Record<string, string | number | undefined>): string {
+  const q = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== "") q.set(key, String(value));
+  }
+  const s = q.toString();
+  return s ? `?${s}` : "";
+}
+
+export async function fetchPipelineSummary(
+  startDate?: string,
+  endDate?: string
+): Promise<PipelineSummary> {
+  return apiRequest<PipelineSummary>(
+    `/api/pipeline/summary/${buildQuery({ start_date: startDate, end_date: endDate })}`
+  );
+}
+
+export async function fetchPipelineStages(
+  startDate?: string,
+  endDate?: string
+): Promise<StageDistribution[]> {
+  return apiRequest<StageDistribution[]>(
+    `/api/pipeline/stages/${buildQuery({ start_date: startDate, end_date: endDate })}`
+  );
+}
+
+export async function fetchPipelinePerformance(
+  year?: number
+): Promise<PipelinePerformance> {
+  return apiRequest<PipelinePerformance>(
+    `/api/pipeline/performance/${buildQuery({ year })}`
+  );
+}
+
+export async function fetchPipelineStageDeals(
+  stage: string
+): Promise<PipelineStageDeal[]> {
+  return apiRequest<PipelineStageDeal[]>(`/api/pipeline/stages/${stage}/deals/`);
+}
+
+export const PIPELINE_STAGE_CONFIG: Record<
+  string,
+  { name: string; color: string; hex: string; stageBg: string }
+> = {
+  Lead: { name: "Lead", color: "bg-purple-500", hex: "#a855f7", stageBg: "bg-purple-100 text-purple-700" },
+  Qualified: { name: "Qualified", color: "bg-blue-500", hex: "#3b82f6", stageBg: "bg-blue-100 text-blue-700" },
+  Proposal: { name: "Proposal", color: "bg-sky-400", hex: "#38bdf8", stageBg: "bg-sky-100 text-sky-700" },
+  Negotiation: { name: "Negotiation", color: "bg-amber-500", hex: "#f59e0b", stageBg: "bg-amber-100 text-amber-700" },
+  "Closed Won": { name: "Closed Won", color: "bg-emerald-500", hex: "#10b981", stageBg: "bg-emerald-100 text-emerald-700" },
+  "Closed Lost": { name: "Closed Lost", color: "bg-rose-500", hex: "#f43f5e", stageBg: "bg-rose-100 text-rose-700" },
+};
+
+export function pipelineStageConfig(
+  label: string
+): { name: string; color: string; hex: string; stageBg: string } {
+  return (
+    PIPELINE_STAGE_CONFIG[label] ?? {
+      name: label,
+      color: "bg-slate-500",
+      hex: "#64748b",
+      stageBg: "bg-slate-100 text-slate-700",
+    }
+  );
+}
