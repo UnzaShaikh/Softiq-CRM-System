@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import FormField from "@/components/customers/FormField";
 import { OpportunityStage, OpportunityStatus } from "@/data/opportunities";
 
 interface FormValues {
@@ -16,34 +15,44 @@ interface FormErrors {
   stage?: string; probability?: string; expectedCloseDate?: string; status?: string;
 }
 
-const INITIAL: FormValues = { name: "", customerName: "", company: "", dealValue: "", stage: "", probability: "", expectedCloseDate: "", status: "", assignedTo: "", notes: "" };
+const INITIAL: FormValues = {
+  name: "", customerName: "", company: "", dealValue: "",
+  stage: "", probability: "", expectedCloseDate: "",
+  status: "", assignedTo: "", notes: "",
+};
+
+const selectStyle = {
+  padding: "12px 14px", border: "1px solid #E5E7EB", borderRadius: "10px",
+  background: "#fff", color: "#1F2937", fontSize: "14px",
+  fontFamily: "inherit", outline: "none", width: "100%",
+};
 
 export default function AddOpportunityPage() {
   const router = useRouter();
   const [form, setForm] = useState<FormValues>(INITIAL);
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState("");
   const [submitError, setSubmitError] = useState("");
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    if (errors[name as keyof FormErrors]) setErrors((prev) => ({ ...prev, [name]: undefined }));
+    setForm(prev => ({ ...prev, [name]: value }));
+    if (errors[name as keyof FormErrors]) setErrors(prev => ({ ...prev, [name]: undefined }));
   }
 
   function validate(): boolean {
     const e: FormErrors = {};
-    if (!form.name.trim()) e.name = "Opportunity name is required";
-    if (!form.customerName.trim()) e.customerName = "Customer name is required";
-    if (!form.company.trim()) e.company = "Company is required";
-    if (!form.dealValue.trim()) e.dealValue = "Deal value is required";
-    else if (isNaN(Number(form.dealValue)) || Number(form.dealValue) < 0) e.dealValue = "Enter a valid amount";
-    if (!form.stage) e.stage = "Please select a stage";
-    if (!form.probability.trim()) e.probability = "Probability is required";
-    else if (isNaN(Number(form.probability)) || Number(form.probability) < 0 || Number(form.probability) > 100) e.probability = "Enter 0–100";
-    if (!form.expectedCloseDate) e.expectedCloseDate = "Close date is required";
-    if (!form.status) e.status = "Please select a status";
+    if (!form.name.trim()) e.name = "Opportunity name is required.";
+    if (!form.customerName.trim()) e.customerName = "Customer name is required.";
+    if (!form.company.trim()) e.company = "Company is required.";
+    if (!form.dealValue.trim()) e.dealValue = "Deal value is required.";
+    else if (isNaN(Number(form.dealValue)) || Number(form.dealValue) < 0) e.dealValue = "Enter a valid amount.";
+    if (!form.stage) e.stage = "Please select a stage.";
+    if (!form.probability.trim()) e.probability = "Probability is required.";
+    else if (isNaN(Number(form.probability)) || Number(form.probability) < 0 || Number(form.probability) > 100) e.probability = "Enter 0–100.";
+    if (!form.expectedCloseDate) e.expectedCloseDate = "Close date is required.";
+    if (!form.status) e.status = "Please select a status.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -53,68 +62,136 @@ export default function AddOpportunityPage() {
     setSubmitError("");
     if (!validate()) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
+    await new Promise(r => setTimeout(r, 1200));
     setLoading(false);
-    setSuccess(true);
-    setTimeout(() => router.push("/opportunities"), 1800);
+    setSuccess("Opportunity created successfully.");
+    setTimeout(() => router.push("/opportunities"), 1500);
   }
 
   return (
     <DashboardLayout>
-      <div className="form-card">
-        <div style={{ padding: "0 0 0.75rem" }}>
-          <button className="back-btn" onClick={() => router.push("/opportunities")}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-            Back to Opportunities
-          </button>
-          <h1 className="page-title">Add Opportunity</h1>
-          <p className="page-subtitle">Fill in the details to create a new opportunity.</p>
+      <div className="company-page">
+        <div className="company-page-header">
+          <div>
+            <h1 className="company-page-title">Add Opportunity</h1>
+            <p className="company-page-subtitle">Create a new opportunity record.</p>
+          </div>
+          <button type="button" className="filter-btn" onClick={() => router.push("/opportunities")}>← Back</button>
         </div>
 
-        {success && <div className="msg-success"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Opportunity created! Redirecting...</div>}
-        {submitError && <div className="msg-error">{submitError}</div>}
+        <div className="company-form-card">
+          {submitError && <div className="msg-error" role="alert">❌ {submitError}</div>}
+          {success && <div className="msg-success" role="status">✅ {success}</div>}
 
-        <div className="form-card-header">
-          <h2 className="form-card-title">Opportunity Details</h2>
-        </div>
+          <form onSubmit={handleSubmit} noValidate>
 
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="form-card-body">
-            <FormField label="Opportunity Name" name="name" value={form.name} onChange={handleChange} error={errors.name} placeholder="e.g. Enterprise CRM License" required />
-            <div className="form-row-2">
-              <FormField label="Customer Name" name="customerName" value={form.customerName} onChange={handleChange} error={errors.customerName} placeholder="e.g. Ahmed Ali" required />
-              <FormField label="Company" name="company" value={form.company} onChange={handleChange} error={errors.company} placeholder="e.g. TechVision Pvt Ltd" required />
+            {/* Opportunity Name */}
+            <div className="form-group">
+              <label htmlFor="name">Opportunity Name *</label>
+              <input id="name" name="name" type="text" value={form.name} onChange={handleChange}
+                placeholder="e.g. Enterprise CRM License"
+                className={errors.name ? "input-error" : ""} disabled={loading} />
+              {errors.name && <span className="form-field-error">{errors.name}</span>}
             </div>
-            <div className="form-row-2">
-              <FormField label="Deal Value ($)" name="dealValue" value={form.dealValue} onChange={handleChange} error={errors.dealValue} placeholder="e.g. 50000" required />
-              <FormField label="Probability (%)" name="probability" value={form.probability} onChange={handleChange} error={errors.probability} placeholder="0 – 100" required />
-            </div>
-            <div className="form-row-2">
-              <FormField label="Stage" name="stage" type="select" value={form.stage} onChange={handleChange} error={errors.stage} required
-                options={["Prospecting","Qualification","Proposal","Negotiation","Closed Won","Closed Lost"].map((s) => ({ label: s, value: s }))} />
-              <FormField label="Status" name="status" type="select" value={form.status} onChange={handleChange} error={errors.status} required
-                options={[{ label: "Active", value: "Active" }, { label: "On Hold", value: "On Hold" }, { label: "Inactive", value: "Inactive" }]} />
-            </div>
-            <div className="form-row-2">
+
+            {/* Customer + Company */}
+            <div className="company-form-card form-row">
               <div className="form-group">
-                <label className="form-label">Expected Close Date <span style={{ color: "var(--error)" }}>*</span></label>
-                <input type="date" name="expectedCloseDate" value={form.expectedCloseDate} onChange={handleChange}
-                  className={`form-input${errors.expectedCloseDate ? " error" : ""}`} />
-                {errors.expectedCloseDate && <p className="form-error">{errors.expectedCloseDate}</p>}
+                <label htmlFor="customerName">Customer Name *</label>
+                <input id="customerName" name="customerName" type="text" value={form.customerName} onChange={handleChange}
+                  placeholder="e.g. Ahmed Ali"
+                  className={errors.customerName ? "input-error" : ""} disabled={loading} />
+                {errors.customerName && <span className="form-field-error">{errors.customerName}</span>}
               </div>
-              <FormField label="Assigned To" name="assignedTo" value={form.assignedTo} onChange={handleChange} placeholder="e.g. Khaanzadi" />
+              <div className="form-group">
+                <label htmlFor="company">Company *</label>
+                <input id="company" name="company" type="text" value={form.company} onChange={handleChange}
+                  placeholder="e.g. TechVision Pvt Ltd"
+                  className={errors.company ? "input-error" : ""} disabled={loading} />
+                {errors.company && <span className="form-field-error">{errors.company}</span>}
+              </div>
             </div>
-            <FormField label="Notes" name="notes" type="textarea" value={form.notes} onChange={handleChange} placeholder="Add any additional notes…" />
-          </div>
-          <div className="form-card-footer">
-            <button type="button" className="btn-secondary" onClick={() => router.push("/opportunities")} disabled={loading}>Cancel</button>
-            <button type="submit" className="btn-add" disabled={loading || success}>
-              {loading ? (<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>Saving...</>) : success ? "Saved!" : "Add Opportunity"}
-            </button>
-          </div>
-        </form>
+
+            {/* Deal Value + Probability */}
+            <div className="company-form-card form-row">
+              <div className="form-group">
+                <label htmlFor="dealValue">Deal Value ($) *</label>
+                <input id="dealValue" name="dealValue" type="text" value={form.dealValue} onChange={handleChange}
+                  placeholder="e.g. 50000"
+                  className={errors.dealValue ? "input-error" : ""} disabled={loading} />
+                {errors.dealValue && <span className="form-field-error">{errors.dealValue}</span>}
+              </div>
+              <div className="form-group">
+                <label htmlFor="probability">Probability (%) *</label>
+                <input id="probability" name="probability" type="text" value={form.probability} onChange={handleChange}
+                  placeholder="0 – 100"
+                  className={errors.probability ? "input-error" : ""} disabled={loading} />
+                {errors.probability && <span className="form-field-error">{errors.probability}</span>}
+              </div>
+            </div>
+
+            {/* Stage + Status */}
+            <div className="company-form-card form-row">
+              <div className="form-group">
+                <label htmlFor="stage">Stage *</label>
+                <select id="stage" name="stage" value={form.stage} onChange={handleChange}
+                  style={selectStyle} className={errors.stage ? "input-error" : ""} disabled={loading}>
+                  <option value="">Select stage</option>
+                  {["Prospecting","Qualification","Proposal","Negotiation","Closed Won","Closed Lost"].map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                {errors.stage && <span className="form-field-error">{errors.stage}</span>}
+              </div>
+              <div className="form-group">
+                <label htmlFor="status">Status *</label>
+                <select id="status" name="status" value={form.status} onChange={handleChange}
+                  style={selectStyle} className={errors.status ? "input-error" : ""} disabled={loading}>
+                  <option value="">Select status</option>
+                  <option value="Active">Active</option>
+                  <option value="On Hold">On Hold</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+                {errors.status && <span className="form-field-error">{errors.status}</span>}
+              </div>
+            </div>
+
+            {/* Close Date + Assigned To */}
+            <div className="company-form-card form-row">
+              <div className="form-group">
+                <label htmlFor="expectedCloseDate">Expected Close Date *</label>
+                <input id="expectedCloseDate" name="expectedCloseDate" type="date" value={form.expectedCloseDate}
+                  onChange={handleChange} style={{ padding: "12px 14px", border: "1px solid #E5E7EB", borderRadius: "10px", background: "#fff", color: "#1F2937", fontSize: "14px", fontFamily: "inherit", outline: "none", width: "100%" }}
+                  className={errors.expectedCloseDate ? "input-error" : ""} disabled={loading} />
+                {errors.expectedCloseDate && <span className="form-field-error">{errors.expectedCloseDate}</span>}
+              </div>
+              <div className="form-group">
+                <label htmlFor="assignedTo">Assigned To</label>
+                <input id="assignedTo" name="assignedTo" type="text" value={form.assignedTo}
+                  onChange={handleChange} placeholder="e.g. Khaanzadi" disabled={loading} />
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="form-group">
+              <label htmlFor="notes">Notes</label>
+              <textarea id="notes" name="notes" value={form.notes} onChange={handleChange}
+                placeholder="Add any additional notes…" disabled={loading} />
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "8px" }}>
+              <button type="button" className="filter-btn" onClick={() => router.push("/opportunities")} disabled={loading}>Cancel</button>
+              <button type="submit" className="save-company-btn" disabled={loading}>
+                {loading ? (
+                  <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>Saving...</>
+                ) : "Save Opportunity"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </DashboardLayout>
   );
 }
