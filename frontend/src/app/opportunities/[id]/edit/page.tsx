@@ -5,13 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { opportunities as oppData, OpportunityStage, OpportunityStatus } from "@/data/opportunities";
 
-interface FormValues {
-  name: string; customerName: string; company: string; dealValue: string;
-  stage: OpportunityStage | ""; probability: string; expectedCloseDate: string;
-  status: OpportunityStatus | ""; assignedTo: string; notes: string;
-}
 interface FormErrors {
-  name?: string; customerName?: string; company?: string; dealValue?: string;
+  name?: string; customer?: string; value?: string;
   stage?: string; probability?: string; expectedCloseDate?: string; status?: string;
 }
 
@@ -36,6 +31,9 @@ export default function EditOpportunityPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
   const [notFound, setNotFound] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [customers, setCustomers] = useState<CustomerOption[]>([]);
+  const [customersLoading, setCustomersLoading] = useState(true);
 
   useEffect(() => {
     const opp = oppData.find(o => o.id === id);
@@ -56,6 +54,7 @@ export default function EditOpportunityPage() {
   }
 
   function validate(): boolean {
+    const f = form as OpportunityFormValues;
     const e: FormErrors = {};
     if (!form.name.trim()) e.name = "Opportunity name is required.";
     if (!form.customerName.trim()) e.customerName = "Customer name is required.";
@@ -73,7 +72,7 @@ export default function EditOpportunityPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!validate()) return;
+    if (!form || !validate()) return;
     setSaving(true);
     await new Promise(r => setTimeout(r, 1200));
     setSaving(false);
@@ -91,7 +90,7 @@ export default function EditOpportunityPage() {
     </DashboardLayout>
   );
 
-  if (notFound) return (
+  if (notFound || !form) return (
     <DashboardLayout>
       <div className="not-found-state">
         <p style={{ fontSize: "3rem", margin: "0 0 12px" }}>🔍</p>

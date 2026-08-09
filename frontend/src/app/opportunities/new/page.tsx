@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { OpportunityStage, OpportunityStatus } from "@/data/opportunities";
 
 interface FormValues {
-  name: string; customerName: string; company: string; dealValue: string;
+  name: string; customer: string; value: string;
   stage: OpportunityStage | ""; probability: string; expectedCloseDate: string;
-  status: OpportunityStatus | ""; assignedTo: string; notes: string;
+  status: OpportunityStatus | ""; notes: string;
 }
 interface FormErrors {
-  name?: string; customerName?: string; company?: string; dealValue?: string;
+  name?: string; customer?: string; value?: string;
   stage?: string; probability?: string; expectedCloseDate?: string; status?: string;
 }
 
@@ -34,6 +34,27 @@ export default function AddOpportunityPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [submitError, setSubmitError] = useState("");
+  const [customers, setCustomers] = useState<CustomerOption[]>([]);
+  const [customersLoading, setCustomersLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadCustomers = async () => {
+      try {
+        const data = await apiRequest<CustomerOption[]>("/api/opportunities/dropdowns/customers/");
+        if (cancelled) return;
+        setCustomers(data);
+      } catch (err) {
+        if (cancelled) return;
+        setSubmitError(`Failed to load customers: ${(err as Error).message}`);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setCustomersLoading(false);
+      }
+    };
+    void loadCustomers();
+    return () => { cancelled = true; };
+  }, [router]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;

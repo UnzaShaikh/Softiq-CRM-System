@@ -38,6 +38,7 @@ export default function EditCustomerPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
   const [notFound, setNotFound] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
     const customer = customersData.find(c => c.id === id);
@@ -59,6 +60,7 @@ export default function EditCustomerPage() {
   }
 
   function validate(): boolean {
+    const f = form as CustomerFormValues;
     const e: FormErrors = {};
     if (!form.first_name.trim()) e.first_name = "First name is required.";
     if (!form.last_name.trim()) e.last_name = "Last name is required.";
@@ -74,7 +76,7 @@ export default function EditCustomerPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!validate()) return;
+    if (!form || !validate()) return;
     setSaving(true);
     await new Promise(r => setTimeout(r, 1200));
     setSaving(false);
@@ -92,7 +94,7 @@ export default function EditCustomerPage() {
     </DashboardLayout>
   );
 
-  if (notFound) return (
+  if (notFound || !form) return (
     <DashboardLayout>
       <div className="not-found-state">
         <p style={{ fontSize: "3rem", margin: "0 0 12px" }}>🔍</p>

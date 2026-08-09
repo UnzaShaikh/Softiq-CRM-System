@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import StatusBadge from "@/components/customers/StatusBadge";
-import { customers as customersData, Customer } from "@/data/customers";
+import { ApiCustomer, Customer, toCustomer } from "@/data/customers";
+import { apiRequest, getAccessToken } from "@/lib/api";
 import { Mail, Phone, MapPin, Building2, Tag, Calendar } from "lucide-react";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 
 const AVATAR_COLORS: [string, string][] = [
   ["#4f46e5", "#7c3aed"], ["#0891b2", "#0e7490"], ["#059669", "#047857"],
@@ -21,24 +23,34 @@ export default function CustomerDetailPage() {
   const id = params?.id as string;
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    setTimeout(() => {
-      const found = customersData.find((c) => c.id === id);
-      if (!found) setNotFound(true);
-      else setCustomer(found);
-      setLoading(false);
-    }, 600);
-  }, [id]);
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const data = await apiRequest<ApiCustomer>(`/api/customers/${id}/`);
+        if (cancelled) return;
+        setCustomer(toCustomer(data));
+      } catch (err) {
+        if (cancelled) return;
+        setError((err as Error).message);
+        setNotFound(true);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, router]);
 
   if (loading) return (
     <DashboardLayout>
-      <div className="loading-state">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-        Loading customer...
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-      </div>
+      <ThemeLoader label="Loading customer..." />
     </DashboardLayout>
   );
 
@@ -47,7 +59,7 @@ export default function CustomerDetailPage() {
       <div className="not-found-state">
         <p style={{ fontSize: "3rem", margin: "0 0 12px" }}>🔍</p>
         <h2>Customer Not Found</h2>
-        <p>No customer found with ID: {id}</p>
+        <p>{error || `No customer found with ID: ${id}`}</p>
         <button className="btn-add" onClick={() => router.push("/customers")}>Back to Customers</button>
       </div>
     </DashboardLayout>
