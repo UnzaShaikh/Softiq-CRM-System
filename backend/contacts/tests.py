@@ -108,3 +108,41 @@ class ContactCRUDTests(APITestCase):
         }
         response = self.client.post(reverse("contact-list"), payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+def test_status_options(self):
+    response = self.client.get(
+        "/api/contacts/status-options/",
+        HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
+    )
+
+    self.assertEqual(response.status_code, 200)
+    self.assertIn("status_options", response.data)
+def test_search_contacts(self):
+    response = self.client.get(
+        "/api/contacts/?search=Ahmed",
+        HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
+    )
+
+    self.assertEqual(response.status_code, 200)
+def test_filter_contacts_by_status(self):
+    response = self.client.get(
+        "/api/contacts/?status=active",
+        HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
+    )
+
+    self.assertEqual(response.status_code, 200)
+def test_order_contacts(self):
+    response = self.client.get(
+        "/api/contacts/?ordering=full_name",
+        HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
+    )
+
+    self.assertEqual(response.status_code, 200)
+def test_contact_pagination(self):
+    response = self.client.get(
+        "/api/contacts/?page=1",
+        HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
+    )
+
+    self.assertEqual(response.status_code, 200)
+    self.assertIn("count", response.data)
+    self.assertIn("results", response.data)

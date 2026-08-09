@@ -1,5 +1,6 @@
 from rest_framework import viewsets, filters, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -39,3 +40,14 @@ class ContactViewSet(viewsets.ModelViewSet):
             {"detail": "Contact deleted successfully."},
             status=status.HTTP_200_OK,
         )
+    @action(detail=False, methods=["get"], url_path="status-options")
+    def status_options(self, request):
+        return Response({
+            "status_options": [
+                {
+                    "value": value,
+                    "label": label
+                }
+                for value, label in Contact.STATUS_CHOICES
+            ]
+        })
