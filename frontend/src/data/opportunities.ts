@@ -6,7 +6,121 @@ export type OpportunityStage =
   | "Closed Won"
   | "Closed Lost";
 
-export type OpportunityStatus = "Active" | "On Hold" | "Inactive";
+export type OpportunityStatus = "Active" | "On Hold" | "Inactive" | "Closed Won" | "Closed Lost";
+
+export interface ApiOpportunity {
+  id: number;
+  name: string;
+  customer: number;
+  customer_name: string;
+  company: string;
+  value: string;
+  stage:
+    | "prospecting"
+    | "qualification"
+    | "proposal"
+    | "negotiation"
+    | "closed_won"
+    | "closed_lost";
+  status: "active" | "on_hold" | "inactive" | "closed_won" | "closed_lost";
+  probability: number;
+  expected_close_date: string | null;
+  notes: string;
+  created_by: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiOpportunityList {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: ApiOpportunity[];
+}
+
+export const STAGE_FROM_API: Record<ApiOpportunity["stage"], OpportunityStage> = {
+  prospecting: "Prospecting",
+  qualification: "Qualification",
+  proposal: "Proposal",
+  negotiation: "Negotiation",
+  closed_won: "Closed Won",
+  closed_lost: "Closed Lost",
+};
+
+export const STAGE_TO_API: Record<OpportunityStage, ApiOpportunity["stage"]> = {
+  Prospecting: "prospecting",
+  Qualification: "qualification",
+  Proposal: "proposal",
+  Negotiation: "negotiation",
+  "Closed Won": "closed_won",
+  "Closed Lost": "closed_lost",
+};
+
+export const STATUS_FROM_API: Record<ApiOpportunity["status"], OpportunityStatus> = {
+  active: "Active",
+  on_hold: "On Hold",
+  inactive: "Inactive",
+  closed_won: "Closed Won",
+  closed_lost: "Closed Lost",
+};
+
+export const STATUS_TO_API: Record<OpportunityStatus, ApiOpportunity["status"]> = {
+  Active: "active",
+  "On Hold": "on_hold",
+  Inactive: "inactive",
+  "Closed Won": "closed_won",
+  "Closed Lost": "closed_lost",
+};
+
+export function toOpportunity(api: ApiOpportunity): Opportunity {
+  const initials =
+    api.customer_name
+      .split(/\s+/)
+      .map((part) => part.charAt(0))
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "?";
+
+  return {
+    id: String(api.id),
+    name: api.name,
+    customerName: api.customer_name,
+    company: api.company,
+    dealValue: Number(api.value),
+    stage: STAGE_FROM_API[api.stage],
+    probability: api.probability,
+    expectedCloseDate: api.expected_close_date ?? "",
+    status: STATUS_FROM_API[api.status],
+    assignedTo: "—",
+    createdDate: api.created_at.slice(0, 10),
+    notes: api.notes,
+    avatar: initials,
+  };
+}
+
+export interface OpportunityFormValues {
+  name: string;
+  customer: string;
+  value: string;
+  stage: OpportunityStage | "";
+  status: OpportunityStatus | "";
+  probability: string;
+  expected_close_date: string;
+  notes: string;
+}
+
+export function toFormValues(api: ApiOpportunity): OpportunityFormValues {
+  return {
+    name: api.name,
+    customer: String(api.customer),
+    value: api.value,
+    stage: STAGE_FROM_API[api.stage],
+    status: STATUS_FROM_API[api.status],
+    probability: String(api.probability),
+    expected_close_date: api.expected_close_date ?? "",
+    notes: api.notes,
+  };
+}
 
 export interface Opportunity {
   id: string;
