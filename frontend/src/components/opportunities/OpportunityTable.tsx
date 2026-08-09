@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Opportunity } from "@/data/opportunities";
-import { OpportunityStageBadge, OpportunityStatusBadge } from "./OpportunityStageBadge";
+import { OpportunityStageBadge } from "./OpportunityStageBadge";
 
 interface OpportunityTableProps {
   opportunities: Opportunity[];
@@ -24,6 +24,14 @@ function getAvatarColor(name: string): [string, string] {
   return AVATAR_COLORS[idx];
 }
 
+function SortIcon({ active, sortDir }: { active: boolean; sortDir: SortDir }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={active ? "#4f46e5" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      {active && sortDir === "asc" ? <polyline points="18 15 12 9 6 15" /> : active && sortDir === "desc" ? <polyline points="6 9 12 15 18 9" /> : <><polyline points="18 15 12 9 6 15" opacity="0.4" /><polyline points="6 9 12 15 18 9" opacity="0.4" /></>}
+    </svg>
+  );
+}
+
 export default function OpportunityTable({ opportunities, onView, onEdit, onDelete }: OpportunityTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("expectedCloseDate");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -42,15 +50,6 @@ export default function OpportunityTable({ opportunities, onView, onEdit, onDele
     if (vA > vB) return sortDir === "asc" ? 1 : -1;
     return 0;
   });
-
-  function SortIcon({ col }: { col: SortKey }) {
-    const active = sortKey === col;
-    return (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={active ? "#4f46e5" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-        {active && sortDir === "asc" ? <polyline points="18 15 12 9 6 15" /> : active && sortDir === "desc" ? <polyline points="6 9 12 15 18 9" /> : <><polyline points="18 15 12 9 6 15" opacity="0.4" /><polyline points="6 9 12 15 18 9" opacity="0.4" /></>}
-      </svg>
-    );
-  }
 
   const thStyle: React.CSSProperties = { padding: "11px 16px", textAlign: "left", fontSize: "0.75rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap", userSelect: "none" };
   const tdStyle: React.CSSProperties = { padding: "14px 16px", fontSize: "0.875rem", color: "#374151", borderBottom: "1px solid #f1f5f9", verticalAlign: "middle" };
@@ -72,12 +71,12 @@ export default function OpportunityTable({ opportunities, onView, onEdit, onDele
       <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif" }}>
         <thead>
           <tr>
-            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("name")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Opportunity <SortIcon col="name" /></span></th>
-            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("customerName")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Customer <SortIcon col="customerName" /></span></th>
-            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("dealValue")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Value <SortIcon col="dealValue" /></span></th>
-            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("stage")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Stage <SortIcon col="stage" /></span></th>
-            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("probability")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Probability <SortIcon col="probability" /></span></th>
-            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("expectedCloseDate")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Close Date <SortIcon col="expectedCloseDate" /></span></th>
+            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("name")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Opportunity <SortIcon active={sortKey === "name"} sortDir={sortDir} /></span></th>
+            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("customerName")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Customer <SortIcon active={sortKey === "customerName"} sortDir={sortDir} /></span></th>
+            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("dealValue")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Value <SortIcon active={sortKey === "dealValue"} sortDir={sortDir} /></span></th>
+            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("stage")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Stage <SortIcon active={sortKey === "stage"} sortDir={sortDir} /></span></th>
+            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("probability")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Probability <SortIcon active={sortKey === "probability"} sortDir={sortDir} /></span></th>
+            <th style={{ ...thStyle, cursor: "pointer" }} onClick={() => handleSort("expectedCloseDate")}><span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Close Date <SortIcon active={sortKey === "expectedCloseDate"} sortDir={sortDir} /></span></th>
             <th style={{ ...thStyle, textAlign: "center" }}>Actions</th>
           </tr>
         </thead>

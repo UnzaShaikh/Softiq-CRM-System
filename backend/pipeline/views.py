@@ -58,9 +58,9 @@ def pipeline_summary(request):
         stage__in=ACTIVE_STAGES
     ).count()
 
-    closed_won = queryset.filter(stage="won").count()
+    closed_won = queryset.filter(stage="closed_won").count()
 
-    closed_lost = queryset.filter(stage="lost").count()
+    closed_lost = queryset.filter(stage="closed_lost").count()
 
     data = {
         "total_deals": total_deals,
