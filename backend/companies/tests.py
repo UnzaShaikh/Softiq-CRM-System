@@ -46,3 +46,69 @@ class CompanyAPITests(APITestCase):
         self.client.credentials()
         res = self.client.get("/api/companies/")
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+    def test_search_companies(self):
+        Company.objects.create(
+            name="Tech Solutions",
+            industry="Technology",
+            created_by=self.user
+        )
+
+        res = self.client.get("/api/companies/?search=Tech")
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+def test_filter_by_industry(self):
+        Company.objects.create(
+            name="Tech Solutions",
+            industry="Technology",
+            created_by=self.user
+        )
+
+        res = self.client.get(
+            "/api/companies/?industry=Technology"
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+def test_filter_by_size(self):
+        Company.objects.create(
+            name="Large Company",
+            industry="Technology",
+            size="Large",
+            created_by=self.user
+        )
+
+        res = self.client.get(
+            "/api/companies/?size=Large"
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+def test_filter_by_status(self):
+        res = self.client.get(
+            "/api/companies/?status=active"
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+def test_ordering(self):
+        res = self.client.get(
+            "/api/companies/?ordering=name"
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+def test_pagination(self):
+        res = self.client.get(
+            "/api/companies/?page=1"
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn("count", res.data)
+        self.assertIn("results", res.data)
+def test_filter_options(self):
+        res = self.client.get(
+            "/api/companies/filter-options/"
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        self.assertIn("industries", res.data)
+        self.assertIn("sizes", res.data)
+        self.assertIn("statuses", res.data)
+        self.assertIn("total_records", res.data)
