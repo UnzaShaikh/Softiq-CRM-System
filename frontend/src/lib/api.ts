@@ -31,6 +31,25 @@ export function setTokens(access: string, refresh: string): void {
 export function clearTokens(): void {
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
+  document.cookie = `${ACCESS_KEY}=; path=/; max-age=0`;
+  document.cookie = `${REFRESH_KEY}=; path=/; max-age=0`;
+}
+
+function setTokenCookies(access: string, refresh?: string | null): void {
+  document.cookie = `${ACCESS_KEY}=${access}; path=/; max-age=86400`;
+  if (refresh) document.cookie = `${REFRESH_KEY}=${refresh}; path=/; max-age=86400`;
+}
+
+let redirecting = false;
+
+export function redirectToLogin(): void {
+  if (typeof window === "undefined" || redirecting) return;
+
+  const { pathname, search } = window.location;
+  if (pathname === "/login" || pathname === "/register") return;
+
+  redirecting = true;
+  window.location.assign(`/login?next=${encodeURIComponent(pathname + search)}`);
 }
 
 const DATA_CHANGED_EVENT = "crm:data-changed";
@@ -40,7 +59,17 @@ export function emitDataChanged(): void {
   window.dispatchEvent(new CustomEvent(DATA_CHANGED_EVENT));
 }
 
-async function refreshAccessToken(): Promise<string | null> {
+let refreshPromise: Promise<string | null> | null = null;
+
+function refreshAccessToken(): Promise<string | null> {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = doRefresh().finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
+}
+
+async function doRefresh(): Promise<string | null> {
   const refresh = getRefreshToken();
   if (!refresh) return null;
 
@@ -55,6 +84,7 @@ async function refreshAccessToken(): Promise<string | null> {
   const data = await res.json();
   localStorage.setItem(ACCESS_KEY, data.access);
   if (data.refresh) localStorage.setItem(REFRESH_KEY, data.refresh);
+  setTokenCookies(data.access, data.refresh);
   return data.access;
 }
 
@@ -86,6 +116,7 @@ export async function apiRequest<T = unknown>(
       res = await send(newToken);
     } else {
       clearTokens();
+      redirectToLogin();
     }
   }
 

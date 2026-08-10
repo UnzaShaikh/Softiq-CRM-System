@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
-import { Contact } from "./types";
+import { useRouter } from "next/navigation";
+import { Contact, ContactStatus, toApiPayload } from "@/data/contact";
+import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
 
 interface ContactFormProps {
   mode: "add" | "edit";
@@ -32,9 +34,7 @@ interface InputProps {
   label: string;
   name: keyof FormState;
   value: string;
-  onChange: (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => void;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   type?: string;
   placeholder?: string;
   error?: string;
@@ -58,10 +58,8 @@ const initialErrors: FormErrors = {
   status: "",
 };
 
-export default function ContactForm({
-  mode,
-  contact,
-}: ContactFormProps) {
+export default function ContactForm({ mode, contact }: ContactFormProps) {
+  const router = useRouter();
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FormErrors>(initialErrors);
   const [loading, setLoading] = useState(false);
@@ -101,10 +99,7 @@ export default function ContactForm({
   };
 
   const validate = () => {
-    const newErrors: FormErrors = {
-      ...initialErrors,
-    };
-
+    const newErrors: FormErrors = { ...initialErrors };
     let valid = true;
 
     if (!form.fullName.trim()) {
@@ -120,9 +115,7 @@ export default function ContactForm({
     if (!form.email.trim()) {
       newErrors.email = "Email is required";
       valid = false;
-    } else if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
-    ) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       newErrors.email = "Please enter a valid email address";
       valid = false;
     }
@@ -143,7 +136,6 @@ export default function ContactForm({
     }
 
     setErrors(newErrors);
-
     return valid;
   };
 
@@ -159,18 +151,33 @@ export default function ContactForm({
     setSubmitError("");
 
     try {
-      // Frontend-only mock submission
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const payload = toApiPayload({
+        ...form,
+        status: form.status as ContactStatus,
+      });
 
       if (mode === "add") {
+        await apiRequest("/api/contacts/", {
+          method: "POST",
+          body: payload,
+        });
         setSuccess("Contact added successfully!");
       } else {
+        await apiRequest(`/api/contacts/${contact!.id}/`, {
+          method: "PATCH",
+          body: payload,
+        });
         setSuccess("Contact updated successfully!");
       }
 
-      console.log("Contact form data:", form);
-    } catch {
-      setSubmitError("Something went wrong. Please try again.");
+      emitDataChanged();
+
+      setTimeout(() => {
+        router.push(mode === "edit" ? `/contacts/${contact!.id}` : "/contacts");
+      }, 1500);
+    } catch (err) {
+      setSubmitError((err as Error).message || "Something went wrong.");
+      if (!getAccessToken()) router.push("/login");
     } finally {
       setLoading(false);
     }
@@ -288,9 +295,7 @@ export default function ContactForm({
                 <option value="Lead">Lead</option>
               </select>
 
-              {errors.status && (
-                <p className="form-error">{errors.status}</p>
-              )}
+              {errors.status && <p className="form-error">{errors.status}</p>}
             </div>
           </div>
         </div>
@@ -301,16 +306,8 @@ export default function ContactForm({
             Cancel
           </Link>
 
-          <button
-            type="submit"
-            className="form-submit-btn"
-            disabled={loading}
-          >
-            {loading
-              ? "Saving..."
-              : mode === "add"
-              ? "Save Contact"
-              : "Update Contact"}
+          <button type="submit" className="form-submit-btn" disabled={loading}>
+            {loading ? "Saving..." : mode === "add" ? "Save Contact" : "Update Contact"}
           </button>
         </div>
       </form>
@@ -340,9 +337,7 @@ function Input({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className={`form-input ${
-          error ? "form-input-error" : ""
-        }`}
+        className={`form-input ${error ? "form-input-error" : ""}`}
       />
 
       {error && <p className="form-error">{error}</p>}

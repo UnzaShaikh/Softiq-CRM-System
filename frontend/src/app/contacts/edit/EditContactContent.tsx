@@ -1,20 +1,61 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ContactForm from "@/components/contacts/ContactForm";
-import { CONTACTS } from "@/components/contacts/data";
-import { useSearchParams } from "next/navigation";
+import { ApiContact, Contact, toContact } from "@/data/contact";
+import { apiRequest, getAccessToken } from "@/lib/api";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 
 export default function EditContactContent() {
+
+  const router = useRouter();
 
   const searchParams = useSearchParams();
 
   const id = Number(searchParams.get("id"));
 
-  const contact = CONTACTS.find((item) => item.id === id);
+  const [contact, setContact] = useState<Contact | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+
+    let cancelled = false;
+
+    const run = async () => {
+      try {
+        const data = await apiRequest<ApiContact>(`/api/contacts/${id}/`);
+        if (cancelled) return;
+        setContact(toContact(data));
+      } catch {
+        if (cancelled) return;
+        setNotFound(true);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, router]);
+
+  if (loading && id) {
+    return (
+      <DashboardLayout>
+        <ThemeLoader label="Loading contact..." />
+      </DashboardLayout>
+    );
+  }
 
 
-  if (!contact) {
+  if (!id || notFound || !contact) {
     return (
       <DashboardLayout>
         <div

@@ -1,5 +1,6 @@
 "use client";
 
+
 import Link from "next/link";
 import {
   Eye,
@@ -8,8 +9,9 @@ import {
   ChevronsUpDown,
   ChevronUp,
 } from "lucide-react";
+    import { Contact } from "@/data/contact";
 
-import { Contact } from "./types";
+
 
 interface Props {
   contacts: Contact[];

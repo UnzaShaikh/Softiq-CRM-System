@@ -17,6 +17,8 @@ class StageDistributionSerializer(serializers.Serializer):
 
 
 class RecentDealSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
     customer = serializers.CharField()
     company = serializers.CharField()
     deal_value = serializers.DecimalField(max_digits=14, decimal_places=2)

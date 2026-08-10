@@ -2,9 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { ContactStatus, STATUS_TO_API } from "@/data/contact";
+import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
 
 export default function AddContactPage() {
+  const router = useRouter();
   const [form, setForm] = useState({
     fullName: "",
     company: "",
@@ -57,21 +61,33 @@ const [loading,setLoading] = useState(false);
 
     setLoading(true);
 
+    await apiRequest("/api/contacts/", {
+      method: "POST",
+      body: {
+        full_name: form.fullName,
+        company: form.company,
+        email: form.email,
+        phone: form.phone,
+        job_title: form.jobTitle,
+        status: STATUS_TO_API[form.status as ContactStatus],
+      },
+    });
 
-    // API call ki jagah abhi testing delay
-    await new Promise(
-      (resolve)=>setTimeout(resolve,1000)
-    );
-
+    emitDataChanged();
 
     alert("Contact added successfully!");
 
-    console.log(form);
-
+    router.push("/contacts");
 
   } catch(error){
 
-    alert("Something went wrong!");
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Something went wrong!"
+    );
+
+    if (!getAccessToken()) router.push("/login");
 
   }
   finally{

@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import ContactTable from "@/components/contacts/ContactTable";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import Pagination from "@/components/customers/Pagination";
 
 import {
@@ -12,85 +16,78 @@ import {
   Zap,
   Search,
   Plus,
-  Eye,
-  Pencil,
   Trash2,
-  ChevronUp,
-  ChevronsUpDown,
 } from "lucide-react";
 
-import { CONTACTS } from "@/components/contacts/data";
+import { Contact, ApiContactList, toContact } from "@/data/contact";
+import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
 
-const CONTACTS_PER_PAGE = 5;
+const CONTACTS_PER_PAGE = 10;
 
 type FilterStatus = "All" | "Active" | "Inactive" | "Lead";
 
 export default function ContactsPage() {
-  const [contacts, setContacts] = useState(CONTACTS);
+  const router = useRouter();
+
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] =
-    useState<FilterStatus>("All");
-
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const [deleteId, setDeleteId] =
-    useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  const [toastMsg, setToastMsg] =
-    useState<string | null>(null);
+  const totalPages = Math.ceil(totalCount / CONTACTS_PER_PAGE) || 1;
 
   /* =========================================
-     FILTER CONTACTS
+     FETCH CONTACTS (server-side search/filter/pagination)
   ========================================== */
 
-  const filteredContacts = contacts.filter((contact) => {
-    const searchValue = search.toLowerCase();
+  useEffect(() => {
+    let cancelled = false;
 
-    const matchesSearch =
-      contact.fullName.toLowerCase().includes(searchValue) ||
-      contact.company.toLowerCase().includes(searchValue) ||
-      contact.email.toLowerCase().includes(searchValue) ||
-      contact.phone.toLowerCase().includes(searchValue);
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    if (statusFilter !== "All") params.set("status", statusFilter.toLowerCase());
+    params.set("page", String(currentPage));
 
-    const matchesStatus =
-      statusFilter === "All" ||
-      contact.status === statusFilter;
+    const run = async () => {
+      setLoading(true);
+      try {
+        const data = await apiRequest<ApiContactList>(`/api/contacts/?${params.toString()}`);
+        if (cancelled) return;
+        setContacts(data.results.map(toContact));
+        setTotalCount(data.count);
+        setError(null);
+        const maxPage = Math.max(1, Math.ceil(data.count / CONTACTS_PER_PAGE));
+        if (currentPage > maxPage) setCurrentPage(maxPage);
+      } catch (err) {
+        if (cancelled) return;
+        setError((err as Error).message);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
 
-    return matchesSearch && matchesStatus;
-  });
-
-  /* =========================================
-     PAGINATION
-  ========================================== */
-
-  const totalPages =
-    Math.ceil(
-      filteredContacts.length / CONTACTS_PER_PAGE
-    ) || 1;
-
-  const indexOfLastContact =
-    currentPage * CONTACTS_PER_PAGE;
-
-  const indexOfFirstContact =
-    indexOfLastContact - CONTACTS_PER_PAGE;
-
-  const currentContacts = filteredContacts.slice(
-    indexOfFirstContact,
-    indexOfLastContact
-  );
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [search, statusFilter, currentPage, refreshKey, router]);
 
   /* =========================================
-     SEARCH
+     SEARCH / FILTER
   ========================================== */
 
   function handleSearch(value: string) {
     setSearch(value);
     setCurrentPage(1);
   }
-
-  /* =========================================
-     STATUS FILTER
-  ========================================== */
 
   function handleStatusFilter(value: FilterStatus) {
     setStatusFilter(value);
@@ -103,7 +100,6 @@ export default function ContactsPage() {
 
   function showToast(message: string) {
     setToastMsg(message);
-
     setTimeout(() => {
       setToastMsg(null);
     }, 3000);
@@ -117,59 +113,37 @@ export default function ContactsPage() {
     setDeleteId(id);
   }
 
-  const contactToDelete =
-    contacts.find(
-      (contact) => contact.id === deleteId
-    ) ?? null;
+  const contactToDelete = contacts.find((contact) => contact.id === deleteId) ?? null;
 
-  function handleDeleteConfirmed() {
+  async function handleDeleteConfirmed() {
     if (!contactToDelete) return;
 
-    setContacts(
-      contacts.filter(
-        (contact) =>
-          contact.id !== contactToDelete.id
-      )
-    );
-
-    showToast(
-      `"${contactToDelete.fullName}" has been deleted.`
-    );
-
-    setDeleteId(null);
-
-    const newTotalPages =
-      Math.ceil(
-        (filteredContacts.length - 1) /
-          CONTACTS_PER_PAGE
-      ) || 1;
-
-    if (currentPage > newTotalPages) {
-      setCurrentPage(newTotalPages);
+    try {
+      await apiRequest(`/api/contacts/${contactToDelete.id}/`, { method: "DELETE" });
+      emitDataChanged();
+      showToast(`"${contactToDelete.fullName}" has been deleted.`);
+      setDeleteId(null);
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setError((err as Error).message);
+      setDeleteId(null);
     }
   }
 
   /* =========================================
      STATS
+     NOTE: "total" uses the accurate API count. The per-status
+     breakdowns (active/inactive/lead) are best-effort, based only
+     on the contacts currently loaded on this page, since the API
+     paginates results. For fully accurate breakdowns, add a
+     backend summary endpoint (like /api/pipeline/summary/).
   ========================================== */
 
   const stats = {
-    total: contacts.length,
-
-    active: contacts.filter(
-      (contact) =>
-        contact.status === "Active"
-    ).length,
-
-    inactive: contacts.filter(
-      (contact) =>
-        contact.status === "Inactive"
-    ).length,
-
-    lead: contacts.filter(
-      (contact) =>
-        contact.status === "Lead"
-    ).length,
+    total: totalCount,
+    active: contacts.filter((contact) => contact.status === "Active").length,
+    inactive: contacts.filter((contact) => contact.status === "Inactive").length,
+    lead: contacts.filter((contact) => contact.status === "Lead").length,
   };
 
   const STAT_CARDS = [
@@ -212,18 +186,11 @@ export default function ContactsPage() {
         ========================================== */}
 
         <div className="contacts-page-header">
-
           <div>
-            <h1 className="contacts-page-title">
-              Contacts
-            </h1>
-
-            <p className="contacts-page-subtitle">
-              Manage your customer contacts.
-            </p>
+            <h1 className="contacts-page-title">Contacts</h1>
+            <p className="contacts-page-subtitle">Manage your customer contacts.</p>
           </div>
 
-          {/* Customer-style Add Button */}
           <Link
             href="/contacts/add"
             className="contacts-add-btn"
@@ -247,22 +214,15 @@ export default function ContactsPage() {
             <Plus size={18} strokeWidth={2.5} />
             <span>Add Contact</span>
           </Link>
-
         </div>
 
         {/* =========================================
             CONTACT STAT CARDS
-            Customer-style compact cards
         ========================================== */}
 
         <div className="contacts-stats-grid">
-
           {STAT_CARDS.map((card) => (
-            <div
-              key={card.label}
-              className="contacts-stat-card"
-            >
-
+            <div key={card.label} className="contacts-stat-card">
               <div
                 className="contacts-stat-icon"
                 style={{
@@ -281,7 +241,6 @@ export default function ContactsPage() {
               </div>
 
               <div className="contacts-stat-content">
-
                 <div
                   className="contacts-stat-value"
                   style={{
@@ -306,12 +265,9 @@ export default function ContactsPage() {
                 >
                   {card.label}
                 </div>
-
               </div>
-
             </div>
           ))}
-
         </div>
 
         {/* =========================================
@@ -320,322 +276,72 @@ export default function ContactsPage() {
 
         <div className="contacts-table-card">
 
-          {/* =========================================
-              TABLE TOOLBAR
-          ========================================== */}
-
+          {/* TOOLBAR */}
           <div className="contacts-table-toolbar">
-
             <div className="contacts-search-wrap">
-
-              <Search
-                size={19}
-                className="contacts-search-icon"
-              />
-
+              <Search size={19} className="contacts-search-icon" />
               <input
                 type="text"
                 className="contacts-search-input"
                 placeholder="Search contacts by name, email, or company..."
                 value={search}
-                onChange={(e) =>
-                  handleSearch(e.target.value)
-                }
+                onChange={(e) => handleSearch(e.target.value)}
               />
-
             </div>
 
             <div className="contacts-toolbar-right">
-
               <span className="contacts-results-count">
-                {filteredContacts.length}{" "}
-                {filteredContacts.length === 1
-                  ? "result"
-                  : "results"}
+                {totalCount} {totalCount === 1 ? "result" : "results"}
               </span>
 
               <div className="contacts-filter-tabs">
-
-                {(
-                  [
-                    "All",
-                    "Active",
-                    "Inactive",
-                    "Lead",
-                  ] as FilterStatus[]
-                ).map((tab) => (
-
+                {(["All", "Active", "Inactive", "Lead"] as FilterStatus[]).map((tab) => (
                   <button
                     key={tab}
                     type="button"
-                    className={`contacts-filter-tab ${
-                      statusFilter === tab
-                        ? "active"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      handleStatusFilter(tab)
-                    }
+                    className={`contacts-filter-tab ${statusFilter === tab ? "active" : ""}`}
+                    onClick={() => handleStatusFilter(tab)}
                   >
                     {tab}
                   </button>
-
                 ))}
-
               </div>
-
             </div>
-
           </div>
 
-          {/* =========================================
-              TABLE
-          ========================================== */}
-
-          {filteredContacts.length === 0 ? (
-
+          {/* TABLE / STATES */}
+          {loading ? (
+            <ThemeLoader label="Loading contacts..." minHeight={220} />
+          ) : error ? (
             <div className="contacts-empty-state">
-
+              <h3 style={{ color: "#dc2626" }}>{error}</h3>
+            </div>
+          ) : contacts.length === 0 ? (
+            <div className="contacts-empty-state">
               <div className="contacts-empty-icon">
                 <Users size={26} />
               </div>
-
-              <h3>
-                No contacts found
-              </h3>
-
-              <p>
-                Try adjusting your search or filter.
-              </p>
-
+              <h3>No contacts found</h3>
+              <p>Try adjusting your search or filter.</p>
             </div>
-
           ) : (
-
             <div className="contacts-table-wrapper">
-
-              <table className="contacts-table">
-
-                <thead>
-
-                  <tr>
-
-                    <th>
-                      <div className="contacts-th-content">
-                        NAME
-                        <ChevronUp
-                          size={13}
-                          className="contacts-sort-active"
-                        />
-                      </div>
-                    </th>
-
-                    <th>
-                      <div className="contacts-th-content">
-                        COMPANY
-                        <ChevronsUpDown size={12} />
-                      </div>
-                    </th>
-
-                    <th>
-                      EMAIL
-                    </th>
-
-                    <th>
-                      PHONE
-                    </th>
-
-                    <th>
-                      <div className="contacts-th-content">
-                        STATUS
-                        <ChevronsUpDown size={12} />
-                      </div>
-                    </th>
-
-                    <th>
-                      ACTIONS
-                    </th>
-
-                  </tr>
-
-                </thead>
-
-                <tbody>
-
-                  {currentContacts.map((contact) => (
-
-                    <tr key={contact.id}>
-
-                      {/* NAME */}
-
-                      <td>
-
-                        <div className="contacts-name-cell">
-
-                          <div className="contacts-avatar">
-                            {contact.fullName
-                              .split(" ")
-                              .map(
-                                (name) =>
-                                  name[0]
-                              )
-                              .slice(0, 2)
-                              .join("")
-                              .toUpperCase()}
-                          </div>
-
-                          <div>
-
-                            <div className="contacts-name">
-                              {contact.fullName}
-                            </div>
-
-                            <div className="contacts-job-title">
-                              {contact.jobTitle}
-                            </div>
-
-                          </div>
-
-                        </div>
-
-                      </td>
-
-                      {/* COMPANY */}
-
-                      <td>
-
-                        <div className="contacts-company">
-                          {contact.company}
-                        </div>
-
-                      </td>
-
-                      {/* EMAIL */}
-
-                      <td>
-
-                        <div className="contacts-email">
-                          {contact.email}
-                        </div>
-
-                      </td>
-
-                      {/* PHONE */}
-
-                      <td>
-
-                        <div className="contacts-phone">
-                          {contact.phone}
-                        </div>
-
-                      </td>
-
-                      {/* STATUS */}
-
-                      <td>
-
-                        <span
-                          className={`contacts-status contacts-status-${contact.status.toLowerCase()}`}
-                        >
-                          <span className="contacts-status-dot" />
-                          {contact.status}
-                        </span>
-
-                      </td>
-
-                      {/* ACTIONS */}
-
-                      <td>
-
-                        <div className="contacts-actions">
-
-                          <Link
-                            href={`/contacts/${contact.id}`}
-                            className="contacts-action-btn contacts-action-view"
-                            title="View Contact"
-                            style={{
-                              width: "38px",
-                              height: "38px",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              borderRadius: "8px",
-                            }}
-                          >
-                            <Eye size={16} />
-                          </Link>
-
-                          <Link
-                            href={`/contacts/edit?id=${contact.id}`}
-                            className="contacts-action-btn contacts-action-edit"
-                            title="Edit Contact"
-                            style={{
-                              width: "38px",
-                              height: "38px",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              borderRadius: "8px",
-                            }}
-                          >
-                            <Pencil size={16} />
-                          </Link>
-
-                          <button
-                            type="button"
-                            className="contacts-action-btn contacts-action-delete"
-                            title="Delete Contact"
-                            onClick={() =>
-                              confirmDelete(contact.id)
-                            }
-                            style={{
-                              width: "38px",
-                              height: "38px",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              borderRadius: "8px",
-                            }}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-
-                        </div>
-
-                      </td>
-
-                    </tr>
-
-                  ))}
-
-                </tbody>
-
-              </table>
-
+              <ContactTable contacts={contacts} onDelete={confirmDelete} />
             </div>
-
           )}
 
-          {/* =========================================
-              PAGINATION
-          ========================================== */}
-
-          {filteredContacts.length > 0 && (
-
+          {/* PAGINATION */}
+          {!loading && !error && contacts.length > 0 && (
             <div className="contacts-pagination">
-
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
-                totalItems={filteredContacts.length}
+                totalItems={totalCount}
                 itemsPerPage={CONTACTS_PER_PAGE}
                 onPageChange={setCurrentPage}
               />
-
             </div>
-
           )}
-
         </div>
 
         {/* =========================================
@@ -643,44 +349,31 @@ export default function ContactsPage() {
         ========================================== */}
 
         {contactToDelete && (
-
           <div
             className="contacts-modal-overlay"
             onClick={(e) => {
-              if (
-                e.target === e.currentTarget
-              ) {
+              if (e.target === e.currentTarget) {
                 setDeleteId(null);
               }
             }}
           >
-
             <div className="contacts-modal">
-
               <div className="contacts-modal-icon">
                 <Trash2 size={22} />
               </div>
 
-              <h2 className="contacts-modal-title">
-                Delete Contact
-              </h2>
+              <h2 className="contacts-modal-title">Delete Contact</h2>
 
               <p className="contacts-modal-text">
-                Are you sure you want to delete{" "}
-                <strong>
-                  {contactToDelete.fullName}
-                </strong>
-                ? This action cannot be undone.
+                Are you sure you want to delete <strong>{contactToDelete.fullName}</strong>? This
+                action cannot be undone.
               </p>
 
               <div className="contacts-modal-actions">
-
                 <button
                   type="button"
                   className="contacts-modal-cancel"
-                  onClick={() =>
-                    setDeleteId(null)
-                  }
+                  onClick={() => setDeleteId(null)}
                 >
                   Cancel
                 </button>
@@ -688,19 +381,13 @@ export default function ContactsPage() {
                 <button
                   type="button"
                   className="contacts-modal-delete"
-                  onClick={
-                    handleDeleteConfirmed
-                  }
+                  onClick={handleDeleteConfirmed}
                 >
                   Delete
                 </button>
-
               </div>
-
             </div>
-
           </div>
-
         )}
 
         {/* =========================================
@@ -708,17 +395,10 @@ export default function ContactsPage() {
         ========================================== */}
 
         {toastMsg && (
-
           <div className="contacts-toast">
-
-            <span className="contacts-toast-icon">
-              ✓
-            </span>
-
+            <span className="contacts-toast-icon">✓</span>
             {toastMsg}
-
           </div>
-
         )}
 
       </div>
