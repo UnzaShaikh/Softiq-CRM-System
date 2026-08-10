@@ -1,21 +1,54 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { CONTACTS } from "@/components/contacts/data";
+import { ApiContact, Contact, toContact } from "@/data/contact";
+import { apiRequest, getAccessToken } from "@/lib/api";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 
-interface Props {
-  params: Promise<{
-    id: string;
-  }>;
-}
+export default function ContactDetailPage() {
+  const router = useRouter();
+  const params = useParams();
+  const id = params?.id as string;
 
-export default async function ContactDetailPage({ params }: Props) {
-  const { id } = await params;
+  const [contact, setContact] = useState<Contact | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
 
-  const contact = CONTACTS.find(
-    (item) => item.id === Number(id)
-  );
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const data = await apiRequest<ApiContact>(`/api/contacts/${id}/`);
+        if (cancelled) return;
+        setContact(toContact(data));
+      } catch (err) {
+        if (cancelled) return;
+        setError((err as Error).message);
+        setNotFound(true);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, router]);
 
-  if (!contact) {
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <ThemeLoader label="Loading contact..." />
+      </DashboardLayout>
+    );
+  }
+
+  if (notFound || !contact) {
     return (
       <DashboardLayout>
         <div
@@ -41,7 +74,7 @@ export default async function ContactDetailPage({ params }: Props) {
               marginTop: "12px",
             }}
           >
-            The requested contact does not exist.
+            {error || "The requested contact does not exist."}
           </p>
 
           <Link

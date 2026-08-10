@@ -1,63 +1,77 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ContactTable from "@/components/contacts/ContactTable";
-import { CONTACTS } from "@/components/contacts/data";
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import { Contact, ApiContactList, toContact } from "@/data/contact";
+import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
 
 
 export default function ContactsPage() {
 
- const [contacts, setContacts] = useState(CONTACTS);
+  const router = useRouter();
+
+  const [contacts, setContacts] = useState<Contact[]>([]);
 
 const [search, setSearch] = useState("");
 const [statusFilter, setStatusFilter] = useState("All");
 const [currentPage, setCurrentPage] = useState(1);
+const [totalCount, setTotalCount] = useState(0);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
+const [refreshKey, setRefreshKey] = useState(0);
 
 
-  const contactsPerPage = 5;
+  const contactsPerPage = 10;
 
+  const totalPages = Math.ceil(totalCount / contactsPerPage);
 
-  const filteredContacts = contacts.filter((contact) => {
+  useEffect(() => {
+    let cancelled = false;
 
-    const matchesSearch =
-      contact.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      contact.company.toLowerCase().includes(search.toLowerCase()) ||
-      contact.email.toLowerCase().includes(search.toLowerCase());
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    if (statusFilter !== "All") params.set("status", statusFilter.toLowerCase());
+    params.set("page", String(currentPage));
 
+    const run = async () => {
+      setLoading(true);
+      try {
+        const data = await apiRequest<ApiContactList>(`/api/contacts/?${params.toString()}`);
+        if (cancelled) return;
+        setContacts(data.results.map(toContact));
+        setTotalCount(data.count);
+        setError(null);
+        const maxPage = Math.max(1, Math.ceil(data.count / contactsPerPage));
+        if (currentPage > maxPage) setCurrentPage(maxPage);
+      } catch (err) {
+        if (cancelled) return;
+        setError((err as Error).message);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
 
-    const matchesStatus =
-      statusFilter === "All" ||
-      contact.status === statusFilter;
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [search, statusFilter, currentPage, refreshKey, router]);
 
-
-    return matchesSearch && matchesStatus;
-
-  });
-
-
-
-  // Pagination Logic
-
-  const indexOfLastContact =
-    currentPage * contactsPerPage;
-
-
-  const indexOfFirstContact =
-    indexOfLastContact - contactsPerPage;
-
-
-  const currentContacts =
-    filteredContacts.slice(
-      indexOfFirstContact,
-      indexOfLastContact
-    );
-
-
-  const totalPages =
-    Math.ceil(filteredContacts.length / contactsPerPage);
+  const handleDelete = async (id: number) => {
+    try {
+      await apiRequest(`/api/contacts/${id}/`, { method: "DELETE" });
+      emitDataChanged();
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
 
 
 
@@ -185,18 +199,23 @@ const [currentPage, setCurrentPage] = useState(1);
 
         {/* Table */}
 
-       <ContactTable
-  contacts={currentContacts}
-  onDelete={(id)=>{
-
-    setContacts(
-      contacts.filter(
-        (contact)=>contact.id !== id
-      )
-    );
-
-  }}
+        {loading ? (
+          <ThemeLoader label="Loading contacts..." minHeight={220} />
+        ) : error ? (
+          <div className="empty-state">
+            <p className="empty-state-title" style={{ color: "#dc2626" }}>{error}</p>
+          </div>
+        ) : contacts.length === 0 ? (
+          <div className="empty-state">
+            <p className="empty-state-title">No contacts found.</p>
+            <p className="empty-state-sub">Try adjusting your search or filter.</p>
+          </div>
+        ) : (
+          <ContactTable
+  contacts={contacts}
+  onDelete={handleDelete}
 />
+        )}
 
 
 

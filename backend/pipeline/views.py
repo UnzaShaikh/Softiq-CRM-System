@@ -154,6 +154,8 @@ def recent_deals(request):
 
     data = [
     {
+        "id": deal.id,
+        "name": deal.name,
         "customer": (
             f"{deal.customer.first_name} {deal.customer.last_name}"
             if deal.customer
