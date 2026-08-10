@@ -6,6 +6,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import Pagination from "@/components/customers/Pagination";
 import emailTemplatesData, { EmailTemplate, TemplateCategory, ALL_CATEGORIES, CATEGORY_COLORS } from "@/data/emailTemplates";
 import { Plus, Search, Eye, Pencil, Trash2, Mail, ChevronDown } from "lucide-react";
+import { HiPlus, HiSearch, HiEye, HiPencil, HiTrash, HiMail, HiChevronDown } from "react-icons/hi";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -64,7 +65,7 @@ export default function EmailTemplatesPage() {
             <p className="page-subtitle">Create and manage email templates for consistent communication.</p>
           </div>
           <button className="btn-add" onClick={() => router.push("/email-templates/new")}>
-            <Plus size={16} /> Add Template
+            <HiPlus size={16} /> Add Template
           </button>
         </div>
 
@@ -75,7 +76,7 @@ export default function EmailTemplatesPage() {
           <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             {/* Search */}
             <div style={{ flex: 1, minWidth: "260px", position: "relative" }}>
-              <Search size={15} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }} />
+              <HiSearch size={15} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }} />
               <input type="text" value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
                 placeholder="Search templates by name or subject..."
                 style={{ width: "100%", padding: "8px 12px 8px 36px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#f8fafc", color: "#0f172a", fontSize: "0.875rem", fontFamily: "inherit", outline: "none" }}
@@ -94,14 +95,14 @@ export default function EmailTemplatesPage() {
                 <option value="All Categories">All Categories</option>
                 {ALL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <ChevronDown size={14} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }} />
+              <HiChevronDown size={14} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }} />
             </div>
           </div>
 
           {/* Table */}
           {filtered.length === 0 ? (
             <div className="empty-state">
-              <Mail size={40} color="#cbd5e1" style={{ margin: "0 auto 12px", display: "block" }} />
+            <HiMail size={40} color="#cbd5e1" style={{ margin: "0 auto 12px", display: "block" }} />
               <p className="empty-state-title">No templates found</p>
               <p className="empty-state-sub">Try adjusting your search or create a new template.</p>
             </div>
@@ -162,22 +163,22 @@ export default function EmailTemplatesPage() {
                       <td style={{ padding: "16px 20px", verticalAlign: "middle" }}>
                         <div style={{ display: "inline-flex", gap: "8px", alignItems: "center" }}>
                           <button onClick={() => router.push(`/email-templates/${template.id}`)} title="View"
-                            style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f46e5", borderRadius: "6px", transition: "background 0.1s" }}
+            style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f46e5", borderRadius: "6px", transition: "background 0.1s" }}
                             onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#eef2ff"}
                             onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "none"}
-                          ><Eye size={16} /></button>
+                          ><HiEye size={16} /></button>
 
                           <button onClick={() => router.push(`/email-templates/${template.id}/edit`)} title="Edit"
                             style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#0891b2", borderRadius: "6px", transition: "background 0.1s" }}
                             onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#ecfeff"}
                             onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "none"}
-                          ><Pencil size={15} /></button>
+                          ><HiPencil size={15} /></button>
 
                           <button onClick={() => setDeleteModal(template)} title="Delete"
                             style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444", borderRadius: "6px", transition: "background 0.1s" }}
                             onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#fef2f2"}
                             onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "none"}
-                          ><Trash2 size={15} /></button>
+                          ><HiTrash size={15} /></button>
                         </div>
                       </td>
                     </tr>
@@ -211,7 +212,7 @@ export default function EmailTemplatesPage() {
 
             {/* Icon */}
             <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-              <Trash2 size={26} color="#ef4444" />
+              <HiTrash size={26} color="#ef4444" />
             </div>
 
             <h2 style={{ margin: "0 0 10px", fontSize: "1.2rem", fontWeight: 700, color: "#0f172a" }}>Delete Email Template?</h2>

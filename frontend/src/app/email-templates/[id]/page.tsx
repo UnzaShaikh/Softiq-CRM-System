@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import emailTemplatesData, { EmailTemplate, CATEGORY_COLORS } from "@/data/emailTemplates";
 import { ArrowLeft, Pencil, Copy, Mail, Tag, User, Calendar, Clock, Eye, FileText, Settings } from "lucide-react";
+import { HiArrowLeft, HiPencil, HiDuplicate, HiMail, HiTag, HiUser, HiCalendar, HiClock, HiEye, HiDocumentText, HiCog, HiClipboardCopy } from "react-icons/hi";
 
 type TabType = "overview" | "preview" | "details" | "activity";
 
@@ -58,10 +59,10 @@ export default function ViewEmailTemplatePage() {
   const catStyle = CATEGORY_COLORS[t.category];
 
   const TABS: { key: TabType; label: string; icon: React.ReactNode }[] = [
-    { key: "overview", label: "Overview", icon: <Mail size={15} /> },
-    { key: "preview", label: "Preview", icon: <Eye size={15} /> },
-    { key: "details", label: "Details", icon: <FileText size={15} /> },
-    { key: "activity", label: "Activity", icon: <Clock size={15} /> },
+    { key: "overview", label: "Overview", icon: <HiMail size={15} /> },
+    { key: "preview", label: "Preview", icon: <HiEye size={15} /> },
+    { key: "details", label: "Details", icon: <HiDocumentText size={15} /> },
+    { key: "activity", label: "Activity", icon: <HiClock size={15} /> },
   ];
 
   return (
@@ -70,7 +71,7 @@ export default function ViewEmailTemplatePage() {
 
         {/* Back */}
         <button className="back-btn" onClick={() => router.push("/email-templates")}>
-          <ArrowLeft size={16} /> Back to Email Templates
+          <HiArrowLeft size={16} /> Back to Email Templates
         </button>
 
         {/* Page header */}
@@ -87,10 +88,10 @@ export default function ViewEmailTemplatePage() {
           <div style={{ display: "flex", gap: "8px" }}>
             <button onClick={() => router.push(`/email-templates/${id}/edit`)}
               style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#374151", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", fontFamily: "inherit" }}>
-              <Pencil size={14} /> Edit Template
+              <HiPencil size={14} /> Edit Template
             </button>
             <button style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#374151", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", fontFamily: "inherit" }}>
-              <Copy size={14} /> Duplicate
+              <HiDuplicate size={14} /> Duplicate
             </button>
             <button style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", border: "none", borderRadius: "8px", background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", color: "#fff", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", fontFamily: "inherit" }}>
               ••• More
@@ -118,11 +119,11 @@ export default function ViewEmailTemplatePage() {
                 <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", overflow: "hidden" }}>
                   <div style={{ padding: "14px 18px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <FileText size={16} color="#4f46e5" />
+                      <HiDocumentText size={16} color="#4f46e5" />
                       <h3 style={{ margin: 0, fontSize: "0.9rem", fontWeight: 700, color: "#0f172a" }}>Email Content</h3>
                     </div>
                     <button onClick={handleCopy} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "5px 12px", border: "1.5px solid #e2e8f0", borderRadius: "6px", background: "#fff", color: "#475569", fontSize: "0.8rem", fontFamily: "inherit", cursor: "pointer" }}>
-                      <Copy size={13} /> {copied ? "Copied!" : "Copy Content"}
+                      <HiClipboardCopy size={13} /> {copied ? "Copied!" : "Copy Content"}
                     </button>
                   </div>
                   <div style={{ padding: "20px", background: "#fafafa" }}>
@@ -154,7 +155,7 @@ export default function ViewEmailTemplatePage() {
                 {/* Subject */}
                 <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px 18px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                    <Mail size={16} color="#4f46e5" />
+                    <HiMail size={16} color="#4f46e5" />
                     <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 700, color: "#0f172a" }}>Subject</h3>
                   </div>
                   <p style={{ margin: 0, color: "#475569", fontSize: "0.9rem" }}>{t.subject}</p>
@@ -163,7 +164,7 @@ export default function ViewEmailTemplatePage() {
                 {/* Description */}
                 <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px 18px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                    <FileText size={16} color="#4f46e5" />
+                    <HiDocumentText size={16} color="#4f46e5" />
                     <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 700, color: "#0f172a" }}>Description</h3>
                   </div>
                   <p style={{ margin: 0, color: "#475569", fontSize: "0.9rem", lineHeight: 1.7 }}>{t.description}</p>
@@ -238,7 +239,7 @@ export default function ViewEmailTemplatePage() {
             {/* Template Information */}
             <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "18px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-                <FileText size={15} color="#4f46e5" />
+                <HiDocumentText size={15} color="#4f46e5" />
                 <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 700, color: "#0f172a" }}>Template Information</h3>
               </div>
               {[
@@ -260,7 +261,7 @@ export default function ViewEmailTemplatePage() {
             {/* Template Settings */}
             <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "18px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-                <Settings size={15} color="#4f46e5" />
+                <HiCog size={15} color="#4f46e5" />
                 <h3 style={{ margin: 0, fontSize: "0.875rem", fontWeight: 700, color: "#0f172a" }}>Template Settings</h3>
               </div>
               {[

@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import emailTemplatesData, { ALL_CATEGORIES, AVAILABLE_VARIABLES, TemplateCategory, TemplateType, TemplateStatus } from "@/data/emailTemplates";
 import { ChevronDown, Save, X } from "lucide-react";
+import { HiChevronDown, HiSave, HiX } from "react-icons/hi";
 
 interface FormValues {
   name: string; subject: string; content: string;
@@ -97,11 +98,11 @@ export default function EditEmailTemplatePage() {
           <div style={{ display: "flex", gap: "10px" }}>
             <button type="button" onClick={() => router.push(`/email-templates/${id}`)}
               style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 20px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#475569", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer", fontFamily: "inherit" }}>
-              <X size={14} /> Cancel
+              <HiX size={14} /> Cancel
             </button>
             <button type="submit" form="edit-template-form" disabled={saving}
               style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 20px", border: "none", borderRadius: "8px", background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", color: "#fff", fontWeight: 600, fontSize: "0.9rem", cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: saving ? 0.75 : 1 }}>
-              {saving ? "Saving..." : <><Save size={14} /> Save Changes</>}
+              {saving ? "Saving..." : <><HiSave size={14} /> Save Changes</>}
             </button>
           </div>
         </div>
@@ -202,7 +203,7 @@ export default function EditEmailTemplatePage() {
                     <option value="">Select category</option>
                     {ALL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  <ChevronDown size={14} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }} />
+                  <HiChevronDown size={14} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }} />
                 </div>
               </div>
 

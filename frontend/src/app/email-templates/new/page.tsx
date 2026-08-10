@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { ALL_CATEGORIES, AVAILABLE_VARIABLES, TemplateCategory, TemplateType, TemplateStatus } from "@/data/emailTemplates";
 import { ChevronDown, Save, X } from "lucide-react";
+import { HiChevronDown, HiSave, HiX } from "react-icons/hi";
 
 interface FormValues {
   name: string; subject: string; content: string;
@@ -72,11 +73,11 @@ export default function AddEmailTemplatePage() {
           <div style={{ display: "flex", gap: "10px" }}>
             <button type="button" onClick={() => router.push("/email-templates")}
               style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 20px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#475569", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer", fontFamily: "inherit" }}>
-              <X size={14} /> Cancel
+              <HiX size={14} /> Cancel
             </button>
             <button type="submit" form="template-form"
               style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 20px", border: "none", borderRadius: "8px", background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", color: "#fff", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 8px rgba(79,70,229,0.35)" }}>
-              <Save size={14} /> Save Template
+              <HiSave size={14} /> Save Template
             </button>
           </div>
         </div>
@@ -215,7 +216,7 @@ export default function AddEmailTemplatePage() {
                     <option value="">Select category</option>
                     {ALL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  <ChevronDown size={14} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }} />
+                  <HiChevronDown size={14} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }} />
                 </div>
                 {errors.category && <p className="form-error">{errors.category}</p>}
                 <p style={{ margin: "4px 0 0", fontSize: "0.72rem", color: "#94a3b8" }}>Choose a category for easy organization.</p>
