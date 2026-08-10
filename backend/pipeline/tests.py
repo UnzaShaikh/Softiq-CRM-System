@@ -4,7 +4,7 @@ from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 
 from customers.models import Customer
-from dashboard.models import Deal
+from deals.models import Deal
 
 User = get_user_model()
 
@@ -13,6 +13,7 @@ class PipelineAPITestCase(APITestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
+            username="admin",
             email="admin@test.com",
             password="admin123"
         )

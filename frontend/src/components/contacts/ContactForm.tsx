@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { Contact } from "./types";
+import { useRouter } from "next/navigation";
+import { Contact, ContactStatus, toApiPayload } from "@/data/contact";
+import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
 
 interface ContactFormProps {
   mode: "add" | "edit";
@@ -23,14 +25,26 @@ export default function ContactForm({
   mode,
   contact,
 }: ContactFormProps) {
-  const [form, setForm] = useState({
-    fullName: "",
-    company: "",
-    email: "",
-    phone: "",
-    jobTitle: "",
-    status: "Active",
-  });
+  const router = useRouter();
+  const [form, setForm] = useState(() =>
+    mode === "edit" && contact
+      ? {
+          fullName: contact.fullName,
+          company: contact.company,
+          email: contact.email,
+          phone: contact.phone,
+          jobTitle: contact.jobTitle,
+          status: contact.status,
+        }
+      : {
+          fullName: "",
+          company: "",
+          email: "",
+          phone: "",
+          jobTitle: "",
+          status: "Active",
+        }
+  );
   const [errors, setErrors] = useState({
   fullName: "",
   company: "",
@@ -42,18 +56,6 @@ export default function ContactForm({
 const [loading, setLoading] = useState(false);
 const [success, setSuccess] = useState("");
 const [submitError, setSubmitError] = useState("");
-  useEffect(() => {
-    if (mode === "edit" && contact) {
-      setForm({
-        fullName: contact.fullName,
-        company: contact.company,
-        email: contact.email,
-        phone: contact.phone,
-        jobTitle: contact.jobTitle,
-        status: contact.status,
-      });
-    }
-  }, [mode, contact]);
 
  const handleChange = (
   e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -134,18 +136,30 @@ const handleSubmit = async (e: React.FormEvent) => {
   setSubmitError("");
 
   try {
-    // Fake API delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const payload = toApiPayload({ ...form, status: form.status as ContactStatus });
 
     if (mode === "add") {
+      await apiRequest("/api/contacts/", {
+        method: "POST",
+        body: payload,
+      });
       setSuccess("Contact added successfully!");
     } else {
+      await apiRequest(`/api/contacts/${contact!.id}/`, {
+        method: "PATCH",
+        body: payload,
+      });
       setSuccess("Contact updated successfully!");
     }
 
-    console.log(form);
-  } catch {
-    setSubmitError("Something went wrong.");
+    emitDataChanged();
+
+    setTimeout(() => {
+      router.push(mode === "edit" ? `/contacts/${contact!.id}` : "/contacts");
+    }, 1500);
+  } catch (err) {
+    setSubmitError((err as Error).message || "Something went wrong.");
+    if (!getAccessToken()) router.push("/login");
   } finally {
     setLoading(false);
   }

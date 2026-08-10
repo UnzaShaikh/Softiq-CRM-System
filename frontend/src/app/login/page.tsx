@@ -289,7 +289,7 @@ export default function LoginPage() {
     throw new Error(data.detail || "Invalid username or password.");
   }
 
- login(
+  login(
   {
     username: data.user.username,
     email: data.user.email,
@@ -300,10 +300,17 @@ export default function LoginPage() {
   data.refresh
 );
 
-  router.push("/dashboard");
+  const params = new URLSearchParams(window.location.search);
+  const next = params.get("next");
+  const dest =
+    next && next.startsWith("/") && !next.startsWith("//")
+      ? next
+      : "/dashboard";
 
-} catch (err: any) {
-  setError(err.message || "Login failed.");
+  router.replace(dest);
+
+} catch (err) {
+  setError(err instanceof Error ? err.message : "Login failed.");
 } finally {
   setIsLoading(false);
 }

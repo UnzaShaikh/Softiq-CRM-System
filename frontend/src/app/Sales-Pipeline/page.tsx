@@ -1,97 +1,160 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import * as XLSX from "xlsx";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  ResponsiveContainer, 
-  ComposedChart, 
-  Bar, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip 
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
 } from "recharts";
-import { 
-  Users, 
-  UserCheck, 
-  DollarSign, 
-  Handshake, 
+import {
+  Users,
+  UserCheck,
+  DollarSign,
+  Handshake,
   XCircle,
-  Calendar, 
+  Calendar,
   Download,
   UserPlus,
   CheckCircle2,
   X,
-  TrendingUp
+  TrendingUp,
 } from "lucide-react";
+import { apiRequest, getAccessToken } from "@/lib/api";
 
 // --- Stages Configuration ---
 const stagesConfig = [
-  { name: "Prospecting", color: "bg-purple-500", hex: "#a855f7", stageBg: "bg-purple-100 text-purple-700" },
-  { name: "Qualification", color: "bg-blue-500", hex: "#3b82f6", stageBg: "bg-blue-100 text-blue-700" },
+  { name: "Lead", color: "bg-purple-500", hex: "#a855f7", stageBg: "bg-purple-100 text-purple-700" },
+  { name: "Qualified", color: "bg-blue-500", hex: "#3b82f6", stageBg: "bg-blue-100 text-blue-700" },
   { name: "Proposal", color: "bg-sky-400", hex: "#38bdf8", stageBg: "bg-sky-100 text-sky-700" },
   { name: "Negotiation", color: "bg-amber-500", hex: "#f59e0b", stageBg: "bg-amber-100 text-amber-700" },
   { name: "Closed Won", color: "bg-emerald-500", hex: "#10b981", stageBg: "bg-emerald-100 text-emerald-700" },
   { name: "Closed Lost", color: "bg-rose-500", hex: "#f43f5e", stageBg: "bg-rose-100 text-rose-700" },
 ];
 
-// --- Dynamic 48 Deals Mock Data Generation ---
-const customersList = [
-  { name: "Zain Raza", company: "Alpha Dynamics", dealName: "ERP Implementation" },
-  { name: "Fatima Noor", company: "TechVision Pvt Ltd", dealName: "Data Analytics Suite" },
-  { name: "Ayesha Siddiqui", company: "BrightEdge Systems", dealName: "Security Audit" },
-  { name: "Sara Khan", company: "Global Enterprises", dealName: "Enterprise Solution" },
-  { name: "Ahmed Ali", company: "Nexus Corp", dealName: "Cloud Migration" },
-];
+// --- API Types ---
+interface PipelineSummary {
+  total_deals: number;
+  total_pipeline_value: number | string;
+  active_deals: number;
+  closed_won: number;
+  closed_lost: number;
+}
 
-const initialDeals = Array.from({ length: 48 }, (_, i) => {
-  const baseCustomer = customersList[i % customersList.length];
-  const stg = stagesConfig[i % stagesConfig.length];
-  const day = (i % 28) + 1;
-  const month = i % 2 === 0 ? "05" : "06";
-  const closeDate = `2024-${month}-${day < 10 ? "0" + day : day}`;
-  const value = (i + 1) * 3500 + 5000;
+interface PipelineTrendItem {
+  current: number | string;
+  previous: number | string;
+  growth: number;
+}
 
-  return {
-    id: i + 1,
-    name: i < 5 ? baseCustomer.dealName : `${baseCustomer.dealName} #${Math.floor(i / 5) + 1}`,
-    customer: baseCustomer.name,
-    company: baseCustomer.company,
-    value: value,
-    stage: stg.name,
-    stageBg: stg.stageBg,
-    closeDate: closeDate,
-    avatarBg: i % 2 === 0 ? "bg-indigo-600" : "bg-blue-600",
-  };
-});
+interface PipelineTrends {
+  total_deals: PipelineTrendItem;
+  pipeline_value: PipelineTrendItem;
+  active_deals: PipelineTrendItem;
+  closed_won: PipelineTrendItem;
+  closed_lost: PipelineTrendItem;
+}
 
-// Monthly Performance Graph Data
-const monthlyPerformanceData = [
-  { month: "Jan", created: 25, closed: 12, revenue: 50000 },
-  { month: "Feb", created: 30, closed: 18, revenue: 75000 },
-  { month: "Mar", created: 42, closed: 25, revenue: 110000 },
-  { month: "Apr", created: 48, closed: 30, revenue: 135000 },
-  { month: "May", created: 58, closed: 38, revenue: 180000 },
-  { month: "Jun", created: 50, closed: 32, revenue: 230000 },
-];
+interface StageDistribution {
+  stage: string;
+  deal_count: number;
+  total_value: number | string;
+  percentage: number;
+}
+
+interface RecentDeal {
+  id: number;
+  name: string;
+  customer: string;
+  company: string;
+  deal_value: number | string;
+  stage: string;
+  expected_closing_date: string | null;
+}
+
+interface PipelinePerformance {
+  months: string[];
+  deals_created: number[];
+  deals_closed: number[];
+  revenue_generated: number[];
+}
+
+const num = (v: number | string | null | undefined): number => Number(v ?? 0) || 0;
+
+const fmtMoney = (v: number | string | null | undefined): string =>
+  `$${num(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+
+const fmtGrowth = (g: number): string => `${g >= 0 ? "+" : ""}${g}%`;
 
 export default function SalesPipelinePage() {
-  const [deals] = useState(initialDeals);
-  const [startDate, setStartDate] = useState("2024-05-01");
-  const [endDate, setEndDate] = useState("2024-05-31");
+  const router = useRouter();
+
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [isFiltered, setIsFiltered] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showAllDeals, setShowAllDeals] = useState(false);
 
-  const filteredDeals = deals.filter((deal) => {
-    if (!isFiltered || !startDate || !endDate) return true;
-    return deal.closeDate >= startDate && deal.closeDate <= endDate;
-  });
+  const [summary, setSummary] = useState<PipelineSummary | null>(null);
+  const [trends, setTrends] = useState<PipelineTrends | null>(null);
+  const [stagesData, setStagesData] = useState<StageDistribution[]>([]);
+  const [recentDeals, setRecentDeals] = useState<RecentDeal[]>([]);
+  const [performance, setPerformance] = useState<PipelinePerformance | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      try {
+        setLoading(true);
+        const dateParams =
+          isFiltered && startDate && endDate
+            ? `?start_date=${startDate}&end_date=${endDate}`
+            : "";
+
+        const [summaryRes, trendsRes, stagesRes, recentRes, performanceRes] =
+          await Promise.all([
+            apiRequest<PipelineSummary>(`/api/pipeline/summary/${dateParams}`),
+            apiRequest<PipelineTrends>("/api/pipeline/trends/"),
+            apiRequest<StageDistribution[]>(`/api/pipeline/stages/${dateParams}`),
+            apiRequest<RecentDeal[]>(`/api/pipeline/recent-deals/${dateParams}`),
+            apiRequest<PipelinePerformance>("/api/pipeline/performance/"),
+          ]);
+
+        if (cancelled) return;
+        setSummary(summaryRes);
+        setTrends(trendsRes);
+        setStagesData(stagesRes);
+        setRecentDeals(recentRes);
+        setPerformance(performanceRes);
+        setError(null);
+      } catch (err) {
+        if (cancelled) return;
+        setError((err as Error).message);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [isFiltered, startDate, endDate, router]);
 
   const formatDateLabel = (dateStr: string) => {
     if (!dateStr) return "";
@@ -99,78 +162,102 @@ export default function SalesPipelinePage() {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
-  const dateButtonLabel = isFiltered && startDate && endDate 
-    ? `${formatDateLabel(startDate)} – ${formatDateLabel(endDate)}, 2024`
-    : "May 1 – May 31, 2024";
+  const dateButtonLabel =
+    isFiltered && startDate && endDate
+      ? `${formatDateLabel(startDate)} – ${formatDateLabel(endDate)}, ${new Date(endDate).getFullYear()}`
+      : "All Dates";
 
-  const totalPipelineValue = filteredDeals.reduce((sum, d) => sum + d.value, 0);
-  const totalDealsCount = filteredDeals.length;
-  const activeDealsCount = filteredDeals.filter(d => d.stage !== "Closed Won" && d.stage !== "Closed Lost").length;
-  const closedWonCount = filteredDeals.filter(d => d.stage === "Closed Won").length;
-  const closedLostCount = filteredDeals.filter(d => d.stage === "Closed Lost").length;
+  const totalPipelineValue = num(summary?.total_pipeline_value);
+  const totalDealsCount = summary?.total_deals ?? 0;
+  const activeDealsCount = summary?.active_deals ?? 0;
+  const closedWonCount = summary?.closed_won ?? 0;
+  const closedLostCount = summary?.closed_lost ?? 0;
+
+  const growthOf = (t?: PipelineTrendItem) => t?.growth ?? 0;
 
   const stats = [
-    { 
-      label: "TOTAL DEALS", 
-      value: totalDealsCount.toString(), 
-      change: "+14.3%", 
-      up: true, 
-      icon: Users, 
-      iconColor: "text-indigo-600 bg-indigo-50/80" 
+    {
+      label: "TOTAL DEALS",
+      value: String(totalDealsCount),
+      change: fmtGrowth(growthOf(trends?.total_deals)),
+      up: growthOf(trends?.total_deals) >= 0,
+      icon: Users,
+      iconColor: "text-indigo-600 bg-indigo-50/80",
     },
-    { 
-      label: "TOTAL PIPELINE VALUE", 
-      value: `$${totalPipelineValue.toLocaleString()}`, 
-      change: "+12.5%", 
-      up: true, 
-      icon: DollarSign, 
-      iconColor: "text-emerald-600 bg-emerald-50/80" 
+    {
+      label: "TOTAL PIPELINE VALUE",
+      value: fmtMoney(totalPipelineValue),
+      change: fmtGrowth(growthOf(trends?.pipeline_value)),
+      up: growthOf(trends?.pipeline_value) >= 0,
+      icon: DollarSign,
+      iconColor: "text-emerald-600 bg-emerald-50/80",
     },
-    { 
-      label: "ACTIVE DEALS", 
-      value: activeDealsCount.toString(), 
-      change: "+7.8%", 
-      up: true, 
-      icon: UserCheck, 
-      iconColor: "text-sky-600 bg-sky-50/80" 
+    {
+      label: "ACTIVE DEALS",
+      value: String(activeDealsCount),
+      change: fmtGrowth(growthOf(trends?.active_deals)),
+      up: growthOf(trends?.active_deals) >= 0,
+      icon: UserCheck,
+      iconColor: "text-sky-600 bg-sky-50/80",
     },
-    { 
-      label: "CLOSED WON", 
-      value: closedWonCount.toString(), 
-      change: "+16.7%", 
-      up: true, 
-      icon: Handshake, 
-      iconColor: "text-amber-600 bg-amber-50/80" 
+    {
+      label: "CLOSED WON",
+      value: String(closedWonCount),
+      change: fmtGrowth(growthOf(trends?.closed_won)),
+      up: growthOf(trends?.closed_won) >= 0,
+      icon: Handshake,
+      iconColor: "text-amber-600 bg-amber-50/80",
     },
-    { 
-      label: "CLOSED LOST", 
-      value: closedLostCount.toString(), 
-      change: "-4.8%", 
-      up: false, 
-      icon: XCircle, 
-      iconColor: "text-rose-600 bg-rose-50/80" 
+    {
+      label: "CLOSED LOST",
+      value: String(closedLostCount),
+      change: fmtGrowth(growthOf(trends?.closed_lost)),
+      up: growthOf(trends?.closed_lost) >= 0,
+      icon: XCircle,
+      iconColor: "text-rose-600 bg-rose-50/80",
     },
   ];
 
+  const stageMap = new Map(stagesData.map((s) => [s.stage, s]));
+
   const stages = stagesConfig.map((stg) => {
-    const stageDeals = filteredDeals.filter(d => d.stage === stg.name);
-    const count = stageDeals.length;
-    const valueNum = stageDeals.reduce((sum, d) => sum + d.value, 0);
-    const percentage = totalPipelineValue > 0 ? ((valueNum / totalPipelineValue) * 100).toFixed(1) + "%" : "0.0%";
+    const api = stageMap.get(stg.name);
+    const rawVal = api ? num(api.total_value) : 0;
     return {
       ...stg,
-      count,
-      value: `$${valueNum.toLocaleString()}`,
-      percentage,
-      rawVal: valueNum
+      count: api?.deal_count ?? 0,
+      value: fmtMoney(rawVal),
+      percentage: api ? `${api.percentage}%` : "0.0%",
+      rawVal,
     };
   });
 
-  const pieData = stages.map((stg) => ({
-    name: stg.name,
-    value: stg.rawVal > 0 ? stg.rawVal : 1,
-    color: stg.hex,
-  }));
+  const pieData = stages
+    .filter((stg) => stg.rawVal > 0)
+    .map((stg) => ({ name: stg.name, value: stg.rawVal, color: stg.hex }));
+
+  const monthlyPerformanceData = performance
+    ? performance.months.map((month, i) => ({
+        month,
+        created: performance.deals_created[i] ?? 0,
+        closed: performance.deals_closed[i] ?? 0,
+        revenue: num(performance.revenue_generated[i]),
+      }))
+    : [];
+
+  const totals = monthlyPerformanceData.reduce(
+    (acc, m) => ({
+      created: acc.created + m.created,
+      closed: acc.closed + m.closed,
+      revenue: acc.revenue + m.revenue,
+    }),
+    { created: 0, closed: 0, revenue: 0 }
+  );
+
+  const stageBgOf = (stageName: string) =>
+    stagesConfig.find((s) => s.name === stageName)?.stageBg ?? "bg-slate-100 text-slate-700";
+
+  const avatarBgOf = (idx: number) => (idx % 2 === 0 ? "bg-indigo-600" : "bg-blue-600");
 
   const handleShowAll = () => {
     setIsFiltered(false);
@@ -183,13 +270,13 @@ export default function SalesPipelinePage() {
   };
 
   const handleExport = () => {
-    const exportData = filteredDeals.map((deal) => ({
+    const exportData = recentDeals.map((deal) => ({
       "Deal Name": deal.name,
       "Customer": deal.customer,
       "Company": deal.company,
-      "Deal Value ($)": deal.value,
+      "Deal Value ($)": num(deal.deal_value),
       "Stage": deal.stage,
-      "Expected Close Date": deal.closeDate,
+      "Expected Close Date": deal.expected_closing_date ?? "",
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -197,6 +284,16 @@ export default function SalesPipelinePage() {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Sales Pipeline");
     XLSX.writeFile(workbook, `Sales_Pipeline_Export.xlsx`);
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col gap-6 p-6 bg-slate-50 min-h-screen relative">
+          <ThemeLoader label="Loading pipeline..." />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -211,7 +308,7 @@ export default function SalesPipelinePage() {
 
           <div className="flex items-center gap-3 relative">
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setShowDatePicker(!showDatePicker)}
                 className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 font-medium shadow-sm hover:bg-slate-50 transition"
               >
@@ -227,12 +324,12 @@ export default function SalesPipelinePage() {
                       <X size={14} />
                     </button>
                   </div>
-                  
+
                   <div className="flex flex-col gap-1">
                     <label className="text-[11px] font-medium text-slate-500">From:</label>
-                    <input 
-                      type="date" 
-                      value={startDate} 
+                    <input
+                      type="date"
+                      value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
                       className="text-xs border border-slate-200 rounded-md p-1.5 outline-none focus:border-indigo-500"
                     />
@@ -240,22 +337,22 @@ export default function SalesPipelinePage() {
 
                   <div className="flex flex-col gap-1">
                     <label className="text-[11px] font-medium text-slate-500">To:</label>
-                    <input 
-                      type="date" 
-                      value={endDate} 
+                    <input
+                      type="date"
+                      value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
                       className="text-xs border border-slate-200 rounded-md p-1.5 outline-none focus:border-indigo-500"
                     />
                   </div>
 
                   <div className="flex gap-2 mt-2">
-                    <button 
+                    <button
                       onClick={handleShowAll}
                       className="flex-1 py-1.5 bg-slate-100 text-slate-700 text-xs font-semibold rounded-md hover:bg-slate-200 transition"
                     >
                       Show All
                     </button>
-                    <button 
+                    <button
                       onClick={handleApplyFilter}
                       className="flex-1 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-md hover:bg-indigo-700 transition"
                     >
@@ -266,7 +363,7 @@ export default function SalesPipelinePage() {
               )}
             </div>
 
-            <button 
+            <button
               onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 shadow-sm transition active:scale-95"
             >
@@ -275,6 +372,12 @@ export default function SalesPipelinePage() {
             </button>
           </div>
         </div>
+
+        {error && (
+          <div className="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg px-4 py-3">
+            {error}
+          </div>
+        )}
 
         {/* 1. Top 5 KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
@@ -290,11 +393,11 @@ export default function SalesPipelinePage() {
                   <span className="text-[10px] font-bold tracking-tight text-slate-400 uppercase truncate" title={item.label}>
                     {item.label}
                   </span>
-                  
+
                   <div className="text-base lg:text-lg font-bold text-slate-900 my-0.5 truncate" title={item.value}>
                     {item.value}
                   </div>
-                  
+
                   <div className="flex items-center gap-1 whitespace-nowrap">
                     <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold shrink-0 ${item.up ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
                       <TrendingUp size={9} className={item.up ? '' : 'rotate-180'} />
@@ -310,12 +413,12 @@ export default function SalesPipelinePage() {
 
         {/* 2. Middle Row */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
+
           <div className="lg:col-span-5 bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-center mb-2">
               <h2 className="font-bold text-slate-800 text-base">Pipeline by Stage</h2>
               <select className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 outline-none">
-                <option>This Month</option>
+                <option>All Time</option>
               </select>
             </div>
 
@@ -326,6 +429,7 @@ export default function SalesPipelinePage() {
                     <div className="flex items-center gap-2">
                       <span className={`w-2 h-2 rounded-full ${stg.color}`}></span>
                       <span className="font-medium text-slate-700">{stg.name}</span>
+                      <span className="text-slate-400">({stg.count})</span>
                     </div>
                     <span className="font-semibold text-slate-700">{stg.value}</span>
                   </div>
@@ -350,9 +454,9 @@ export default function SalesPipelinePage() {
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
-                
+
                 <div className="absolute text-center">
-                  <div className="text-[11px] font-bold text-slate-800">${totalPipelineValue.toLocaleString()}</div>
+                  <div className="text-[11px] font-bold text-slate-800">{fmtMoney(totalPipelineValue)}</div>
                   <div className="text-[8px] text-slate-400 font-medium">Total Pipeline</div>
                 </div>
               </div>
@@ -362,7 +466,7 @@ export default function SalesPipelinePage() {
               <span>Total</span>
               <div className="flex gap-6">
                 <span>{totalDealsCount}</span>
-                <span>${totalPipelineValue.toLocaleString()}</span>
+                <span>{fmtMoney(totalPipelineValue)}</span>
                 <span>100%</span>
               </div>
             </div>
@@ -370,8 +474,8 @@ export default function SalesPipelinePage() {
 
           <div className="lg:col-span-7 bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="font-bold text-slate-800 text-base">Recent Deals ({filteredDeals.length})</h2>
-              <button 
+              <h2 className="font-bold text-slate-800 text-base">Recent Deals ({recentDeals.length})</h2>
+              <button
                 onClick={() => setShowAllDeals(!showAllDeals)}
                 className="text-xs font-medium text-indigo-600 hover:underline transition"
               >
@@ -392,24 +496,24 @@ export default function SalesPipelinePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {filteredDeals.length > 0 ? (
-                    filteredDeals.map((deal) => (
+                  {recentDeals.length > 0 ? (
+                    recentDeals.map((deal, idx) => (
                       <tr key={deal.id} className="hover:bg-slate-50/50">
                         <td className="py-3 font-semibold text-slate-800 flex items-center gap-2">
-                          <span className={`w-6 h-6 text-[10px] font-bold text-white rounded-full flex items-center justify-center shrink-0 ${deal.avatarBg}`}>
+                          <span className={`w-6 h-6 text-[10px] font-bold text-white rounded-full flex items-center justify-center shrink-0 ${avatarBgOf(idx)}`}>
                             {deal.customer.split(' ').map(n => n[0]).join('')}
                           </span>
                           {deal.name}
                         </td>
                         <td className="py-3 text-slate-600">{deal.customer}</td>
                         <td className="py-3 text-slate-500">{deal.company}</td>
-                        <td className="py-3 font-bold text-slate-800">${deal.value.toLocaleString()}</td>
+                        <td className="py-3 font-bold text-slate-800">{fmtMoney(deal.deal_value)}</td>
                         <td className="py-3">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-medium ${deal.stageBg}`}>
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-medium ${stageBgOf(deal.stage)}`}>
                             {deal.stage}
                           </span>
                         </td>
-                        <td className="py-3 text-right text-slate-500">{deal.closeDate}</td>
+                        <td className="py-3 text-right text-slate-500">{deal.expected_closing_date ?? "—"}</td>
                       </tr>
                     ))
                   ) : (
@@ -455,16 +559,16 @@ export default function SalesPipelinePage() {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
                   <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                  <YAxis 
-                    yAxisId="right" 
-                    orientation="right" 
-                    axisLine={false} 
-                    tickLine={false} 
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    axisLine={false}
+                    tickLine={false}
                     tick={{ fontSize: 11, fill: '#94a3b8' }}
                     tickFormatter={(v) => `$${v / 1000}k`}
                   />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }} 
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}
                   />
                   <Bar yAxisId="left" dataKey="created" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={12} />
                   <Bar yAxisId="left" dataKey="closed" fill="#38bdf8" radius={[4, 4, 0, 0]} barSize={12} />
@@ -478,8 +582,10 @@ export default function SalesPipelinePage() {
             <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
               <div>
                 <span className="text-xs text-slate-500 font-medium">Deals Created</span>
-                <div className="text-xl font-bold text-slate-800 mt-1">129</div>
-                <span className="text-xs text-emerald-600 font-semibold">▲ 18.2% <span className="text-[10px] text-slate-400 font-normal">vs last year</span></span>
+                <div className="text-xl font-bold text-slate-800 mt-1">{totals.created.toLocaleString()}</div>
+                <span className={`text-xs font-semibold ${growthOf(trends?.total_deals) >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                  {growthOf(trends?.total_deals) >= 0 ? "▲" : "▼"} {fmtGrowth(growthOf(trends?.total_deals))} <span className="text-[10px] text-slate-400 font-normal">vs last month</span>
+                </span>
               </div>
               <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600">
                 <UserPlus size={20} />
@@ -489,8 +595,10 @@ export default function SalesPipelinePage() {
             <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
               <div>
                 <span className="text-xs text-slate-500 font-medium">Deals Closed</span>
-                <div className="text-xl font-bold text-slate-800 mt-1">93</div>
-                <span className="text-xs text-emerald-600 font-semibold">▲ 15.4% <span className="text-[10px] text-slate-400 font-normal">vs last year</span></span>
+                <div className="text-xl font-bold text-slate-800 mt-1">{totals.closed.toLocaleString()}</div>
+                <span className={`text-xs font-semibold ${growthOf(trends?.closed_won) >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                  {growthOf(trends?.closed_won) >= 0 ? "▲" : "▼"} {fmtGrowth(growthOf(trends?.closed_won))} <span className="text-[10px] text-slate-400 font-normal">vs last month</span>
+                </span>
               </div>
               <div className="p-3 bg-sky-50 rounded-xl text-sky-600">
                 <CheckCircle2 size={20} />
@@ -500,8 +608,10 @@ export default function SalesPipelinePage() {
             <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
               <div>
                 <span className="text-xs text-slate-500 font-medium">Revenue Generated</span>
-                <div className="text-xl font-bold text-slate-800 mt-1">$679,000</div>
-                <span className="text-xs text-emerald-600 font-semibold">▲ 22.7% <span className="text-[10px] text-slate-400 font-normal">vs last year</span></span>
+                <div className="text-xl font-bold text-slate-800 mt-1">{fmtMoney(totals.revenue)}</div>
+                <span className={`text-xs font-semibold ${growthOf(trends?.pipeline_value) >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                  {growthOf(trends?.pipeline_value) >= 0 ? "▲" : "▼"} {fmtGrowth(growthOf(trends?.pipeline_value))} <span className="text-[10px] text-slate-400 font-normal">vs last month</span>
+                </span>
               </div>
               <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600">
                 <DollarSign size={20} />

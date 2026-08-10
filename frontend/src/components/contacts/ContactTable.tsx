@@ -1,7 +1,7 @@
     "use client";
 
     import Link from "next/link";
-    import { Contact } from "./types";
+    import { Contact } from "@/data/contact";
 
 
     interface Props {
