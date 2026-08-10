@@ -13,9 +13,11 @@ const STAGE_STYLES: Record<OpportunityStage, { bg: string; color: string; border
 };
 
 const STATUS_STYLES: Record<OpportunityStatus, { bg: string; color: string; border: string; dot: string }> = {
-  "Active":   { bg: "#dcfce7", color: "#15803d", border: "#bbf7d0", dot: "#22c55e" },
-  "On Hold":  { bg: "#fef3c7", color: "#b45309", border: "#fde68a", dot: "#f59e0b" },
-  "Inactive": { bg: "#f1f5f9", color: "#64748b", border: "#e2e8f0", dot: "#94a3b8" },
+  "Active":     { bg: "#dcfce7", color: "#15803d", border: "#bbf7d0", dot: "#22c55e" },
+  "On Hold":    { bg: "#fef3c7", color: "#b45309", border: "#fde68a", dot: "#f59e0b" },
+  "Inactive":   { bg: "#f1f5f9", color: "#64748b", border: "#e2e8f0", dot: "#94a3b8" },
+  "Closed Won": { bg: "#dcfce7", color: "#15803d", border: "#86efac", dot: "#22c55e" },
+  "Closed Lost":{ bg: "#fef2f2", color: "#dc2626", border: "#fca5a5", dot: "#ef4444" },
 };
 
 export function OpportunityStageBadge({ stage }: StageBadgeProps) {

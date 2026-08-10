@@ -1,22 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import FormField from "@/components/customers/FormField";
-import { OpportunityStage, OpportunityStatus } from "@/data/opportunities";
+import { OpportunityStage, OpportunityStatus, STAGE_TO_API, STATUS_TO_API } from "@/data/opportunities";
+import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
 
 interface FormValues {
-  name: string; customerName: string; company: string; dealValue: string;
+  name: string; customer: string; value: string;
   stage: OpportunityStage | ""; probability: string; expectedCloseDate: string;
-  status: OpportunityStatus | ""; assignedTo: string; notes: string;
+  status: OpportunityStatus | ""; notes: string;
 }
 interface FormErrors {
-  name?: string; customerName?: string; company?: string; dealValue?: string;
+  name?: string; customer?: string; value?: string;
   stage?: string; probability?: string; expectedCloseDate?: string; status?: string;
 }
 
-const INITIAL: FormValues = { name: "", customerName: "", company: "", dealValue: "", stage: "", probability: "", expectedCloseDate: "", status: "", assignedTo: "", notes: "" };
+interface CustomerOption {
+  id: number;
+  name: string;
+  company: string;
+}
+
+const INITIAL: FormValues = { name: "", customer: "", value: "", stage: "", probability: "", expectedCloseDate: "", status: "", notes: "" };
+
+const STAGE_OPTIONS: OpportunityStage[] = ["Prospecting", "Qualification", "Proposal", "Negotiation", "Closed Won", "Closed Lost"];
+const STATUS_OPTIONS: OpportunityStatus[] = ["Active", "On Hold", "Inactive", "Closed Won", "Closed Lost"];
 
 export default function AddOpportunityPage() {
   const router = useRouter();
@@ -25,6 +35,27 @@ export default function AddOpportunityPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [customers, setCustomers] = useState<CustomerOption[]>([]);
+  const [customersLoading, setCustomersLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadCustomers = async () => {
+      try {
+        const data = await apiRequest<CustomerOption[]>("/api/opportunities/dropdowns/customers/");
+        if (cancelled) return;
+        setCustomers(data);
+      } catch (err) {
+        if (cancelled) return;
+        setSubmitError(`Failed to load customers: ${(err as Error).message}`);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setCustomersLoading(false);
+      }
+    };
+    void loadCustomers();
+    return () => { cancelled = true; };
+  }, [router]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
@@ -35,10 +66,9 @@ export default function AddOpportunityPage() {
   function validate(): boolean {
     const e: FormErrors = {};
     if (!form.name.trim()) e.name = "Opportunity name is required";
-    if (!form.customerName.trim()) e.customerName = "Customer name is required";
-    if (!form.company.trim()) e.company = "Company is required";
-    if (!form.dealValue.trim()) e.dealValue = "Deal value is required";
-    else if (isNaN(Number(form.dealValue)) || Number(form.dealValue) < 0) e.dealValue = "Enter a valid amount";
+    if (!form.customer.trim()) e.customer = "Please select a customer";
+    if (!form.value.trim()) e.value = "Deal value is required";
+    else if (isNaN(Number(form.value)) || Number(form.value) < 0) e.value = "Enter a valid amount";
     if (!form.stage) e.stage = "Please select a stage";
     if (!form.probability.trim()) e.probability = "Probability is required";
     else if (isNaN(Number(form.probability)) || Number(form.probability) < 0 || Number(form.probability) > 100) e.probability = "Enter 0–100";
@@ -53,10 +83,28 @@ export default function AddOpportunityPage() {
     setSubmitError("");
     if (!validate()) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    setSuccess(true);
-    setTimeout(() => router.push("/opportunities"), 1800);
+    try {
+      await apiRequest("/api/opportunities/", {
+        method: "POST",
+        body: {
+          name: form.name,
+          customer: Number(form.customer),
+          value: Number(form.value),
+          stage: STAGE_TO_API[form.stage as OpportunityStage],
+          status: STATUS_TO_API[form.status as OpportunityStatus],
+          probability: Number(form.probability),
+          expected_close_date: form.expectedCloseDate,
+          notes: form.notes,
+        },
+      });
+      emitDataChanged();
+      setSuccess(true);
+      setTimeout(() => router.push("/opportunities"), 1800);
+    } catch (err) {
+      setSubmitError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -81,28 +129,23 @@ export default function AddOpportunityPage() {
         <form onSubmit={handleSubmit} noValidate>
           <div className="form-card-body">
             <FormField label="Opportunity Name" name="name" value={form.name} onChange={handleChange} error={errors.name} placeholder="e.g. Enterprise CRM License" required />
+            <FormField label="Customer" name="customer" type="select" value={form.customer} onChange={handleChange} error={errors.customer} required disabled={customersLoading}
+              options={customers.map((c) => ({ label: c.company ? `${c.name} — ${c.company}` : c.name, value: String(c.id) }))} />
             <div className="form-row-2">
-              <FormField label="Customer Name" name="customerName" value={form.customerName} onChange={handleChange} error={errors.customerName} placeholder="e.g. Ahmed Ali" required />
-              <FormField label="Company" name="company" value={form.company} onChange={handleChange} error={errors.company} placeholder="e.g. TechVision Pvt Ltd" required />
-            </div>
-            <div className="form-row-2">
-              <FormField label="Deal Value ($)" name="dealValue" value={form.dealValue} onChange={handleChange} error={errors.dealValue} placeholder="e.g. 50000" required />
+              <FormField label="Deal Value ($)" name="value" value={form.value} onChange={handleChange} error={errors.value} placeholder="e.g. 50000" required />
               <FormField label="Probability (%)" name="probability" value={form.probability} onChange={handleChange} error={errors.probability} placeholder="0 – 100" required />
             </div>
             <div className="form-row-2">
               <FormField label="Stage" name="stage" type="select" value={form.stage} onChange={handleChange} error={errors.stage} required
-                options={["Prospecting","Qualification","Proposal","Negotiation","Closed Won","Closed Lost"].map((s) => ({ label: s, value: s }))} />
+                options={STAGE_OPTIONS.map((s) => ({ label: s, value: s }))} />
               <FormField label="Status" name="status" type="select" value={form.status} onChange={handleChange} error={errors.status} required
-                options={[{ label: "Active", value: "Active" }, { label: "On Hold", value: "On Hold" }, { label: "Inactive", value: "Inactive" }]} />
+                options={STATUS_OPTIONS.map((s) => ({ label: s, value: s }))} />
             </div>
-            <div className="form-row-2">
-              <div className="form-group">
-                <label className="form-label">Expected Close Date <span style={{ color: "var(--error)" }}>*</span></label>
-                <input type="date" name="expectedCloseDate" value={form.expectedCloseDate} onChange={handleChange}
-                  className={`form-input${errors.expectedCloseDate ? " error" : ""}`} />
-                {errors.expectedCloseDate && <p className="form-error">{errors.expectedCloseDate}</p>}
-              </div>
-              <FormField label="Assigned To" name="assignedTo" value={form.assignedTo} onChange={handleChange} placeholder="e.g. Khaanzadi" />
+            <div className="form-group">
+              <label className="form-label">Expected Close Date <span style={{ color: "var(--error)" }}>*</span></label>
+              <input type="date" name="expectedCloseDate" value={form.expectedCloseDate} onChange={handleChange}
+                className={`form-input${errors.expectedCloseDate ? " error" : ""}`} />
+              {errors.expectedCloseDate && <p className="form-error">{errors.expectedCloseDate}</p>}
             </div>
             <FormField label="Notes" name="notes" type="textarea" value={form.notes} onChange={handleChange} placeholder="Add any additional notes…" />
           </div>

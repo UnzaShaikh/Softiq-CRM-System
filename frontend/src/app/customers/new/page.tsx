@@ -4,11 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import FormField from "@/components/customers/FormField";
-import { CustomerStatus } from "@/data/customers";
+import { CustomerStatus, STATUS_TO_API } from "@/data/customers";
+import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
 
 interface FormValues {
   first_name: string; last_name: string; email: string;
-  phone: string; company: string; location: string;
+  phone: string; company: string;
   status: CustomerStatus | "";
 }
 interface FormErrors {
@@ -16,7 +17,7 @@ interface FormErrors {
   phone?: string; company?: string; status?: string;
 }
 
-const INITIAL: FormValues = { first_name: "", last_name: "", email: "", phone: "", company: "", location: "", status: "" };
+const INITIAL: FormValues = { first_name: "", last_name: "", email: "", phone: "", company: "", status: "" };
 
 export default function AddCustomerPage() {
   const router = useRouter();
@@ -51,10 +52,27 @@ export default function AddCustomerPage() {
     setSubmitError("");
     if (!validate()) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    setSuccess(true);
-    setTimeout(() => router.push("/customers"), 1800);
+    try {
+      await apiRequest("/api/customers/", {
+        method: "POST",
+        body: {
+          first_name: form.first_name,
+          last_name: form.last_name,
+          email: form.email,
+          phone: form.phone,
+          company: form.company,
+          status: STATUS_TO_API[form.status as CustomerStatus],
+        },
+      });
+      emitDataChanged();
+      setSuccess(true);
+      setTimeout(() => router.push("/customers"), 1800);
+    } catch (err) {
+      setSubmitError((err as Error).message);
+      if (!getAccessToken()) router.push("/login");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -98,10 +116,9 @@ export default function AddCustomerPage() {
             </div>
             <div className="form-row-2">
               <FormField label="Company" name="company" value={form.company} onChange={handleChange} error={errors.company} placeholder="e.g. TechVision Pvt Ltd" required />
-              <FormField label="Location" name="location" value={form.location} onChange={handleChange} placeholder="e.g. Karachi, Pakistan" />
+              <FormField label="Status" name="status" type="select" value={form.status} onChange={handleChange} error={errors.status} required
+                options={[{ label: "Active", value: "Active" }, { label: "Inactive", value: "Inactive" }, { label: "Lead", value: "Lead" }]} />
             </div>
-            <FormField label="Status" name="status" type="select" value={form.status} onChange={handleChange} error={errors.status} required
-              options={[{ label: "Active", value: "Active" }, { label: "Inactive", value: "Inactive" }, { label: "Lead", value: "Lead" }]} />
           </div>
 
           <div className="form-card-footer">

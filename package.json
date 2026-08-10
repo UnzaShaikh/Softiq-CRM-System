@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "lucide-react": "^1.28.0"
+    "recharts": "^3.10.1",
+    "xlsx": "^0.18.5"
   }
 }
