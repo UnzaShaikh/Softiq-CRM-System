@@ -1,353 +1,234 @@
-    "use client";
+"use client";
 
-    import Link from "next/link";
-    import { Contact } from "./types";
+import Link from "next/link";
+import {
+  Eye,
+  Pencil,
+  Trash2,
+  ChevronsUpDown,
+  ChevronUp,
+} from "lucide-react";
 
+import { Contact } from "./types";
 
-    interface Props {
+interface Props {
   contacts: Contact[];
   onDelete: (id: number) => void;
 }
 
-    export default function ContactTable({ contacts,onDelete }: Props) {
-
-    return (
-
-        <div
-  style={{
-    background: "#ffffff",
-    borderRadius: "16px",
-    padding: "16px",
-    overflowX: "auto",
-    WebkitOverflowScrolling: "touch",
-    border: "1px solid #d1d5db",
-    boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
-  }}
->
-
-
-      <table
-  style={{
-    width: "100%",
-    minWidth: "760px",
-    borderCollapse: "collapse",
-  }}
->
-
-
-            <thead>
-
-            <tr
-                style={{
-                background:"#f8fafc",
-                }}
-            >
-
-                <th style={headerStyle}>
-                Name
-                </th>
-
-
-                <th style={headerStyle}>
-                Company
-                </th>
-
-
-                <th style={headerStyle}>
-                Email
-                </th>
-
-
-                <th style={headerStyle}>
-                Phone
-                </th>
-
-
-                <th style={headerStyle}>
-                Status
-                </th>
-
-
-                <th style={headerStyle}>
-                Action
-                </th>
-
-
-            </tr>
-
-            </thead>
-
-
-
-            <tbody>
-
-
-            {
-                contacts.map((contact)=>(
-
-                <tr
-
-                    key={contact.id}
-
-                    onMouseEnter={(e)=>
-                    e.currentTarget.style.background="#f9fafb"
-                    }
-
-                    onMouseLeave={(e)=>
-                    e.currentTarget.style.background="#ffffff"
-                    }
-
-                >
-
-
-
-                    <td style={cellStyle}>
-                    <strong
-                        style={{
-                        color:"#111827",
-                        }}
-                    >
-                        {contact.fullName}
-                    </strong>
-                    </td>
-
-
-
-
-                    <td style={cellStyle}>
-                    {contact.company}
-                    </td>
-
-
-
-                    <td style={cellStyle}>
-                    {contact.email}
-                    </td>
-
-
-
-                    <td style={cellStyle}>
-                    {contact.phone}
-                    </td>
-
-
-
-
-                    <td style={cellStyle}>
-
-                    <span
-                        style={{
-
-                        padding:"6px 14px",
-
-                        borderRadius:"20px",
-
-                        fontSize:"12px",
-
-                        fontWeight:600,
-
-
-                        background:
-
-                        contact.status==="Active"
-                        ?
-                        "#dcfce7"
-
-                        :
-
-                        contact.status==="Lead"
-                        ?
-                        "#dbeafe"
-
-                        :
-
-                        "#e5e7eb",
-
-
-
-                        color:
-
-                        contact.status==="Active"
-                        ?
-                        "#166534"
-
-                        :
-
-                        contact.status==="Lead"
-                        ?
-                        "#1d4ed8"
-
-                        :
-
-                        "#374151",
-
-
-                        }}
-                    >
-
-                        {contact.status}
-
-                    </span>
-
-
-                    </td>
-
-
-
-
-
-                    <td style={cellStyle}>
-
-
-                  <div
-  style={{
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
-  }}
->
-
-
-
-                        {/* VIEW */}
-
-                        <Link
-
-                        href={`/contacts/${contact.id}`}
-
-                        style={{
-                            ...buttonStyle,
-                            background:"#e0e7ff",
-                            color:"#3730a3",
-                        }}
-
-                        >
-
-                        View
-
-                        </Link>
-
-
-
-
-
-                        {/* EDIT */}
-
-                        <Link
-
-                        href={`/contacts/edit?id=${contact.id}`}
-
-                        style={{
-                            ...buttonStyle,
-                            background:"#dcfce7",
-                            color:"#166534",
-                        }}
-
-                        >
-
-                        Edit
-
-                        </Link>
-
-
-
-
-
-                        {/* DELETE */}
-
-                       <button
-  onClick={() => {
-
-    const confirmDelete = window.confirm(
-      `Delete ${contact.fullName}?`
-    );
-
-    if(confirmDelete){
-      onDelete(contact.id);
-    }
-
-  }}
-
-  style={{
-    ...buttonStyle,
-    background:"#fee2e2",
-    color:"#991b1b",
-    cursor:"pointer",
-  }}
->
-Delete
-</button>
-
-
-
+/* =========================================
+   CONTACT STATUS
+========================================= */
+
+function statusBadgeClass(status: Contact["status"]) {
+  switch (status) {
+    case "Active":
+      return "contacts-table-status contacts-status-active";
+
+    case "Lead":
+      return "contacts-table-status contacts-status-lead";
+
+    case "Inactive":
+    default:
+      return "contacts-table-status contacts-status-inactive";
+  }
+}
+
+/* =========================================
+   CONTACT TABLE
+========================================= */
+
+export default function ContactTable({
+  contacts,
+  onDelete,
+}: Props) {
+  return (
+    <div className="contacts-data-table-wrapper">
+      <table className="contacts-data-table">
+        {/* =========================================
+            TABLE HEADER
+        ========================================== */}
+
+        <thead>
+          <tr>
+            <th>
+              <div className="contacts-th-content">
+                <span>NAME</span>
+                <ChevronUp
+                  size={14}
+                  className="contacts-sort-active"
+                />
+              </div>
+            </th>
+
+            <th>
+              <div className="contacts-th-content">
+                <span>COMPANY</span>
+                <ChevronsUpDown size={13} />
+              </div>
+            </th>
+
+            <th>
+              <span>EMAIL</span>
+            </th>
+
+            <th>
+              <span>PHONE</span>
+            </th>
+
+            <th>
+              <div className="contacts-th-content">
+                <span>STATUS</span>
+                <ChevronsUpDown size={13} />
+              </div>
+            </th>
+
+            <th className="contacts-actions-header">
+              <span>ACTIONS</span>
+            </th>
+          </tr>
+        </thead>
+
+        {/* =========================================
+            TABLE BODY
+        ========================================== */}
+
+        <tbody>
+          {contacts.map((contact) => {
+            const initials = contact.fullName
+              .split(" ")
+              .filter(Boolean)
+              .map((name) => name[0])
+              .slice(0, 2)
+              .join("")
+              .toUpperCase();
+
+            return (
+              <tr key={contact.id}>
+                {/* =================================
+                    NAME
+                ================================= */}
+
+                <td>
+                  <div className="contacts-name-cell">
+                    <div className="contacts-avatar">
+                      {initials}
                     </div>
 
+                    <div className="contacts-name-content">
+                      <p className="contacts-cell-name">
+                        {contact.fullName}
+                      </p>
 
-                    </td>
+                      <p className="contacts-job-title">
+                        {contact.jobTitle}
+                      </p>
+                    </div>
+                  </div>
+                </td>
 
+                {/* =================================
+                    COMPANY
+                ================================= */}
 
+                <td>
+                  <span className="contacts-cell-primary">
+                    {contact.company}
+                  </span>
+                </td>
 
-                </tr>
+                {/* =================================
+                    EMAIL
+                ================================= */}
 
+                <td>
+                  <span className="contacts-cell-primary">
+                    {contact.email}
+                  </span>
+                </td>
 
-                ))
-            }
+                {/* =================================
+                    PHONE
+                ================================= */}
 
+                <td>
+                  <span className="contacts-cell-primary">
+                    {contact.phone}
+                  </span>
+                </td>
 
+                {/* =================================
+                    STATUS
+                ================================= */}
 
-            </tbody>
+                <td>
+                  <span
+                    className={statusBadgeClass(
+                      contact.status
+                    )}
+                  >
+                    <span className="contacts-status-dot" />
+                    {contact.status}
+                  </span>
+                </td>
 
+                {/* =================================
+                    ACTIONS
+                ================================= */}
 
-        </table>
+                <td>
+                  <div className="contacts-action-buttons">
+                    {/* VIEW */}
 
+                    <Link
+                      href={`/contacts/${contact.id}`}
+                      className="contacts-action-button contacts-action-view"
+                      title="View Contact"
+                      aria-label="View Contact"
+                    >
+                      <Eye
+                        size={16}
+                        strokeWidth={2}
+                      />
+                    </Link>
 
-        </div>
+                    {/* EDIT */}
 
-    );
+                    <Link
+                      href={`/contacts/edit?id=${contact.id}`}
+                      className="contacts-action-button contacts-action-edit"
+                      title="Edit Contact"
+                      aria-label="Edit Contact"
+                    >
+                      <Pencil
+                        size={16}
+                        strokeWidth={2}
+                      />
+                    </Link>
 
-    }
+                    {/* DELETE */}
 
-
-
-
-    const headerStyle = {
-
-    padding:"16px",
-
-    textAlign:"left" as const,
-
-    fontSize:"14px",
-
-    fontWeight:700,
-
-    color:"#111827",
-
-    background:"#f1f5f9",
-
-    borderBottom:"1px solid #cbd5e1",
-
-    };
-
-
-
-   const cellStyle = {
-  padding: "14px 12px",
-  fontSize: "14px",
-  color: "#374151",
-  borderBottom: "1px solid #e5e7eb",
-};
-
-
-
-const buttonStyle = {
-  padding: "8px 12px",
-  borderRadius: "8px",
-  border: "none",
-  textDecoration: "none",
-  fontSize: "12px",
-  fontWeight: 600,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  whiteSpace: "nowrap" as const,
-};
+                    <button
+                      type="button"
+                      className="contacts-action-button contacts-action-delete"
+                      title="Delete Contact"
+                      aria-label="Delete Contact"
+                      onClick={() =>
+                        onDelete(contact.id)
+                      }
+                    >
+                      <Trash2
+                        size={16}
+                        strokeWidth={2}
+                      />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}

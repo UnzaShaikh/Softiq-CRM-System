@@ -17,14 +17,14 @@ import {
   Tooltip 
 } from "recharts";
 import { 
-  Users, 
-  UserCheck, 
+  Briefcase,
+  Activity,
   DollarSign, 
   Handshake, 
   XCircle,
   Calendar, 
   Download,
-  UserPlus,
+  FilePlus2,
   CheckCircle2,
   X,
   TrendingUp
@@ -109,13 +109,16 @@ export default function SalesPipelinePage() {
   const closedWonCount = filteredDeals.filter(d => d.stage === "Closed Won").length;
   const closedLostCount = filteredDeals.filter(d => d.stage === "Closed Lost").length;
 
+  // Icons + colors matched to the Dashboard's KPI card palette:
+  // indigo (Total), cyan (Active), green (Value/Revenue), amber (Won/Deals),
+  // rose stays for the one negative-status card (Closed Lost).
   const stats = [
     { 
       label: "TOTAL DEALS", 
       value: totalDealsCount.toString(), 
       change: "+14.3%", 
       up: true, 
-      icon: Users, 
+      icon: Briefcase, 
       iconColor: "text-indigo-600 bg-indigo-50/80" 
     },
     { 
@@ -124,15 +127,15 @@ export default function SalesPipelinePage() {
       change: "+12.5%", 
       up: true, 
       icon: DollarSign, 
-      iconColor: "text-emerald-600 bg-emerald-50/80" 
+      iconColor: "text-green-600 bg-green-50/80" 
     },
     { 
       label: "ACTIVE DEALS", 
       value: activeDealsCount.toString(), 
       change: "+7.8%", 
       up: true, 
-      icon: UserCheck, 
-      iconColor: "text-sky-600 bg-sky-50/80" 
+      icon: Activity, 
+      iconColor: "text-cyan-600 bg-cyan-50/80" 
     },
     { 
       label: "CLOSED WON", 
@@ -205,8 +208,8 @@ export default function SalesPipelinePage() {
         {/* Header Section */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Sales Pipeline</h1>
-            <p className="text-sm text-slate-500 mt-1">Track every deal from lead to close.</p>
+            <h1 className="text-[2rem] font-bold text-slate-900 leading-tight">Sales Pipeline</h1>
+            <p className="text-base text-slate-500 mt-1.5">Track every deal from lead to close.</p>
           </div>
 
           <div className="flex items-center gap-3 relative">
@@ -281,26 +284,26 @@ export default function SalesPipelinePage() {
           {stats.map((item, idx) => {
             const Icon = item.icon;
             return (
-              <div key={idx} className="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-2.5 min-w-0">
-                <div className={`p-2.5 rounded-xl shrink-0 ${item.iconColor}`}>
+              <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-3 min-w-0">
+                <div className={`w-10 h-10 flex items-center justify-center rounded-xl shrink-0 ${item.iconColor}`}>
                   <Icon size={20} />
                 </div>
 
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-[10px] font-bold tracking-tight text-slate-400 uppercase truncate" title={item.label}>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase leading-snug break-words">
                     {item.label}
                   </span>
                   
-                  <div className="text-base lg:text-lg font-bold text-slate-900 my-0.5 truncate" title={item.value}>
+                  <div className="text-2xl font-bold text-slate-900 mt-1 mb-1.5 break-words">
                     {item.value}
                   </div>
                   
-                  <div className="flex items-center gap-1 whitespace-nowrap">
-                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold shrink-0 ${item.up ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                      <TrendingUp size={9} className={item.up ? '' : 'rotate-180'} />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-semibold shrink-0 ${item.up ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                      <TrendingUp size={11} className={item.up ? '' : 'rotate-180'} />
                       {item.change}
                     </span>
-                    <span className="text-[9px] text-slate-400 truncate">vs last month</span>
+                    <span className="text-xs text-slate-500">vs last month</span>
                   </div>
                 </div>
               </div>
@@ -313,7 +316,7 @@ export default function SalesPipelinePage() {
           
           <div className="lg:col-span-5 bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-center mb-2">
-              <h2 className="font-bold text-slate-800 text-base">Pipeline by Stage</h2>
+              <h2 className="font-bold text-slate-800 text-lg">Pipeline by Stage</h2>
               <select className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 outline-none">
                 <option>This Month</option>
               </select>
@@ -352,8 +355,8 @@ export default function SalesPipelinePage() {
                 </ResponsiveContainer>
                 
                 <div className="absolute text-center">
-                  <div className="text-[11px] font-bold text-slate-800">${totalPipelineValue.toLocaleString()}</div>
-                  <div className="text-[8px] text-slate-400 font-medium">Total Pipeline</div>
+                  <div className="text-xs font-bold text-slate-800">${totalPipelineValue.toLocaleString()}</div>
+                  <div className="text-[9px] text-slate-400 font-medium">Total Pipeline</div>
                 </div>
               </div>
             </div>
@@ -370,7 +373,7 @@ export default function SalesPipelinePage() {
 
           <div className="lg:col-span-7 bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="font-bold text-slate-800 text-base">Recent Deals ({filteredDeals.length})</h2>
+              <h2 className="font-bold text-slate-800 text-lg">Recent Deals ({filteredDeals.length})</h2>
               <button 
                 onClick={() => setShowAllDeals(!showAllDeals)}
                 className="text-xs font-medium text-indigo-600 hover:underline transition"
@@ -431,16 +434,16 @@ export default function SalesPipelinePage() {
           <div className="lg:col-span-8 bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h2 className="font-bold text-slate-800 text-base">Pipeline Performance (Monthly)</h2>
+                <h2 className="font-bold text-slate-800 text-lg">Pipeline Performance (Monthly)</h2>
                 <div className="flex gap-4 text-xs mt-2">
                   <span className="flex items-center gap-1.5 text-slate-600">
                     <span className="w-2.5 h-2.5 bg-indigo-600 rounded-sm"></span> Deals Created
                   </span>
                   <span className="flex items-center gap-1.5 text-slate-600">
-                    <span className="w-2.5 h-2.5 bg-sky-400 rounded-sm"></span> Deals Closed
+                    <span className="w-2.5 h-2.5 bg-cyan-500 rounded-sm"></span> Deals Closed
                   </span>
                   <span className="flex items-center gap-1.5 text-slate-600">
-                    <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span> Revenue Generated
+                    <span className="w-2.5 h-2.5 bg-green-500 rounded-full"></span> Revenue Generated
                   </span>
                 </div>
               </div>
@@ -466,9 +469,9 @@ export default function SalesPipelinePage() {
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }} 
                   />
-                  <Bar yAxisId="left" dataKey="created" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={12} />
-                  <Bar yAxisId="left" dataKey="closed" fill="#38bdf8" radius={[4, 4, 0, 0]} barSize={12} />
-                  <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4, fill: '#10b981' }} />
+                  <Bar yAxisId="left" dataKey="created" fill="#4f46e5" radius={[4, 4, 0, 0]} barSize={12} />
+                  <Bar yAxisId="left" dataKey="closed" fill="#0891b2" radius={[4, 4, 0, 0]} barSize={12} />
+                  <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#16a34a" strokeWidth={2.5} dot={{ r: 4, fill: '#16a34a' }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -478,21 +481,21 @@ export default function SalesPipelinePage() {
             <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
               <div>
                 <span className="text-xs text-slate-500 font-medium">Deals Created</span>
-                <div className="text-xl font-bold text-slate-800 mt-1">129</div>
+                <div className="text-2xl font-bold text-slate-800 mt-1">129</div>
                 <span className="text-xs text-emerald-600 font-semibold">▲ 18.2% <span className="text-[10px] text-slate-400 font-normal">vs last year</span></span>
               </div>
               <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600">
-                <UserPlus size={20} />
+                <FilePlus2 size={20} />
               </div>
             </div>
 
             <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
               <div>
                 <span className="text-xs text-slate-500 font-medium">Deals Closed</span>
-                <div className="text-xl font-bold text-slate-800 mt-1">93</div>
+                <div className="text-2xl font-bold text-slate-800 mt-1">93</div>
                 <span className="text-xs text-emerald-600 font-semibold">▲ 15.4% <span className="text-[10px] text-slate-400 font-normal">vs last year</span></span>
               </div>
-              <div className="p-3 bg-sky-50 rounded-xl text-sky-600">
+              <div className="p-3 bg-cyan-50 rounded-xl text-cyan-600">
                 <CheckCircle2 size={20} />
               </div>
             </div>
@@ -500,10 +503,10 @@ export default function SalesPipelinePage() {
             <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
               <div>
                 <span className="text-xs text-slate-500 font-medium">Revenue Generated</span>
-                <div className="text-xl font-bold text-slate-800 mt-1">$679,000</div>
+                <div className="text-2xl font-bold text-slate-800 mt-1">$679,000</div>
                 <span className="text-xs text-emerald-600 font-semibold">▲ 22.7% <span className="text-[10px] text-slate-400 font-normal">vs last year</span></span>
               </div>
-              <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600">
+              <div className="p-3 bg-green-50 rounded-xl text-green-600">
                 <DollarSign size={20} />
               </div>
             </div>

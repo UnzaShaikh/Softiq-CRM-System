@@ -2,15 +2,21 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import {
+  Building2,
+  Users2,
+  TrendingUp,
+  UserRoundPlus,
+  Plus,
+} from "lucide-react";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import CompanyTable from "@/components/company/CompanyTable";
+import SearchBar from "@/components/customers/SearchBar";
 import { companies as initialCompanies, Company } from "@/data/company";
 
 export default function CompanyPage() {
-  const [companies, setCompanies] =
-    useState<Company[]>(initialCompanies);
-
+  const [companies, setCompanies] = useState<Company[]>(initialCompanies);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [industryFilter, setIndustryFilter] = useState("All");
@@ -19,17 +25,21 @@ export default function CompanyPage() {
 
   const companiesPerPage = 10;
 
-  const industries = useMemo(() => {
-    return Array.from(
-      new Set(companies.map((company) => company.industry))
-    );
-  }, [companies]);
+  const industries = useMemo(
+    () =>
+      Array.from(
+        new Set(companies.map((company) => company.industry))
+      ),
+    [companies]
+  );
 
-  const companySizes = useMemo(() => {
-    return Array.from(
-      new Set(companies.map((company) => company.size))
-    );
-  }, [companies]);
+  const companySizes = useMemo(
+    () =>
+      Array.from(
+        new Set(companies.map((company) => company.size))
+      ),
+    [companies]
+  );
 
   const filteredCompanies = useMemo(() => {
     const searchValue = search.toLowerCase().trim();
@@ -42,16 +52,14 @@ export default function CompanyPage() {
         company.email.toLowerCase().includes(searchValue);
 
       const matchesStatus =
-        statusFilter === "All" ||
-        company.status === statusFilter;
+        statusFilter === "All" || company.status === statusFilter;
 
       const matchesIndustry =
         industryFilter === "All" ||
         company.industry === industryFilter;
 
       const matchesSize =
-        sizeFilter === "All" ||
-        company.size === sizeFilter;
+        sizeFilter === "All" || company.size === sizeFilter;
 
       return (
         matchesSearch &&
@@ -132,14 +140,10 @@ export default function CompanyPage() {
       `Are you sure you want to delete ${company.name}?`
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setCompanies((previousCompanies) =>
-      previousCompanies.filter(
-        (item) => item.id !== company.id
-      )
+      previousCompanies.filter((item) => item.id !== company.id)
     );
 
     setCurrentPage(1);
@@ -149,267 +153,280 @@ export default function CompanyPage() {
 
   return (
     <DashboardLayout>
-      <div className="company-page">
-        {/* Header */}
-        <div className="company-page-header">
+      <div className="page-container">
+        <div className="page-header">
           <div>
-            <h1 className="company-page-title">
-              Companies
-            </h1>
-
-            <p className="company-page-subtitle">
-              Manage all companies in one place.
-            </p>
+            <h1>Companies</h1>
+            <p>Manage all companies in one place.</p>
           </div>
 
           <Link
             href="/company/new"
-            className="add-company-btn"
+            className="btn-add add-company-btn"
           >
-            + Add Company
+            <Plus size={16} />
+            Add Company
           </Link>
         </div>
 
-        {/* Summary Cards — icons ab color-coded hain */}
-        <div className="company-stats-grid">
-          <div className="company-stat-card">
-            <div className="company-stat-icon stat-icon-purple">
-              🏢
+        <div className="stats-grid company-stats-grid">
+          <div className="stat-card company-stat-card">
+            <div
+              className="stat-card-icon"
+              style={{
+                background: "#f0edff",
+                color: "#6c5dd3",
+              }}
+            >
+              <Building2 size={20} />
             </div>
 
-            <div className="company-stat-content">
-              <span className="company-stat-label">
-                Total Companies
-              </span>
-
-              <strong className="company-stat-value">
-                {totalCompanies}
-              </strong>
-
-              <span className="company-stat-change">
-                ↑ 12.5% vs last month
-              </span>
-            </div>
-          </div>
-
-          <div className="company-stat-card">
-            <div className="company-stat-icon stat-icon-teal">
-              👥
-            </div>
-
-            <div className="company-stat-content">
-              <span className="company-stat-label">
-                Active Companies
-              </span>
-
-              <strong className="company-stat-value">
-                {activeCompanies}
-              </strong>
-
-              <span className="company-stat-change">
-                ↑ 8.7% vs last month
-              </span>
-            </div>
-          </div>
-
-          <div className="company-stat-card">
-            <div className="company-stat-icon stat-icon-green">
-              +
-            </div>
-
-            <div className="company-stat-content">
-              <span className="company-stat-label">
-                New This Month
-              </span>
-
-              <strong className="company-stat-value">
-                {newCompaniesThisMonth}
-              </strong>
-
-              <span className="company-stat-change">
-                ↑ 27.3% vs last month
-              </span>
-            </div>
-          </div>
-
-          <div className="company-stat-card">
-            <div className="company-stat-icon stat-icon-orange">
-              👤
-            </div>
-
-            <div className="company-stat-content">
-              <span className="company-stat-label">
-                Total Contacts
-              </span>
-
-              <strong className="company-stat-value">
-                {totalContacts}
-              </strong>
-
-              <span className="company-stat-change">
-                ↑ 15.6% vs last month
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Search & Filters */}
-        <div className="company-toolbar">
-          {/* Row 1: Search + results pill + status tabs — reference jaisa */}
-          <div className="search-box">
-            <span className="search-icon" aria-hidden="true">🔍</span>
-
-            <input
-              type="text"
-              placeholder="Search companies..."
-              className="search-input"
-              value={search}
-              onChange={(event) =>
-                handleSearchChange(event.target.value)
-              }
-              aria-label="Search companies"
-            />
-          </div>
-
-          <span className="badge badge-new">
-            {filteredCompanies.length} results
-          </span>
-
-          <div className="filter-tabs">
-            {statusTabs.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                className={`filter-tab ${statusFilter === tab ? "active" : ""}`}
-                onClick={() => handleStatusChange(tab)}
+            <div>
+              <p
+                className="stat-card-value"
+                style={{ color: "#6c5dd3" }}
               >
-                {tab}
-              </button>
-            ))}
+                {totalCompanies}
+              </p>
+
+              <p className="stat-card-label">
+                Total Companies
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/* Row 2: Industry + Size + Reset — extra filters jo Leads/Customers mein nahi the */}
-        <div className="filter-group" style={{ marginTop: "-8px", marginBottom: "24px" }}>
-          <select
-            className="filter-select"
-            value={industryFilter}
-            onChange={(event) =>
-              handleIndustryChange(event.target.value)
-            }
-            aria-label="Filter by industry"
-          >
-            <option value="All">All Industry</option>
-            {industries.map((industry) => (
-              <option key={industry} value={industry}>
-                {industry}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="filter-select"
-            value={sizeFilter}
-            onChange={(event) =>
-              handleSizeChange(event.target.value)
-            }
-            aria-label="Filter by company size"
-          >
-            <option value="All">All Size</option>
-            {companySizes.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
-
-          <button
-            type="button"
-            className="filter-btn"
-            onClick={handleReset}
-          >
-            ↻ Reset
-          </button>
-        </div>
-
-        {/* Result Information */}
-        <div className="company-result-info">
-          Showing{" "}
-          {filteredCompanies.length === 0
-            ? 0
-            : (currentPage - 1) * companiesPerPage + 1}{" "}
-          to{" "}
-          {Math.min(
-            currentPage * companiesPerPage,
-            filteredCompanies.length
-          )}{" "}
-          of {filteredCompanies.length} companies
-        </div>
-
-        {paginatedCompanies.length > 0 ? (
-          <CompanyTable
-            companies={paginatedCompanies}
-            onDelete={handleDelete}
-          />
-        ) : (
-          <div className="company-empty-state">
-            <h3 className="empty-state-title">
-              No companies found
-            </h3>
-
-            <p className="empty-state-sub">
-              Try changing your search or filters.
-            </p>
-          </div>
-        )}
-
-        {filteredCompanies.length > 0 && (
-          <div className="company-pagination">
-            <button
-              type="button"
-              className="pagination-btn"
-              disabled={currentPage === 1}
-              onClick={() =>
-                setCurrentPage((page) => Math.max(1, page - 1))
-              }
-              aria-label="Previous page"
+          <div className="stat-card company-stat-card">
+            <div
+              className="stat-card-icon"
+              style={{
+                background: "#e6fbfc",
+                color: "#0891b2",
+              }}
             >
-              ‹
-            </button>
-
-            <div className="pagination-pages">
-              {Array.from(
-                { length: totalPages },
-                (_, index) => index + 1
-              ).map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  className={`pagination-page ${
-                    currentPage === page ? "active" : ""
-                  }`}
-                  onClick={() => setCurrentPage(page)}
-                >
-                  {page}
-                </button>
-              ))}
+              <Users2 size={20} />
             </div>
 
+            <div>
+              <p
+                className="stat-card-value"
+                style={{ color: "#0891b2" }}
+              >
+                {activeCompanies}
+              </p>
+
+              <p className="stat-card-label">
+                Active Companies
+              </p>
+            </div>
+          </div>
+
+          <div className="stat-card company-stat-card">
+            <div
+              className="stat-card-icon"
+              style={{
+                background: "#f0fdf4",
+                color: "#16a34a",
+              }}
+            >
+              <TrendingUp size={20} />
+            </div>
+
+            <div>
+              <p
+                className="stat-card-value"
+                style={{ color: "#16a34a" }}
+              >
+                {newCompaniesThisMonth}
+              </p>
+
+              <p className="stat-card-label">
+                New This Month
+              </p>
+            </div>
+          </div>
+
+          <div className="stat-card company-stat-card">
+            <div
+              className="stat-card-icon"
+              style={{
+                background: "#fef3c7",
+                color: "#f59e0b",
+              }}
+            >
+              <UserRoundPlus size={20} />
+            </div>
+
+            <div>
+              <p
+                className="stat-card-value"
+                style={{ color: "#f59e0b" }}
+              >
+                {totalContacts}
+              </p>
+
+              <p className="stat-card-label">
+                Total Contacts
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="table-card company-table-card">
+          <div className="contacts-table-toolbar">
+            <div className="contacts-search-wrap">
+              <SearchBar
+                value={search}
+                onChange={handleSearchChange}
+                placeholder="Search companies by name, industry, or email…"
+              />
+            </div>
+
+            <div className="contacts-toolbar-right">
+              <span className="contacts-results-count">
+                {filteredCompanies.length} results
+              </span>
+
+              <div className="contacts-filter-tabs">
+                {statusTabs.map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    className={`contacts-filter-tab${
+                      statusFilter === tab ? " active" : ""
+                    }`}
+                    onClick={() => handleStatusChange(tab)}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="filter-group company-filter-group">
+            <select
+              className="filter-select"
+              value={industryFilter}
+              onChange={(event) =>
+                handleIndustryChange(event.target.value)
+              }
+              aria-label="Filter by industry"
+            >
+              <option value="All">All Industry</option>
+
+              {industries.map((industry) => (
+                <option key={industry} value={industry}>
+                  {industry}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="filter-select"
+              value={sizeFilter}
+              onChange={(event) =>
+                handleSizeChange(event.target.value)
+              }
+              aria-label="Filter by company size"
+            >
+              <option value="All">All Size</option>
+
+              {companySizes.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+
             <button
               type="button"
-              className="pagination-btn"
-              disabled={currentPage === totalPages}
-              onClick={() =>
-                setCurrentPage((page) =>
-                  Math.min(totalPages, page + 1)
-                )
-              }
-              aria-label="Next page"
+              className="btn-secondary"
+              onClick={handleReset}
             >
-              ›
+              Reset
             </button>
           </div>
-        )}
+
+          <div className="company-result-info">
+            Showing{" "}
+            {filteredCompanies.length === 0
+              ? 0
+              : (currentPage - 1) * companiesPerPage + 1}{" "}
+            to{" "}
+            {Math.min(
+              currentPage * companiesPerPage,
+              filteredCompanies.length
+            )}{" "}
+            of {filteredCompanies.length} companies
+          </div>
+
+          {paginatedCompanies.length > 0 ? (
+            <CompanyTable
+              companies={paginatedCompanies}
+              onDelete={handleDelete}
+            />
+          ) : (
+            <div className="empty-state company-empty-state">
+              <p className="empty-state-title">
+                No companies found.
+              </p>
+
+              <p className="empty-state-sub">
+                Try changing your search or filters.
+              </p>
+            </div>
+          )}
+
+          {filteredCompanies.length > 0 && (
+            <div className="pagination-wrap company-pagination">
+              <button
+                type="button"
+                className="pagination-btn"
+                disabled={currentPage === 1}
+                onClick={() =>
+                  setCurrentPage((page) =>
+                    Math.max(1, page - 1)
+                  )
+                }
+                aria-label="Previous page"
+              >
+                ‹
+              </button>
+
+              <div className="pagination-pages">
+                {Array.from(
+                  { length: totalPages },
+                  (_, index) => index + 1
+                ).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`pagination-page ${
+                      currentPage === page ? "active" : ""
+                    }`}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className="pagination-btn"
+                disabled={currentPage === totalPages}
+                onClick={() =>
+                  setCurrentPage((page) =>
+                    Math.min(totalPages, page + 1)
+                  )
+                }
+                aria-label="Next page"
+              >
+                ›
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </DashboardLayout>
   );
