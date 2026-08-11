@@ -1,14 +1,20 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import CompanyForm, {
-  CompanyFormData,
-} from "@/components/company/CompanyForm";
-import { companies } from "@/data/company";
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import CompanyForm from "@/components/company/CompanyForm";
+import {
+  apiErrorMessage,
+  ApiCompany,
+  CompanyFormValues,
+  toCompanyApiPayload,
+  toCompanyFormValues,
+} from "@/data/company";
+import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
 
 export default function EditCompanyPage() {
   const params = useParams();
@@ -16,118 +22,120 @@ export default function EditCompanyPage() {
 
   const companyId = Number(params.id);
 
-  const company = companies.find(
-    (company) => company.id === companyId
-  );
+  const [initialData, setInitialData] =
+    useState<CompanyFormValues | null>(null);
+  const [fetching, setFetching] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Company not found
-  if (!company) {
-    return (
-      <DashboardLayout>
-        <div className="company-page-container">
-          <div className="page-header">
-            <div>
-              <h1 className="company-page-title">
-                Company Not Found
-              </h1>
+  const missingId = !companyId;
 
-              <p className="company-page-subtitle">
-                We couldn't find a company with this ID.
-              </p>
-            </div>
+  useEffect(() => {
+    if (!companyId) return;
 
-            <div className="page-header-actions">
-              <Link href="/company">
-                <button
-                  type="button"
-                  className="filter-btn"
-                >
-                  ← Back to Companies
-                </button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+    let cancelled = false;
 
-  /*
-   * Empty form fields.
-   *
-   * Backend API integration hone ke baad
-   * yahan API se company data load kiya ja sakta hai.
-   */
-  const initialData: CompanyFormData = {
-    name: "",
-    industry: "",
-    website: "",
-    phone: "",
-    email: "",
-    address: "",
-  };
+    const run = async () => {
+      try {
+        const data = await apiRequest<ApiCompany>(
+          `/api/companies/${companyId}/`
+        );
+        if (cancelled) return;
+        setInitialData(toCompanyFormValues(data));
+      } catch {
+        if (cancelled) return;
+        setNotFound(true);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setFetching(false);
+      }
+    };
 
-  const handleSubmit = async (
-    data: CompanyFormData
-  ) => {
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId, router]);
+
+  const handleSubmit = async (data: CompanyFormValues) => {
     setLoading(true);
     setError("");
     setSuccess("");
 
     try {
-      // Temporary frontend-only update
-      console.log("Updated Company:", {
-        id: companyId,
-        ...data,
+      await apiRequest(`/api/companies/${companyId}/`, {
+        method: "PATCH",
+        body: toCompanyApiPayload(data),
       });
 
-      // Backend API integration baad mein hogi
-      await new Promise((resolve) =>
-        setTimeout(resolve, 1000)
-      );
+      emitDataChanged();
 
-      setSuccess(
-        "Company updated successfully."
-      );
+      setSuccess("Company updated successfully.");
 
       setTimeout(() => {
         router.push(`/company/${companyId}`);
       }, 1000);
-    } catch {
-      setError(
-        "Something went wrong while updating the company."
-      );
+    } catch (err) {
+      setError(apiErrorMessage(err));
+
+      if (!getAccessToken()) router.push("/login");
     } finally {
       setLoading(false);
     }
   };
 
+  const notFoundView = (message: string) => (
+    <DashboardLayout>
+      <div className="page-wrapper">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Company Not Found</h1>
+            <p className="page-subtitle">{message}</p>
+          </div>
+
+          <Link href="/company">
+            <button className="filter-btn">← Back to Companies</button>
+          </Link>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+
+  if (missingId || notFound) {
+    return notFoundView("We couldn't find a company with this ID.");
+  }
+
+  if (fetching) {
+    return (
+      <DashboardLayout>
+        <ThemeLoader label="Loading company..." />
+      </DashboardLayout>
+    );
+  }
+
+  if (!initialData) {
+    return notFoundView("We couldn't find a company with this ID.");
+  }
+
   return (
     <DashboardLayout>
-      <div className="company-page-container">
-
+      <div className="page-wrapper">
         {/* Header */}
         <div className="page-header">
           <div>
-            <h1 className="company-page-title">
-              Edit Company
-            </h1>
+            <h1 className="page-title">Edit Company</h1>
 
-            <p className="company-page-subtitle">
+            <p className="page-subtitle">
               Update company information.
             </p>
           </div>
 
           <div className="page-header-actions">
             <Link href={`/company/${companyId}`}>
-              <button
-                type="button"
-                className="filter-btn"
-              >
+              <button type="button" className="filter-btn">
                 ← Back
               </button>
             </Link>
@@ -145,7 +153,6 @@ export default function EditCompanyPage() {
             success={success}
           />
         </div>
-
       </div>
     </DashboardLayout>
   );

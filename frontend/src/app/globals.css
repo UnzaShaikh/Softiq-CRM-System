@@ -3469,10 +3469,30 @@ body {
 .company-page-subtitle {
   margin: 0;
 
-  color: var(--muted);
-
   font-size: 14px;
   line-height: 1.5;
+}
+
+.th-sortable {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.th-sortable:hover {
+  color: #1F2937;
+}
+
+.th-sortable.active {
+  color: #6C5DD3;
 }
 
 .page-header-actions {
@@ -3553,18 +3573,21 @@ body {
 }
 
 
-/* Form */
-
-.company-form-card form {
+.company-form-card .form-group input,
+.company-form-card .form-group textarea,
+.company-form-card .form-group select {
   width: 100%;
   margin: 0;
   padding: 0;
 }
 
 
-/* =========================================================
-   FORM GROUP
-   ========================================================= */
+.company-form-card .form-group input:focus,
+.company-form-card .form-group textarea:focus,
+.company-form-card .form-group select:focus {
+  border-color: #6C5DD3;
+  box-shadow: 0 0 0 3px rgba(108, 93, 211, 0.12);
+}
 
 .company-form-card .form-group {
   width: 100%;

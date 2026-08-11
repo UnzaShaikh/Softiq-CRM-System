@@ -1,19 +1,11 @@
 "use client";
 
 import { useState } from "react";
-
-export interface CompanyFormData {
-  name: string;
-  industry: string;
-  website: string;
-  phone: string;
-  email: string;
-  address: string;
-}
+import { CompanyFormValues } from "@/data/company";
 
 interface CompanyFormProps {
-  initialData?: CompanyFormData;
-  onSubmit: (data: CompanyFormData) => void | Promise<void>;
+  initialData?: CompanyFormValues;
+  onSubmit: (data: CompanyFormValues) => void | Promise<void>;
   submitText?: string;
   loading?: boolean;
   error?: string;
@@ -27,15 +19,21 @@ interface FormErrors {
   phone?: string;
   email?: string;
   address?: string;
+  size?: string;
+  status?: string;
+  description?: string;
 }
 
-const emptyForm: CompanyFormData = {
+const emptyForm: CompanyFormValues = {
   name: "",
   industry: "",
   website: "",
   phone: "",
   email: "",
   address: "",
+  size: "",
+  status: "Active",
+  description: "",
 };
 
 export default function CompanyForm({
@@ -46,14 +44,16 @@ export default function CompanyForm({
   error,
   success,
 }: CompanyFormProps) {
-  const [formData, setFormData] = useState<CompanyFormData>(
+  const [formData, setFormData] = useState<CompanyFormValues>(
     initialData ?? emptyForm
   );
 
   const [errors, setErrors] = useState<FormErrors>({});
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
 
@@ -169,6 +169,9 @@ export default function CompanyForm({
       phone: formData.phone.trim(),
       email: formData.email.trim(),
       address: formData.address.trim(),
+      size: formData.size.trim(),
+      status: formData.status,
+      description: formData.description.trim(),
     });
   };
 
@@ -388,10 +391,83 @@ export default function CompanyForm({
           )}
         </div>
 
-        {/* =================================================
-            SUBMIT BUTTON
-            ================================================= */}
+        {/* Size + Status */}
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="size">
+              Company Size
+            </label>
 
+            <input
+              id="size"
+              name="size"
+              type="text"
+              value={formData.size}
+              onChange={handleChange}
+              placeholder="e.g. 51 - 200 Employees"
+              className={
+                errors.size ? "input-error" : ""
+              }
+              disabled={loading}
+            />
+
+            {errors.size && (
+              <span className="form-field-error">
+                {errors.size}
+              </span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="status">
+              Status *
+            </label>
+
+            <select
+              id="status"
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              disabled={loading}
+            >
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+
+            {errors.status && (
+              <span className="form-field-error">
+                {errors.status}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="form-group">
+          <label htmlFor="description">
+            Description
+          </label>
+
+          <textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Brief description of the company"
+            className={
+              errors.description ? "input-error" : ""
+            }
+            disabled={loading}
+          />
+
+          {errors.description && (
+            <span className="form-field-error">
+              {errors.description}
+            </span>
+          )}
+        </div>
+
+        {/* Submit Button */}
         <button
           type="submit"
           className="btn-primary"

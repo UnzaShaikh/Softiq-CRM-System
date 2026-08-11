@@ -1,115 +1,144 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Building2,
-  Users2,
-  TrendingUp,
-  UserRoundPlus,
   Plus,
   Trash2,
+  TrendingUp,
+  UserRoundPlus,
+  Users2,
 } from "lucide-react";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import CompanyTable from "@/components/company/CompanyTable";
-import SearchBar from "@/components/customers/SearchBar";
-import { companies as initialCompanies, Company } from "@/data/company";
+import SearchBar from "@/components/company/SearchBar";
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import {
+  ApiCompanyList,
+  ApiCompanyStats,
+  ApiFilterOptions,
+  Company,
+  toCompany,
+} from "@/data/company";
+import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
 
 export default function CompanyPage() {
-  const [companies, setCompanies] = useState<Company[]>(initialCompanies);
+  const router = useRouter();
+
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [industryFilter, setIndustryFilter] = useState("All");
   const [sizeFilter, setSizeFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<"name" | "created_at">("created_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  // Company pending delete confirmation (drives the modal)
+  const [stats, setStats] = useState<ApiCompanyStats | null>(null);
+  const [filterOptions, setFilterOptions] =
+    useState<ApiFilterOptions | null>(null);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Delete confirmation modal state
   const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const companiesPerPage = 10;
+  const statusTabs = ["All", "Active", "Inactive"];
 
-  const industries = useMemo(
-    () =>
-      Array.from(
-        new Set(companies.map((company) => company.industry))
-      ),
-    [companies]
-  );
+  useEffect(() => {
+    let cancelled = false;
 
-  const companySizes = useMemo(
-    () =>
-      Array.from(
-        new Set(companies.map((company) => company.size))
-      ),
-    [companies]
-  );
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    if (statusFilter !== "All") params.set("status", statusFilter.toLowerCase());
+    if (industryFilter !== "All") params.set("industry", industryFilter);
+    if (sizeFilter !== "All") params.set("size", sizeFilter);
+    params.set("page", String(currentPage));
+    params.set("ordering", sortDir === "asc" ? sortBy : `-${sortBy}`);
 
-  const filteredCompanies = useMemo(() => {
-    const searchValue = search.toLowerCase().trim();
+    const run = async () => {
+      setLoading(true);
+      try {
+        const data = await apiRequest<ApiCompanyList>(
+          `/api/companies/?${params.toString()}`
+        );
+        if (cancelled) return;
+        setCompanies(data.results.map(toCompany));
+        setTotalCount(data.count);
+        setError(null);
+        const maxPage = Math.max(
+          1,
+          Math.ceil(data.count / companiesPerPage)
+        );
+        if (currentPage > maxPage) setCurrentPage(maxPage);
+      } catch (err) {
+        if (cancelled) return;
+        setError((err as Error).message);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
 
-    return companies.filter((company) => {
-      const matchesSearch =
-        searchValue === "" ||
-        company.name.toLowerCase().includes(searchValue) ||
-        company.industry.toLowerCase().includes(searchValue) ||
-        company.email.toLowerCase().includes(searchValue);
-
-      const matchesStatus =
-        statusFilter === "All" || company.status === statusFilter;
-
-      const matchesIndustry =
-        industryFilter === "All" ||
-        company.industry === industryFilter;
-
-      const matchesSize =
-        sizeFilter === "All" || company.size === sizeFilter;
-
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesIndustry &&
-        matchesSize
-      );
-    });
+    void run();
+    return () => {
+      cancelled = true;
+    };
   }, [
-    companies,
     search,
     statusFilter,
     industryFilter,
     sizeFilter,
+    currentPage,
+    sortBy,
+    sortDir,
+    refreshKey,
+    router,
   ]);
 
-  const totalCompanies = companies.length;
+  useEffect(() => {
+    let cancelled = false;
 
-  const activeCompanies = companies.filter(
-    (company) => company.status === "Active"
-  ).length;
+    const run = async () => {
+      try {
+        const [statsData, optionsData] = await Promise.all([
+          apiRequest<ApiCompanyStats>("/api/companies/stats/"),
+          apiRequest<ApiFilterOptions>("/api/companies/filter-options/"),
+        ]);
+        if (cancelled) return;
+        setStats(statsData);
+        setFilterOptions(optionsData);
+      } catch {
+        if (cancelled) return;
+        if (!getAccessToken()) router.push("/login");
+      }
+    };
 
-  const newCompaniesThisMonth = companies.filter((company) => {
-    const companyDate = new Date(company.createdOn);
-    const currentDate = new Date();
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey, router]);
 
-    return (
-      companyDate.getMonth() === currentDate.getMonth() &&
-      companyDate.getFullYear() === currentDate.getFullYear()
-    );
-  }).length;
+  const totalCompanies = stats?.total_companies ?? totalCount;
+  const activeCompanies = stats?.active_companies ?? 0;
+  const newCompaniesThisMonth = stats?.new_this_month ?? 0;
+  const totalContacts = stats?.total_contacts ?? 0;
 
-  const totalContacts = companies.reduce(
-    (total, company) => total + company.contacts,
-    0
-  );
+  const totalPages = Math.max(1, Math.ceil(totalCount / companiesPerPage));
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredCompanies.length / companiesPerPage)
-  );
-
-  const paginatedCompanies = filteredCompanies.slice(
-    (currentPage - 1) * companiesPerPage,
-    currentPage * companiesPerPage
-  );
+  const startIndex =
+    totalCount === 0 ? 0 : (currentPage - 1) * companiesPerPage + 1;
+  const endIndex = Math.min(currentPage * companiesPerPage, totalCount);
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -139,158 +168,119 @@ export default function CompanyPage() {
     setCurrentPage(1);
   };
 
-  // Opens the confirmation modal instead of deleting immediately
+  const handleSort = (field: "name" | "created_at") => {
+    if (sortBy === field) {
+      setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(field);
+      setSortDir("asc");
+    }
+    setCurrentPage(1);
+  };
+
   const handleDelete = (company: Company) => {
     setDeleteTarget(company);
   };
 
-  // Runs when the user confirms deletion inside the modal
-  const handleDeleteConfirmed = () => {
+  const handleDeleteConfirmed = async () => {
     if (!deleteTarget) return;
 
-    setCompanies((previousCompanies) =>
-      previousCompanies.filter((item) => item.id !== deleteTarget.id)
-    );
-
-    setDeleteTarget(null);
-    setCurrentPage(1);
+    setDeleting(true);
+    try {
+      await apiRequest(`/api/companies/${deleteTarget.id}/`, {
+        method: "DELETE",
+      });
+      emitDataChanged();
+      setError(null);
+      setDeleteTarget(null);
+      setRefreshKey((key) => key + 1);
+    } catch (err) {
+      setError((err as Error).message);
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(false);
+    }
   };
 
-  const statusTabs = ["All", "Active", "Inactive"];
+  const industries = filterOptions?.industries ?? [];
+  const companySizes = filterOptions?.sizes ?? [];
+
+  const statCards = [
+    {
+      label: "Total Companies",
+      value: totalCompanies,
+      color: "#6c5dd3",
+      background: "#eef2ff",
+      icon: <Building2 size={24} />,
+    },
+    {
+      label: "Active Companies",
+      value: activeCompanies,
+      color: "#0891b2",
+      background: "#e6fbfc",
+      icon: <Users2 size={24} />,
+    },
+    {
+      label: "New This Month",
+      value: newCompaniesThisMonth,
+      color: "#16a34a",
+      background: "#f0fdf4",
+      icon: <TrendingUp size={24} />,
+    },
+    {
+      label: "Total Contacts",
+      value: totalContacts,
+      color: "#f59e0b",
+      background: "#fef3c7",
+      icon: <UserRoundPlus size={24} />,
+    },
+  ];
 
   return (
     <DashboardLayout>
-      <div className="page-container">
+      <div className="page-wrapper">
         <div className="page-header">
           <div>
-            <h1>Companies</h1>
-            <p>Manage all companies in one place.</p>
+            <h1 className="page-title">Companies</h1>
+            <p className="page-subtitle">Manage all companies in one place.</p>
           </div>
 
-          <Link
-            href="/company/new"
-            className="btn-add add-company-btn"
-          >
+          <Link href="/company/new" className="btn-add add-company-btn">
             <Plus size={16} />
             Add Company
           </Link>
         </div>
 
-        <div className="stats-grid company-stats-grid">
-          <div className="stat-card company-stat-card">
-            <div
-              className="stat-card-icon"
-              style={{
-                background: "#f0edff",
-                color: "#6c5dd3",
-              }}
-            >
-              <Building2 size={20} />
-            </div>
-
-            <div>
-              <p
-                className="stat-card-value"
-                style={{ color: "#6c5dd3" }}
+        {/* Summary Cards */}
+        <div className="company-stats-grid">
+          {statCards.map((card) => (
+            <div key={card.label} className="company-stat-card">
+              <div
+                className="stat-card-icon"
+                style={{ background: card.background, color: card.color }}
               >
-                {totalCompanies}
-              </p>
+                {card.icon}
+              </div>
 
-              <p className="stat-card-label">
-                Total Companies
-              </p>
+              <div>
+                <p className="stat-card-value" style={{ color: card.color }}>
+                  {card.value}
+                </p>
+                <p className="stat-card-label">{card.label}</p>
+              </div>
             </div>
-          </div>
-
-          <div className="stat-card company-stat-card">
-            <div
-              className="stat-card-icon"
-              style={{
-                background: "#e6fbfc",
-                color: "#0891b2",
-              }}
-            >
-              <Users2 size={20} />
-            </div>
-
-            <div>
-              <p
-                className="stat-card-value"
-                style={{ color: "#0891b2" }}
-              >
-                {activeCompanies}
-              </p>
-
-              <p className="stat-card-label">
-                Active Companies
-              </p>
-            </div>
-          </div>
-
-          <div className="stat-card company-stat-card">
-            <div
-              className="stat-card-icon"
-              style={{
-                background: "#f0fdf4",
-                color: "#16a34a",
-              }}
-            >
-              <TrendingUp size={20} />
-            </div>
-
-            <div>
-              <p
-                className="stat-card-value"
-                style={{ color: "#16a34a" }}
-              >
-                {newCompaniesThisMonth}
-              </p>
-
-              <p className="stat-card-label">
-                New This Month
-              </p>
-            </div>
-          </div>
-
-          <div className="stat-card company-stat-card">
-            <div
-              className="stat-card-icon"
-              style={{
-                background: "#fef3c7",
-                color: "#f59e0b",
-              }}
-            >
-              <UserRoundPlus size={20} />
-            </div>
-
-            <div>
-              <p
-                className="stat-card-value"
-                style={{ color: "#f59e0b" }}
-              >
-                {totalContacts}
-              </p>
-
-              <p className="stat-card-label">
-                Total Contacts
-              </p>
-            </div>
-          </div>
+          ))}
         </div>
 
-        <div className="table-card company-table-card">
+        {/* Company table card */}
+        <div className="company-table-card">
+          {/* Toolbar: search + results + status tabs */}
           <div className="contacts-table-toolbar">
-            <div className="contacts-search-wrap">
-              <SearchBar
-                value={search}
-                onChange={handleSearchChange}
-                placeholder="Search companies by name, industry, or email…"
-              />
-            </div>
+            <SearchBar value={search} onChange={handleSearchChange} />
 
             <div className="contacts-toolbar-right">
               <span className="contacts-results-count">
-                {filteredCompanies.length} results
+                {totalCount} result{totalCount === 1 ? "" : "s"}
               </span>
 
               <div className="contacts-filter-tabs">
@@ -298,8 +288,8 @@ export default function CompanyPage() {
                   <button
                     key={tab}
                     type="button"
-                    className={`contacts-filter-tab${
-                      statusFilter === tab ? " active" : ""
+                    className={`contacts-filter-tab ${
+                      statusFilter === tab ? "active" : ""
                     }`}
                     onClick={() => handleStatusChange(tab)}
                   >
@@ -310,17 +300,15 @@ export default function CompanyPage() {
             </div>
           </div>
 
-          <div className="filter-group company-filter-group">
+          {/* Industry + Size filters */}
+          <div className="company-filter-group">
             <select
               className="filter-select"
               value={industryFilter}
-              onChange={(event) =>
-                handleIndustryChange(event.target.value)
-              }
+              onChange={(event) => handleIndustryChange(event.target.value)}
               aria-label="Filter by industry"
             >
               <option value="All">All Industry</option>
-
               {industries.map((industry) => (
                 <option key={industry} value={industry}>
                   {industry}
@@ -331,13 +319,10 @@ export default function CompanyPage() {
             <select
               className="filter-select"
               value={sizeFilter}
-              onChange={(event) =>
-                handleSizeChange(event.target.value)
-              }
+              onChange={(event) => handleSizeChange(event.target.value)}
               aria-label="Filter by company size"
             >
               <option value="All">All Size</option>
-
               {companySizes.map((size) => (
                 <option key={size} value={size}>
                   {size}
@@ -354,47 +339,43 @@ export default function CompanyPage() {
             </button>
           </div>
 
+          {/* Result Information */}
           <div className="company-result-info">
-            Showing{" "}
-            {filteredCompanies.length === 0
-              ? 0
-              : (currentPage - 1) * companiesPerPage + 1}{" "}
-            to{" "}
-            {Math.min(
-              currentPage * companiesPerPage,
-              filteredCompanies.length
-            )}{" "}
-            of {filteredCompanies.length} companies
+            Showing {startIndex} to {endIndex} of {totalCount} companies
           </div>
 
-          {paginatedCompanies.length > 0 ? (
+          {error && (
+            <div className="msg-error" role="alert">
+              ❌ {error}
+            </div>
+          )}
+
+          {loading ? (
+            <ThemeLoader label="Loading companies..." minHeight={220} />
+          ) : companies.length > 0 ? (
             <CompanyTable
-              companies={paginatedCompanies}
+              companies={companies}
               onDelete={handleDelete}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onSort={handleSort}
             />
           ) : (
-            <div className="empty-state company-empty-state">
-              <p className="empty-state-title">
-                No companies found.
-              </p>
-
+            <div className="company-empty-state">
+              <h3 className="empty-state-title">No companies found</h3>
               <p className="empty-state-sub">
                 Try changing your search or filters.
               </p>
             </div>
           )}
 
-          {filteredCompanies.length > 0 && (
-            <div className="pagination-wrap company-pagination">
+          {totalPages > 1 && (
+            <div className="company-pagination">
               <button
                 type="button"
                 className="pagination-btn"
                 disabled={currentPage === 1}
-                onClick={() =>
-                  setCurrentPage((page) =>
-                    Math.max(1, page - 1)
-                  )
-                }
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                 aria-label="Previous page"
               >
                 ‹
@@ -422,11 +403,7 @@ export default function CompanyPage() {
                 type="button"
                 className="pagination-btn"
                 disabled={currentPage === totalPages}
-                onClick={() =>
-                  setCurrentPage((page) =>
-                    Math.min(totalPages, page + 1)
-                  )
-                }
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                 aria-label="Next page"
               >
                 ›
@@ -436,25 +413,25 @@ export default function CompanyPage() {
         </div>
       </div>
 
-      {/* =========================================
-          DELETE CONFIRMATION MODAL
-      ========================================== */}
-
+      {/* Delete confirmation modal */}
       {deleteTarget && (
         <div
           className="contacts-modal-overlay"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setDeleteTarget(null);
-            }
+          onClick={() => {
+            if (!deleting) setDeleteTarget(null);
           }}
         >
-          <div className="contacts-modal">
+          <div
+            className="contacts-modal"
+            role="dialog"
+            aria-modal="true"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="contacts-modal-icon">
               <Trash2 size={22} />
             </div>
 
-            <h2 className="contacts-modal-title">Delete Company</h2>
+            <h3 className="contacts-modal-title">Delete Company</h3>
 
             <p className="contacts-modal-text">
               Are you sure you want to delete{" "}
@@ -467,6 +444,7 @@ export default function CompanyPage() {
                 type="button"
                 className="contacts-modal-cancel"
                 onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
               >
                 Cancel
               </button>
@@ -475,8 +453,9 @@ export default function CompanyPage() {
                 type="button"
                 className="contacts-modal-delete"
                 onClick={handleDeleteConfirmed}
+                disabled={deleting}
               >
-                Delete
+                {deleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>
