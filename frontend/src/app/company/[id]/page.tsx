@@ -1,16 +1,82 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { companies } from "@/data/company";
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import { ApiCompany, Company, toCompany } from "@/data/company";
+import { apiRequest, getAccessToken } from "@/lib/api";
 
 export default function CompanyDetailPage() {
+  const router = useRouter();
   const params = useParams();
-  const companyId = Number(params.id);
+  const companyId = Number(params?.id);
 
-  const company = companies.find((c) => c.id === companyId);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
+
+  const missingId = !companyId;
+
+  useEffect(() => {
+    if (!companyId) return;
+
+    let cancelled = false;
+
+    const run = async () => {
+      try {
+        const data = await apiRequest<ApiCompany>(
+          `/api/companies/${companyId}/`
+        );
+        if (cancelled) return;
+        setCompany(toCompany(data));
+      } catch (err) {
+        if (cancelled) return;
+        setError((err as Error).message);
+        setNotFound(true);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId, router]);
+
+  if (missingId || notFound) {
+    return (
+      <DashboardLayout>
+        <div className="company-page">
+          <div className="page-header">
+            <div>
+              <h1 className="page-title">Company Not Found</h1>
+              <p className="page-subtitle">
+                {error || "We couldn't find a company with this ID."}
+              </p>
+            </div>
+
+            <Link href="/company">
+              <button className="filter-btn">← Back to Companies</button>
+            </Link>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <ThemeLoader label="Loading company..." />
+      </DashboardLayout>
+    );
+  }
 
   if (!company) {
     return (
@@ -38,27 +104,33 @@ export default function CompanyDetailPage() {
     `${company.name} is a ${company.industry.toLowerCase()} company with ${company.contacts} contacts and ${company.deals} active deals.`;
 
   const infoFields = [
-    { icon: "🏭", label: "Industry", value: company.industry },
+    { icon: "🏭", label: "Industry", value: company.industry || "—" },
     {
       icon: "🌐",
       label: "Website",
-      value: (
+      value: company.website ? (
         <a href={company.website} target="_blank" rel="noopener noreferrer">
           {company.website}
         </a>
+      ) : (
+        "—"
       ),
     },
-    { icon: "📞", label: "Phone", value: company.phone },
+    { icon: "📞", label: "Phone", value: company.phone || "—" },
     {
       icon: "✉️",
       label: "Email",
-      value: <a href={`mailto:${company.email}`}>{company.email}</a>,
+      value: company.email ? (
+        <a href={`mailto:${company.email}`}>{company.email}</a>
+      ) : (
+        "—"
+      ),
     },
     { icon: "👥", label: "Contacts", value: company.contacts },
     { icon: "💼", label: "Deals", value: company.deals },
-    { icon: "📅", label: "Created On", value: company.createdOn },
-    { icon: "📍", label: "Address", value: company.address },
-    { icon: "🏢", label: "Company Size", value: company.size },
+    { icon: "📅", label: "Created On", value: company.createdOn || "—" },
+    { icon: "📍", label: "Address", value: company.address || "—" },
+    { icon: "🏢", label: "Company Size", value: company.size || "—" },
   ];
 
   return (

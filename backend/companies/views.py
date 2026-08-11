@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound
 from django.db.models import Count, Q, Subquery, OuterRef, IntegerField
 from django.db.models.functions import Coalesce
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 
@@ -76,6 +77,28 @@ class CompanyViewSet(viewsets.ModelViewSet):
         instance.delete()
         return Response({"message": "Company deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
     
+    @action(detail=False, methods=["get"], url_path="stats")
+    def stats(self, request):
+        now = timezone.now()
+        month_start = now.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+
+        company_names = Company.objects.values_list("name", flat=True)
+
+        return Response({
+            "total_companies": Company.objects.count(),
+            "active_companies": Company.objects.filter(
+                status="active"
+            ).count(),
+            "new_this_month": Company.objects.filter(
+                created_at__gte=month_start
+            ).count(),
+            "total_contacts": Contact.objects.filter(
+                company__in=company_names
+            ).count(),
+        })
+
     @action(detail=False, methods=["get"], url_path="filter-options")
     def filter_options(self, request):
         industries = (

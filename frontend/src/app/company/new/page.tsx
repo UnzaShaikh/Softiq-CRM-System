@@ -3,9 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import CompanyForm, {
-  CompanyFormData,
-} from "@/components/company/CompanyForm";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import CompanyForm from "@/components/company/CompanyForm";
+import {
+  apiErrorMessage,
+  CompanyFormValues,
+  toCompanyApiPayload,
+} from "@/data/company";
+import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
 
 export default function NewCompanyPage() {
   const router = useRouter();
@@ -14,56 +19,58 @@ export default function NewCompanyPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const handleSubmit = async (data: CompanyFormData) => {
+  const handleSubmit = async (data: CompanyFormValues) => {
     setLoading(true);
     setError("");
     setSuccess("");
 
     try {
-      // Frontend-only implementation for now.
-      console.log("New Company:", data);
+      await apiRequest("/api/companies/", {
+        method: "POST",
+        body: toCompanyApiPayload(data),
+      });
 
-      await new Promise((resolve) =>
-        setTimeout(resolve, 1000)
-      );
+      emitDataChanged();
 
       setSuccess("Company created successfully.");
 
       setTimeout(() => {
         router.push("/company");
       }, 1000);
-    } catch {
-      setError(
-        "Something went wrong while creating the company."
-      );
+    } catch (err) {
+      setError(apiErrorMessage(err));
+
+      if (!getAccessToken()) router.push("/login");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="company-page">
-      {/* Header */}
-      <div className="company-page-header">
-        <div>
-          <h1 className="company-page-title">
-            Add Company
-          </h1>
+    <DashboardLayout>
+      <div className="company-page">
+        {/* Header */}
+        <div className="company-page-header">
+          <div>
+            <h1 className="company-page-title">
+              Add Company
+            </h1>
 
-          <p className="company-page-subtitle">
-            Create a new company record.
-          </p>
+            <p className="company-page-subtitle">
+              Create a new company record.
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Company Form */}
-      <CompanyForm
-        onSubmit={handleSubmit}
-        submitText="Save Company"
-        loading={loading}
-        error={error}
-        success={success}
-      />
-    </div>
+        {/* Company Form */}
+        <CompanyForm
+          onSubmit={handleSubmit}
+          submitText="Save Company"
+          loading={loading}
+          error={error}
+          success={success}
+        />
+      </div>
+    </DashboardLayout>
   );
 }

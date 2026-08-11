@@ -1,186 +1,146 @@
+export type CompanyStatus = "Active" | "Inactive";
+
 export interface Company {
   id: number;
   name: string;
   industry: string;
   contacts: number;
   deals: number;
-  status: "Active" | "Inactive";
+  status: CompanyStatus;
   createdOn: string;
   website: string;
   phone: string;
   email: string;
   address: string;
   size: string;
-   description?: string; 
+  description?: string;
 }
 
-export const companies: Company[] = [
-  {
-    id: 1,
-    name: "TechVision Pvt Ltd",
-    industry: "Technology",
-    contacts: 24,
-    deals: 6,
-    status: "Active",
-    createdOn: "2024-05-05",
-    website: "https://techvision.com",
-    phone: "+92 300 1234567",
-    email: "info@techvision.com",
-    address: "123 Business Road, Karachi, Pakistan",
-    size: "51 - 200 Employees",
-  },
-  {
-    id: 2,
-    name: "BrightEdge Systems",
-    industry: "IT Services",
-    contacts: 18,
-    deals: 4,
-    status: "Active",
-    createdOn: "2024-05-03",
-    website: "https://brightedge.com",
-    phone: "+92 301 2345678",
-    email: "contact@brightedge.com",
-    address: "45 Shahrah-e-Faisal, Karachi, Pakistan",
-    size: "11 - 50 Employees",
-  },
-  {
-    id: 3,
-    name: "Alpha Dynamics",
-    industry: "Software",
-    contacts: 32,
-    deals: 8,
-    status: "Active",
-    createdOn: "2024-04-28",
-    website: "https://alphadynamics.com",
-    phone: "+92 302 3456789",
-    email: "hello@alphadynamics.com",
-    address: "Blue Area, Islamabad, Pakistan",
-    size: "201 - 500 Employees",
-  },
-  {
-    id: 4,
-    name: "Nexus Corp",
-    industry: "Manufacturing",
-    contacts: 11,
-    deals: 2,
-    status: "Inactive",
-    createdOn: "2024-04-20",
-    website: "https://nexuscorp.com",
-    phone: "+92 303 4567890",
-    email: "support@nexuscorp.com",
-    address: "Industrial Zone, Lahore, Pakistan",
-    size: "501+ Employees",
-  },
-  {
-    id: 5,
-    name: "Global Enterprises",
-    industry: "Logistics",
-    contacts: 15,
-    deals: 3,
-    status: "Active",
-    createdOn: "2024-04-18",
-    website: "https://globalenterprises.com",
-    phone: "+92 304 5678901",
-    email: "sales@globalenterprises.com",
-    address: "Port Qasim, Karachi, Pakistan",
-    size: "201 - 500 Employees",
-  },
-  {
-    id: 6,
-    name: "Skyline Solutions",
-    industry: "Consulting",
-    contacts: 20,
-    deals: 5,
-    status: "Active",
-    createdOn: "2024-04-15",
-    website: "https://skylinesolutions.com",
-    phone: "+92 305 6789012",
-    email: "info@skylinesolutions.com",
-    address: "Gulberg III, Lahore, Pakistan",
-    size: "51 - 200 Employees",
-  },
-  {
-    id: 7,
-    name: "Vertex Technologies",
-    industry: "Technology",
-    contacts: 28,
-    deals: 7,
-    status: "Active",
-    createdOn: "2024-04-12",
-    website: "https://vertextech.com",
-    phone: "+92 306 7890123",
-    email: "contact@vertextech.com",
-    address: "Johar Town, Lahore, Pakistan",
-    size: "201 - 500 Employees",
-  },
-  {
-    id: 8,
-    name: "BlueWave Digital",
-    industry: "Marketing",
-    contacts: 13,
-    deals: 2,
-    status: "Inactive",
-    createdOn: "2024-04-08",
-    website: "https://bluewave.com",
-    phone: "+92 307 8901234",
-    email: "hello@bluewave.com",
-    address: "Clifton, Karachi, Pakistan",
-    size: "11 - 50 Employees",
-  },
-  {
-    id: 9,
-    name: "FutureTech Labs",
-    industry: "Research",
-    contacts: 17,
-    deals: 4,
-    status: "Active",
-    createdOn: "2024-04-04",
-    website: "https://futuretechlabs.com",
-    phone: "+92 308 9012345",
-    email: "info@futuretechlabs.com",
-    address: "I-8, Islamabad, Pakistan",
-    size: "51 - 200 Employees",
-  },
-  {
-    id: 10,
-    name: "Prime Innovations",
-    industry: "Engineering",
-    contacts: 22,
-    deals: 5,
-    status: "Active",
-    createdOn: "2024-03-30",
-    website: "https://primeinnovations.com",
-    phone: "+92 309 0123456",
-    email: "support@primeinnovations.com",
-    address: "Model Town, Lahore, Pakistan",
-    size: "201 - 500 Employees",
-  },
-  {
-    id: 11,
-    name: "SmartCore Ltd",
-    industry: "Technology",
-    contacts: 14,
-    deals: 3,
-    status: "Active",
-    createdOn: "2024-03-25",
-    website: "https://smartcore.com",
-    phone: "+92 310 1234567",
-    email: "info@smartcore.com",
-    address: "Gulshan-e-Iqbal, Karachi, Pakistan",
-    size: "11 - 50 Employees",
-  },
-  {
-    id: 12,
-    name: "Infinity Networks",
-    industry: "Telecommunications",
-    contacts: 30,
-    deals: 9,
-    status: "Active",
-    createdOn: "2024-03-20",
-    website: "https://infinitynetworks.com",
-    phone: "+92 311 2345678",
-    email: "contact@infinitynetworks.com",
-    address: "F-10, Islamabad, Pakistan",
-    size: "501+ Employees",
-  },
-];
+export interface ApiCompany {
+  id: number;
+  name: string;
+  industry: string;
+  website: string;
+  phone: string;
+  email: string;
+  address: string;
+  size: string;
+  status: "active" | "inactive";
+  description: string;
+  contacts_count: number;
+  deals_count: number;
+  created_by: number | null;
+  created_by_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const STATUS_FROM_API: Record<ApiCompany["status"], CompanyStatus> = {
+  active: "Active",
+  inactive: "Inactive",
+};
+
+export const STATUS_TO_API: Record<CompanyStatus, ApiCompany["status"]> = {
+  Active: "active",
+  Inactive: "inactive",
+};
+
+export function toCompany(api: ApiCompany): Company {
+  return {
+    id: api.id,
+    name: api.name,
+    industry: api.industry,
+    contacts: api.contacts_count,
+    deals: api.deals_count,
+    status: STATUS_FROM_API[api.status],
+    createdOn: api.created_at ? api.created_at.slice(0, 10) : "",
+    website: api.website,
+    phone: api.phone,
+    email: api.email,
+    address: api.address,
+    size: api.size,
+    description: api.description || undefined,
+  };
+}
+
+export interface CompanyFormValues {
+  name: string;
+  industry: string;
+  website: string;
+  phone: string;
+  email: string;
+  address: string;
+  size: string;
+  status: CompanyStatus;
+  description: string;
+}
+
+export function toCompanyFormValues(api: ApiCompany): CompanyFormValues {
+  return {
+    name: api.name,
+    industry: api.industry,
+    website: api.website,
+    phone: api.phone,
+    email: api.email,
+    address: api.address,
+    size: api.size,
+    status: STATUS_FROM_API[api.status],
+    description: api.description || "",
+  };
+}
+
+export function toCompanyApiPayload(
+  form: CompanyFormValues
+): Partial<ApiCompany> {
+  return {
+    name: form.name,
+    industry: form.industry,
+    website: form.website,
+    phone: form.phone,
+    email: form.email,
+    address: form.address,
+    size: form.size,
+    status: STATUS_TO_API[form.status],
+    description: form.description,
+  };
+}
+
+export interface ApiCompanyList {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: ApiCompany[];
+}
+
+export interface ApiCompanyStats {
+  total_companies: number;
+  active_companies: number;
+  new_this_month: number;
+  total_contacts: number;
+}
+
+export interface ApiFilterOptions {
+  industries: string[];
+  sizes: string[];
+  statuses: { value: string; label: string }[];
+  total_records: number;
+}
+
+export function apiErrorMessage(err: unknown): string {
+  if (err instanceof Error) {
+    try {
+      const parsed = JSON.parse(err.message);
+      if (parsed && typeof parsed === "object") {
+        const firstValue = Object.values(parsed)[0];
+        if (Array.isArray(firstValue)) return String(firstValue[0]);
+        if (firstValue !== undefined && firstValue !== null) {
+          return String(firstValue);
+        }
+      }
+    } catch {
+      // message is not JSON, fall through to raw message
+    }
+    return err.message;
+  }
+  return "Something went wrong.";
+}

@@ -1,102 +1,137 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import CompanyTable from "@/components/company/CompanyTable";
-import { companies as initialCompanies, Company } from "@/data/company";
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import {
+  ApiCompanyList,
+  ApiFilterOptions,
+  ApiCompanyStats,
+  Company,
+  toCompany,
+} from "@/data/company";
+import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
 
 export default function CompanyPage() {
-  const [companies, setCompanies] =
-    useState<Company[]>(initialCompanies);
+  const router = useRouter();
+
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [industryFilter, setIndustryFilter] = useState("All");
   const [sizeFilter, setSizeFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<"name" | "created_at">("created_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const [stats, setStats] = useState<ApiCompanyStats | null>(null);
+  const [filterOptions, setFilterOptions] =
+    useState<ApiFilterOptions | null>(null);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const companiesPerPage = 10;
 
-  const industries = useMemo(() => {
-    return Array.from(
-      new Set(companies.map((company) => company.industry))
-    );
-  }, [companies]);
+  const statusTabs = ["All", "Active", "Inactive"];
 
-  const companySizes = useMemo(() => {
-    return Array.from(
-      new Set(companies.map((company) => company.size))
-    );
-  }, [companies]);
+  useEffect(() => {
+    let cancelled = false;
 
-  const filteredCompanies = useMemo(() => {
-    const searchValue = search.toLowerCase().trim();
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    if (statusFilter !== "All") params.set("status", statusFilter.toLowerCase());
+    if (industryFilter !== "All") params.set("industry", industryFilter);
+    if (sizeFilter !== "All") params.set("size", sizeFilter);
+    params.set("page", String(currentPage));
+    params.set("ordering", sortDir === "asc" ? sortBy : `-${sortBy}`);
 
-    return companies.filter((company) => {
-      const matchesSearch =
-        searchValue === "" ||
-        company.name.toLowerCase().includes(searchValue) ||
-        company.industry.toLowerCase().includes(searchValue) ||
-        company.email.toLowerCase().includes(searchValue);
+    const run = async () => {
+      setLoading(true);
+      try {
+        const data = await apiRequest<ApiCompanyList>(
+          `/api/companies/?${params.toString()}`
+        );
+        if (cancelled) return;
+        setCompanies(data.results.map(toCompany));
+        setTotalCount(data.count);
+        setError(null);
+        const maxPage = Math.max(
+          1,
+          Math.ceil(data.count / companiesPerPage)
+        );
+        if (currentPage > maxPage) setCurrentPage(maxPage);
+      } catch (err) {
+        if (cancelled) return;
+        setError((err as Error).message);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
 
-      const matchesStatus =
-        statusFilter === "All" ||
-        company.status === statusFilter;
-
-      const matchesIndustry =
-        industryFilter === "All" ||
-        company.industry === industryFilter;
-
-      const matchesSize =
-        sizeFilter === "All" ||
-        company.size === sizeFilter;
-
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesIndustry &&
-        matchesSize
-      );
-    });
+    void run();
+    return () => {
+      cancelled = true;
+    };
   }, [
-    companies,
     search,
     statusFilter,
     industryFilter,
     sizeFilter,
+    currentPage,
+    sortBy,
+    sortDir,
+    refreshKey,
+    router,
   ]);
 
-  const totalCompanies = companies.length;
+  useEffect(() => {
+    let cancelled = false;
 
-  const activeCompanies = companies.filter(
-    (company) => company.status === "Active"
-  ).length;
+    const run = async () => {
+      try {
+        const [statsData, optionsData] = await Promise.all([
+          apiRequest<ApiCompanyStats>("/api/companies/stats/"),
+          apiRequest<ApiFilterOptions>("/api/companies/filter-options/"),
+        ]);
+        if (cancelled) return;
+        setStats(statsData);
+        setFilterOptions(optionsData);
+      } catch {
+        if (cancelled) return;
+        if (!getAccessToken()) router.push("/login");
+      }
+    };
 
-  const newCompaniesThisMonth = companies.filter((company) => {
-    const companyDate = new Date(company.createdOn);
-    const currentDate = new Date();
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey, router]);
 
-    return (
-      companyDate.getMonth() === currentDate.getMonth() &&
-      companyDate.getFullYear() === currentDate.getFullYear()
-    );
-  }).length;
-
-  const totalContacts = companies.reduce(
-    (total, company) => total + company.contacts,
-    0
-  );
+  const totalCompanies = stats?.total_companies ?? totalCount;
+  const activeCompanies = stats?.active_companies ?? 0;
+  const newCompaniesThisMonth = stats?.new_this_month ?? 0;
+  const totalContacts = stats?.total_contacts ?? 0;
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredCompanies.length / companiesPerPage)
+    Math.ceil(totalCount / companiesPerPage)
   );
 
-  const paginatedCompanies = filteredCompanies.slice(
-    (currentPage - 1) * companiesPerPage,
-    currentPage * companiesPerPage
+  const startIndex =
+    totalCount === 0 ? 0 : (currentPage - 1) * companiesPerPage + 1;
+  const endIndex = Math.min(
+    currentPage * companiesPerPage,
+    totalCount
   );
 
   const handleSearchChange = (value: string) => {
@@ -127,7 +162,17 @@ export default function CompanyPage() {
     setCurrentPage(1);
   };
 
-  const handleDelete = (company: Company) => {
+  const handleSort = (field: "name" | "created_at") => {
+    if (sortBy === field) {
+      setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(field);
+      setSortDir("asc");
+    }
+    setCurrentPage(1);
+  };
+
+  const handleDelete = async (company: Company) => {
     const confirmed = window.confirm(
       `Are you sure you want to delete ${company.name}?`
     );
@@ -136,16 +181,20 @@ export default function CompanyPage() {
       return;
     }
 
-    setCompanies((previousCompanies) =>
-      previousCompanies.filter(
-        (item) => item.id !== company.id
-      )
-    );
-
-    setCurrentPage(1);
+    try {
+      await apiRequest(`/api/companies/${company.id}/`, {
+        method: "DELETE",
+      });
+      emitDataChanged();
+      setError(null);
+      setRefreshKey((key) => key + 1);
+    } catch (err) {
+      setError((err as Error).message);
+    }
   };
 
-  const statusTabs = ["All", "Active", "Inactive"];
+  const industries = filterOptions?.industries ?? [];
+  const companySizes = filterOptions?.sizes ?? [];
 
   return (
     <DashboardLayout>
@@ -170,7 +219,7 @@ export default function CompanyPage() {
           </Link>
         </div>
 
-        {/* Summary Cards — icons ab color-coded hain */}
+        {/* Summary Cards */}
         <div className="company-stats-grid">
           <div className="company-stat-card">
             <div className="company-stat-icon stat-icon-purple">
@@ -185,10 +234,6 @@ export default function CompanyPage() {
               <strong className="company-stat-value">
                 {totalCompanies}
               </strong>
-
-              <span className="company-stat-change">
-                ↑ 12.5% vs last month
-              </span>
             </div>
           </div>
 
@@ -205,10 +250,6 @@ export default function CompanyPage() {
               <strong className="company-stat-value">
                 {activeCompanies}
               </strong>
-
-              <span className="company-stat-change">
-                ↑ 8.7% vs last month
-              </span>
             </div>
           </div>
 
@@ -225,10 +266,6 @@ export default function CompanyPage() {
               <strong className="company-stat-value">
                 {newCompaniesThisMonth}
               </strong>
-
-              <span className="company-stat-change">
-                ↑ 27.3% vs last month
-              </span>
             </div>
           </div>
 
@@ -245,17 +282,12 @@ export default function CompanyPage() {
               <strong className="company-stat-value">
                 {totalContacts}
               </strong>
-
-              <span className="company-stat-change">
-                ↑ 15.6% vs last month
-              </span>
             </div>
           </div>
         </div>
 
         {/* Search & Filters */}
         <div className="company-toolbar">
-          {/* Row 1: Search + results pill + status tabs — reference jaisa */}
           <div className="search-box">
             <span className="search-icon" aria-hidden="true">🔍</span>
 
@@ -272,7 +304,7 @@ export default function CompanyPage() {
           </div>
 
           <span className="badge badge-new">
-            {filteredCompanies.length} results
+            {totalCount} results
           </span>
 
           <div className="filter-tabs">
@@ -289,7 +321,6 @@ export default function CompanyPage() {
           </div>
         </div>
 
-        {/* Row 2: Industry + Size + Reset — extra filters jo Leads/Customers mein nahi the */}
         <div className="filter-group" style={{ marginTop: "-8px", marginBottom: "24px" }}>
           <select
             className="filter-select"
@@ -334,22 +365,24 @@ export default function CompanyPage() {
 
         {/* Result Information */}
         <div className="company-result-info">
-          Showing{" "}
-          {filteredCompanies.length === 0
-            ? 0
-            : (currentPage - 1) * companiesPerPage + 1}{" "}
-          to{" "}
-          {Math.min(
-            currentPage * companiesPerPage,
-            filteredCompanies.length
-          )}{" "}
-          of {filteredCompanies.length} companies
+          Showing {startIndex} to {endIndex} of {totalCount} companies
         </div>
 
-        {paginatedCompanies.length > 0 ? (
+        {error && (
+          <div className="msg-error" role="alert">
+            ❌ {error}
+          </div>
+        )}
+
+        {loading ? (
+          <ThemeLoader label="Loading companies..." minHeight={220} />
+        ) : companies.length > 0 ? (
           <CompanyTable
-            companies={paginatedCompanies}
+            companies={companies}
             onDelete={handleDelete}
+            sortBy={sortBy}
+            sortDir={sortDir}
+            onSort={handleSort}
           />
         ) : (
           <div className="company-empty-state">
@@ -363,7 +396,7 @@ export default function CompanyPage() {
           </div>
         )}
 
-        {filteredCompanies.length > 0 && (
+        {totalPages > 1 && (
           <div className="company-pagination">
             <button
               type="button"

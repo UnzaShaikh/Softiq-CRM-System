@@ -46,6 +46,7 @@ class CompanyAPITests(APITestCase):
         self.client.credentials()
         res = self.client.get("/api/companies/")
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_search_companies(self):
         Company.objects.create(
             name="Tech Solutions",
@@ -56,7 +57,8 @@ class CompanyAPITests(APITestCase):
         res = self.client.get("/api/companies/?search=Tech")
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-def test_filter_by_industry(self):
+
+    def test_filter_by_industry(self):
         Company.objects.create(
             name="Tech Solutions",
             industry="Technology",
@@ -68,7 +70,8 @@ def test_filter_by_industry(self):
         )
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-def test_filter_by_size(self):
+
+    def test_filter_by_size(self):
         Company.objects.create(
             name="Large Company",
             industry="Technology",
@@ -81,19 +84,22 @@ def test_filter_by_size(self):
         )
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-def test_filter_by_status(self):
+
+    def test_filter_by_status(self):
         res = self.client.get(
             "/api/companies/?status=active"
         )
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-def test_ordering(self):
+
+    def test_ordering(self):
         res = self.client.get(
             "/api/companies/?ordering=name"
         )
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-def test_pagination(self):
+
+    def test_pagination(self):
         res = self.client.get(
             "/api/companies/?page=1"
         )
@@ -101,7 +107,8 @@ def test_pagination(self):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertIn("count", res.data)
         self.assertIn("results", res.data)
-def test_filter_options(self):
+
+    def test_filter_options(self):
         res = self.client.get(
             "/api/companies/filter-options/"
         )
@@ -112,3 +119,19 @@ def test_filter_options(self):
         self.assertIn("sizes", res.data)
         self.assertIn("statuses", res.data)
         self.assertIn("total_records", res.data)
+
+    def test_stats(self):
+        Company.objects.create(
+            name="Tech Solutions",
+            industry="Technology",
+            created_by=self.user
+        )
+
+        res = self.client.get("/api/companies/stats/")
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        self.assertIn("total_companies", res.data)
+        self.assertIn("active_companies", res.data)
+        self.assertIn("new_this_month", res.data)
+        self.assertIn("total_contacts", res.data)
