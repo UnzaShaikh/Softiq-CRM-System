@@ -38,6 +38,9 @@ export default function CompanyPage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Company pending delete confirmation (drives the modal)
+  const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
+
   const companiesPerPage = 10;
 
   const statusTabs = ["All", "Active", "Inactive"];
@@ -177,9 +180,9 @@ export default function CompanyPage() {
       `Are you sure you want to delete ${company.name}?`
     );
 
-    if (!confirmed) {
-      return;
-    }
+  // Runs when the user confirms deletion inside the modal
+  const handleDeleteConfirmed = () => {
+    if (!deleteTarget) return;
 
     try {
       await apiRequest(`/api/companies/${company.id}/`, {
@@ -198,24 +201,19 @@ export default function CompanyPage() {
 
   return (
     <DashboardLayout>
-      <div className="company-page">
-        {/* Header */}
-        <div className="company-page-header">
+      <div className="page-container">
+        <div className="page-header">
           <div>
-            <h1 className="company-page-title">
-              Companies
-            </h1>
-
-            <p className="company-page-subtitle">
-              Manage all companies in one place.
-            </p>
+            <h1>Companies</h1>
+            <p>Manage all companies in one place.</p>
           </div>
 
           <Link
             href="/company/new"
-            className="add-company-btn"
+            className="btn-add add-company-btn"
           >
-            + Add Company
+            <Plus size={16} />
+            Add Company
           </Link>
         </div>
 
@@ -226,65 +224,89 @@ export default function CompanyPage() {
               🏢
             </div>
 
-            <div className="company-stat-content">
-              <span className="company-stat-label">
-                Total Companies
-              </span>
-
-              <strong className="company-stat-value">
+            <div>
+              <p
+                className="stat-card-value"
+                style={{ color: "#6c5dd3" }}
+              >
                 {totalCompanies}
               </strong>
             </div>
           </div>
 
-          <div className="company-stat-card">
-            <div className="company-stat-icon stat-icon-teal">
-              👥
+          <div className="stat-card company-stat-card">
+            <div
+              className="stat-card-icon"
+              style={{
+                background: "#e6fbfc",
+                color: "#0891b2",
+              }}
+            >
+              <Users2 size={20} />
             </div>
 
-            <div className="company-stat-content">
-              <span className="company-stat-label">
-                Active Companies
-              </span>
-
-              <strong className="company-stat-value">
+            <div>
+              <p
+                className="stat-card-value"
+                style={{ color: "#0891b2" }}
+              >
                 {activeCompanies}
               </strong>
             </div>
           </div>
 
-          <div className="company-stat-card">
-            <div className="company-stat-icon stat-icon-green">
-              +
+          <div className="stat-card company-stat-card">
+            <div
+              className="stat-card-icon"
+              style={{
+                background: "#f0fdf4",
+                color: "#16a34a",
+              }}
+            >
+              <TrendingUp size={20} />
             </div>
 
-            <div className="company-stat-content">
-              <span className="company-stat-label">
-                New This Month
-              </span>
-
-              <strong className="company-stat-value">
+            <div>
+              <p
+                className="stat-card-value"
+                style={{ color: "#16a34a" }}
+              >
                 {newCompaniesThisMonth}
               </strong>
             </div>
           </div>
 
-          <div className="company-stat-card">
-            <div className="company-stat-icon stat-icon-orange">
-              👤
+          <div className="stat-card company-stat-card">
+            <div
+              className="stat-card-icon"
+              style={{
+                background: "#fef3c7",
+                color: "#f59e0b",
+              }}
+            >
+              <UserRoundPlus size={20} />
             </div>
 
-            <div className="company-stat-content">
-              <span className="company-stat-label">
+            <div>
+              <p
+                className="stat-card-value"
+                style={{ color: "#f59e0b" }}
+              >
+                {totalContacts}
+              </p>
+
+              <p className="stat-card-label">
                 Total Contacts
-              </span>
+              </p>
+            </div>
+          </div>
+        </div>
 
               <strong className="company-stat-value">
                 {totalContacts}
               </strong>
             </div>
           </div>
-        </div>
 
         {/* Search & Filters */}
         <div className="company-toolbar">
@@ -297,29 +319,100 @@ export default function CompanyPage() {
               className="search-input"
               value={search}
               onChange={(event) =>
-                handleSearchChange(event.target.value)
+                handleIndustryChange(event.target.value)
               }
-              aria-label="Search companies"
-            />
+              aria-label="Filter by industry"
+            >
+              <option value="All">All Industry</option>
+
+              {industries.map((industry) => (
+                <option key={industry} value={industry}>
+                  {industry}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="filter-select"
+              value={sizeFilter}
+              onChange={(event) =>
+                handleSizeChange(event.target.value)
+              }
+              aria-label="Filter by company size"
+            >
+              <option value="All">All Size</option>
+
+              {companySizes.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleReset}
+            >
+              Reset
+            </button>
           </div>
 
           <span className="badge badge-new">
             {totalCount} results
           </span>
 
-          <div className="filter-tabs">
-            {statusTabs.map((tab) => (
+          {filteredCompanies.length > 0 && (
+            <div className="pagination-wrap company-pagination">
               <button
-                key={tab}
                 type="button"
-                className={`filter-tab ${statusFilter === tab ? "active" : ""}`}
-                onClick={() => handleStatusChange(tab)}
+                className="pagination-btn"
+                disabled={currentPage === 1}
+                onClick={() =>
+                  setCurrentPage((page) =>
+                    Math.max(1, page - 1)
+                  )
+                }
+                aria-label="Previous page"
               >
-                {tab}
+                ‹
               </button>
-            ))}
-          </div>
+
+              <div className="pagination-pages">
+                {Array.from(
+                  { length: totalPages },
+                  (_, index) => index + 1
+                ).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`pagination-page ${
+                      currentPage === page ? "active" : ""
+                    }`}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className="pagination-btn"
+                disabled={currentPage === totalPages}
+                onClick={() =>
+                  setCurrentPage((page) =>
+                    Math.min(totalPages, page + 1)
+                  )
+                }
+                aria-label="Next page"
+              >
+                ›
+              </button>
+            </div>
+          )}
         </div>
+      </div>
 
         <div className="filter-group" style={{ marginTop: "-8px", marginBottom: "24px" }}>
           <select
@@ -344,24 +437,12 @@ export default function CompanyPage() {
             onChange={(event) =>
               handleSizeChange(event.target.value)
             }
-            aria-label="Filter by company size"
-          >
-            <option value="All">All Size</option>
-            {companySizes.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
-
-          <button
-            type="button"
-            className="filter-btn"
-            onClick={handleReset}
-          >
-            ↻ Reset
-          </button>
-        </div>
+          }}
+        >
+          <div className="contacts-modal">
+            <div className="contacts-modal-icon">
+              <Trash2 size={22} />
+            </div>
 
         {/* Result Information */}
         <div className="company-result-info">
@@ -393,8 +474,6 @@ export default function CompanyPage() {
             <p className="empty-state-sub">
               Try changing your search or filters.
             </p>
-          </div>
-        )}
 
         {totalPages > 1 && (
           <div className="company-pagination">
@@ -410,40 +489,17 @@ export default function CompanyPage() {
               ‹
             </button>
 
-            <div className="pagination-pages">
-              {Array.from(
-                { length: totalPages },
-                (_, index) => index + 1
-              ).map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  className={`pagination-page ${
-                    currentPage === page ? "active" : ""
-                  }`}
-                  onClick={() => setCurrentPage(page)}
-                >
-                  {page}
-                </button>
-              ))}
+              <button
+                type="button"
+                className="contacts-modal-delete"
+                onClick={handleDeleteConfirmed}
+              >
+                Delete
+              </button>
             </div>
-
-            <button
-              type="button"
-              className="pagination-btn"
-              disabled={currentPage === totalPages}
-              onClick={() =>
-                setCurrentPage((page) =>
-                  Math.min(totalPages, page + 1)
-                )
-              }
-              aria-label="Next page"
-            >
-              ›
-            </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

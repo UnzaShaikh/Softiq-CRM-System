@@ -14,9 +14,9 @@ export default function SearchBar({
   resultCount,
 }: SearchBarProps) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", width: "100%" }}>
       {/* Search input */}
-      <div style={{ position: "relative", flex: 1, minWidth: "240px" }}>
+      <div style={{ position: "relative", flex: "1 1 240px", minWidth: 0 }}>
         {/* Search icon */}
         <svg
           style={{
@@ -56,6 +56,8 @@ export default function SearchBar({
             fontSize: "0.875rem",
             fontFamily: "inherit",
             outline: "none",
+            boxSizing: "border-box",
+            minWidth: 0,
             transition: "border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease",
           }}
           onFocus={(e) => {

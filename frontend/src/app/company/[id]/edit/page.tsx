@@ -20,7 +20,11 @@ export default function EditCompanyPage() {
   const params = useParams();
   const router = useRouter();
 
-  const companyId = params.id as string;
+  const companyId = Number(params.id);
+
+  const company = companies.find(
+    (company) => company.id === companyId
+  );
 
   const [initialData, setInitialData] =
     useState<CompanyFormValues | null>(null);
@@ -61,6 +65,56 @@ export default function EditCompanyPage() {
   }, [companyId, router]);
 
   const handleSubmit = async (data: CompanyFormValues) => {
+  // Company not found
+  if (!company) {
+    return (
+      <DashboardLayout>
+        <div className="company-page-container">
+          <div className="page-header">
+            <div>
+              <h1 className="company-page-title">
+                Company Not Found
+              </h1>
+
+              <p className="company-page-subtitle">
+                We couldn't find a company with this ID.
+              </p>
+            </div>
+
+            <div className="page-header-actions">
+              <Link href="/company">
+                <button
+                  type="button"
+                  className="filter-btn"
+                >
+                  ← Back to Companies
+                </button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  /*
+   * Empty form fields.
+   *
+   * Backend API integration hone ke baad
+   * yahan API se company data load kiya ja sakta hai.
+   */
+  const initialData: CompanyFormData = {
+    name: "",
+    industry: "",
+    website: "",
+    phone: "",
+    email: "",
+    address: "",
+  };
+
+  const handleSubmit = async (
+    data: CompanyFormData
+  ) => {
     setLoading(true);
     setError("");
     setSuccess("");
@@ -73,7 +127,9 @@ export default function EditCompanyPage() {
 
       emitDataChanged();
 
-      setSuccess("Company updated successfully.");
+      setSuccess(
+        "Company updated successfully."
+      );
 
       setTimeout(() => {
         router.push(`/company/${companyId}`);
@@ -152,25 +208,30 @@ export default function EditCompanyPage() {
             </p>
           </div>
 
-          <Link href={`/company/${companyId}`}>
-            <button
-              type="button"
-              className="filter-btn"
-            >
-              ← Back
-            </button>
-          </Link>
+          <div className="page-header-actions">
+            <Link href={`/company/${companyId}`}>
+              <button
+                type="button"
+                className="filter-btn"
+              >
+                ← Back
+              </button>
+            </Link>
+          </div>
         </div>
 
         {/* Company Form */}
-        <CompanyForm
-          initialData={initialData}
-          onSubmit={handleSubmit}
-          submitText="Update Company"
-          loading={loading}
-          error={error}
-          success={success}
-        />
+        <div className="company-form-card">
+          <CompanyForm
+            initialData={initialData}
+            onSubmit={handleSubmit}
+            submitText="Update Company"
+            loading={loading}
+            error={error}
+            success={success}
+          />
+        </div>
+
       </div>
     </DashboardLayout>
   );

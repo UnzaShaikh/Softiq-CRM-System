@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Company } from "@/data/company";
 
 interface CompanyTableProps {
@@ -29,7 +30,7 @@ export default function CompanyTable({
 
   return (
     <div className="company-table-container">
-      <table className="company-table">
+      <table className="data-table company-table">
         <thead>
           <tr>
             <th>
@@ -79,35 +80,24 @@ export default function CompanyTable({
             <tr key={company.id}>
               <td>
                 <div className="cell-user">
-                  <div className="company-avatar">
-                    {company.name.substring(0, 2).toUpperCase()}
-                  </div>
-
+                  <div className="cell-avatar company-avatar">{company.name.substring(0, 2).toUpperCase()}</div>
                   <div>
                     <p className="cell-name">{company.name}</p>
                   </div>
                 </div>
               </td>
 
-              <td>{company.industry}</td>
-
-              <td>{company.contacts}</td>
-
-              <td>{company.deals}</td>
+              <td className="cell-primary">{company.industry}</td>
+              <td className="cell-primary">{company.contacts}</td>
+              <td className="cell-primary">{company.deals}</td>
 
               <td>
-                <span
-                  className={
-                    company.status === "Active"
-                      ? "status-badge status-active"
-                      : "status-badge status-inactive"
-                  }
-                >
+                <span className={`badge ${company.status === "Active" ? "badge-active" : "badge-inactive"}`}>
                   {company.status}
                 </span>
               </td>
 
-              <td>{company.createdOn}</td>
+              <td className="cell-muted">{company.createdOn}</td>
 
               <td>
                 <div

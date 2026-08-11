@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import Link from "next/link";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import CompanyForm from "@/components/company/CompanyForm";
@@ -12,7 +13,7 @@ import {
 } from "@/data/company";
 import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
 
-export default function NewCompanyPage() {
+export default function AddCompanyPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
@@ -60,16 +61,31 @@ export default function NewCompanyPage() {
               Create a new company record.
             </p>
           </div>
+
+          <div className="page-header-actions">
+            <Link href="/company">
+              <button
+                type="button"
+                className="filter-btn"
+              >
+                ← Back
+              </button>
+            </Link>
+          </div>
         </div>
 
         {/* Company Form */}
-        <CompanyForm
-          onSubmit={handleSubmit}
-          submitText="Save Company"
-          loading={loading}
-          error={error}
-          success={success}
-        />
+        <div className="company-form-card">
+          <CompanyForm
+            initialData={initialData}
+            onSubmit={handleSubmit}
+            submitText="Save Company"
+            loading={loading}
+            error={error}
+            success={success}
+          />
+        </div>
+
       </div>
     </DashboardLayout>
   );
