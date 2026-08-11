@@ -20,17 +20,32 @@ class ActivityViewSet(viewsets.ModelViewSet):
         qs = Activity.objects.select_related(
             "customer", "lead", "deal", "assigned_to", "created_by"
         )
-        # Manual query-param filtering (no django-filter dependency)
+
+        # Manual query-param filtering
         type_param = self.request.query_params.get("type")
         status_param = self.request.query_params.get("status")
         priority_param = self.request.query_params.get("priority")
+        assigned_to_param = self.request.query_params.get("assigned_to")
+        date_from = self.request.query_params.get("date_from")
+        date_to = self.request.query_params.get("date_to")
 
         if type_param:
             qs = qs.filter(type=type_param)
+
         if status_param:
             qs = qs.filter(status=status_param)
+
         if priority_param:
             qs = qs.filter(priority=priority_param)
+
+        if assigned_to_param:
+            qs = qs.filter(assigned_to_id=assigned_to_param)
+
+        if date_from:
+            qs = qs.filter(date__gte=date_from)
+
+        if date_to:
+            qs = qs.filter(date__lte=date_to)
 
         return qs
 
