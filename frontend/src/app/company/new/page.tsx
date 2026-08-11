@@ -49,15 +49,15 @@ export default function AddCompanyPage() {
 
   return (
     <DashboardLayout>
-      <div className="company-page">
+      <div className="page-wrapper">
         {/* Header */}
-        <div className="company-page-header">
+        <div className="page-header">
           <div>
-            <h1 className="company-page-title">
+            <h1 className="page-title">
               Add Company
             </h1>
 
-            <p className="company-page-subtitle">
+            <p className="page-subtitle">
               Create a new company record.
             </p>
           </div>
@@ -77,7 +77,6 @@ export default function AddCompanyPage() {
         {/* Company Form */}
         <div className="company-form-card">
           <CompanyForm
-            initialData={initialData}
             onSubmit={handleSubmit}
             submitText="Save Company"
             loading={loading}

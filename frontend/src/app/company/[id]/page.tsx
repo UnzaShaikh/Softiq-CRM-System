@@ -52,7 +52,7 @@ export default function CompanyDetailPage() {
   if (missingId || notFound) {
     return (
       <DashboardLayout>
-        <div className="company-page">
+        <div className="page-wrapper">
           <div className="page-header">
             <div>
               <h1 className="page-title">Company Not Found</h1>
@@ -81,7 +81,7 @@ export default function CompanyDetailPage() {
   if (!company) {
     return (
       <DashboardLayout>
-        <div className="company-page">
+        <div className="page-wrapper">
           <div className="page-header">
             <div>
               <h1 className="page-title">Company Not Found</h1>
@@ -135,7 +135,7 @@ export default function CompanyDetailPage() {
 
   return (
     <DashboardLayout>
-      <div className="company-page">
+      <div className="page-wrapper">
         {/* Header */}
         <div className="page-header">
           <div>

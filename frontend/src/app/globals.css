@@ -3469,13 +3469,8 @@ body {
 .company-page-subtitle {
   margin: 0;
 
-.company-table th {
-  padding: 16px;
-  text-align: left;
-  font-size: 13px;
-  font-weight: 600;
-  color: #6B7280;
-  border-bottom: 1px solid #E5E7EB;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .th-sortable {
@@ -3498,11 +3493,6 @@ body {
 
 .th-sortable.active {
   color: #6C5DD3;
-}
-
-
-  font-size: 14px;
-  line-height: 1.5;
 }
 
 .page-header-actions {

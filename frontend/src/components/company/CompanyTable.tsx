@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Company } from "@/data/company";
 
 interface CompanyTableProps {

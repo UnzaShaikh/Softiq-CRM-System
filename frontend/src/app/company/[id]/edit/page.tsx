@@ -22,10 +22,6 @@ export default function EditCompanyPage() {
 
   const companyId = Number(params.id);
 
-  const company = companies.find(
-    (company) => company.id === companyId
-  );
-
   const [initialData, setInitialData] =
     useState<CompanyFormValues | null>(null);
   const [fetching, setFetching] = useState(true);
@@ -65,56 +61,6 @@ export default function EditCompanyPage() {
   }, [companyId, router]);
 
   const handleSubmit = async (data: CompanyFormValues) => {
-  // Company not found
-  if (!company) {
-    return (
-      <DashboardLayout>
-        <div className="company-page-container">
-          <div className="page-header">
-            <div>
-              <h1 className="company-page-title">
-                Company Not Found
-              </h1>
-
-              <p className="company-page-subtitle">
-                We couldn't find a company with this ID.
-              </p>
-            </div>
-
-            <div className="page-header-actions">
-              <Link href="/company">
-                <button
-                  type="button"
-                  className="filter-btn"
-                >
-                  ← Back to Companies
-                </button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  /*
-   * Empty form fields.
-   *
-   * Backend API integration hone ke baad
-   * yahan API se company data load kiya ja sakta hai.
-   */
-  const initialData: CompanyFormData = {
-    name: "",
-    industry: "",
-    website: "",
-    phone: "",
-    email: "",
-    address: "",
-  };
-
-  const handleSubmit = async (
-    data: CompanyFormData
-  ) => {
     setLoading(true);
     setError("");
     setSuccess("");
@@ -127,9 +73,7 @@ export default function EditCompanyPage() {
 
       emitDataChanged();
 
-      setSuccess(
-        "Company updated successfully."
-      );
+      setSuccess("Company updated successfully.");
 
       setTimeout(() => {
         router.push(`/company/${companyId}`);
@@ -143,25 +87,25 @@ export default function EditCompanyPage() {
     }
   };
 
-  if (missingId || notFound) {
-    return (
-      <DashboardLayout>
-        <div className="company-page">
-          <div className="page-header">
-            <div>
-              <h1 className="page-title">Company Not Found</h1>
-              <p className="page-subtitle">
-                We couldn&apos;t find a company with this ID.
-              </p>
-            </div>
-
-            <Link href="/company">
-              <button className="filter-btn">← Back to Companies</button>
-            </Link>
+  const notFoundView = (message: string) => (
+    <DashboardLayout>
+      <div className="page-wrapper">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Company Not Found</h1>
+            <p className="page-subtitle">{message}</p>
           </div>
+
+          <Link href="/company">
+            <button className="filter-btn">← Back to Companies</button>
+          </Link>
         </div>
-      </DashboardLayout>
-    );
+      </div>
+    </DashboardLayout>
+  );
+
+  if (missingId || notFound) {
+    return notFoundView("We couldn't find a company with this ID.");
   }
 
   if (fetching) {
@@ -173,47 +117,25 @@ export default function EditCompanyPage() {
   }
 
   if (!initialData) {
-    return (
-      <DashboardLayout>
-        <div className="company-page">
-          <div className="page-header">
-            <div>
-              <h1 className="page-title">Company Not Found</h1>
-              <p className="page-subtitle">
-                We couldn&apos;t find a company with this ID.
-              </p>
-            </div>
-
-            <Link href="/company">
-              <button className="filter-btn">← Back to Companies</button>
-            </Link>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
+    return notFoundView("We couldn't find a company with this ID.");
   }
 
   return (
     <DashboardLayout>
-      <div className="company-page">
+      <div className="page-wrapper">
         {/* Header */}
-        <div className="company-page-header">
+        <div className="page-header">
           <div>
-            <h1 className="company-page-title">
-              Edit Company
-            </h1>
+            <h1 className="page-title">Edit Company</h1>
 
-            <p className="company-page-subtitle">
+            <p className="page-subtitle">
               Update company information.
             </p>
           </div>
 
           <div className="page-header-actions">
             <Link href={`/company/${companyId}`}>
-              <button
-                type="button"
-                className="filter-btn"
-              >
+              <button type="button" className="filter-btn">
                 ← Back
               </button>
             </Link>
@@ -231,7 +153,6 @@ export default function EditCompanyPage() {
             success={success}
           />
         </div>
-
       </div>
     </DashboardLayout>
   );
