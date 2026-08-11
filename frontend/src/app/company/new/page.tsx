@@ -1,18 +1,30 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import Link from "next/link";
 
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import CompanyForm, {
   CompanyFormData,
 } from "@/components/company/CompanyForm";
 
-export default function NewCompanyPage() {
+export default function AddCompanyPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Empty form for adding a new company
+  const initialData: CompanyFormData = {
+    name: "",
+    industry: "",
+    website: "",
+    phone: "",
+    email: "",
+    address: "",
+  };
 
   const handleSubmit = async (data: CompanyFormData) => {
     setLoading(true);
@@ -20,12 +32,11 @@ export default function NewCompanyPage() {
     setSuccess("");
 
     try {
-      // Frontend-only implementation for now.
+      // Temporary frontend-only functionality
       console.log("New Company:", data);
 
-      await new Promise((resolve) =>
-        setTimeout(resolve, 1000)
-      );
+      // Backend API integration baad mein hogi
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       setSuccess("Company created successfully.");
 
@@ -33,37 +44,53 @@ export default function NewCompanyPage() {
         router.push("/company");
       }, 1000);
     } catch {
-      setError(
-        "Something went wrong while creating the company."
-      );
+      setError("Something went wrong while creating the company.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="company-page">
-      {/* Header */}
-      <div className="company-page-header">
-        <div>
-          <h1 className="company-page-title">
-            Add Company
-          </h1>
+    <DashboardLayout>
+      <div className="company-page-container">
 
-          <p className="company-page-subtitle">
-            Create a new company record.
-          </p>
+        {/* Header */}
+        <div className="page-header">
+          <div>
+            <h1 className="company-page-title">
+              Add Company
+            </h1>
+
+            <p className="company-page-subtitle">
+              Create a new company record.
+            </p>
+          </div>
+
+          <div className="page-header-actions">
+            <Link href="/company">
+              <button
+                type="button"
+                className="filter-btn"
+              >
+                ← Back
+              </button>
+            </Link>
+          </div>
         </div>
-      </div>
 
-      {/* Company Form */}
-      <CompanyForm
-        onSubmit={handleSubmit}
-        submitText="Save Company"
-        loading={loading}
-        error={error}
-        success={success}
-      />
-    </div>
+        {/* Company Form */}
+        <div className="company-form-card">
+          <CompanyForm
+            initialData={initialData}
+            onSubmit={handleSubmit}
+            submitText="Save Company"
+            loading={loading}
+            error={error}
+            success={success}
+          />
+        </div>
+
+      </div>
+    </DashboardLayout>
   );
 }

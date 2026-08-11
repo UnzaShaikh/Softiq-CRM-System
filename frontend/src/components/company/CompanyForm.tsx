@@ -71,7 +71,10 @@ export default function CompanyForm({
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
 
-    // Company Name
+    /* =====================================================
+       COMPANY NAME
+       ===================================================== */
+
     if (!formData.name.trim()) {
       newErrors.name = "Company name is required.";
     } else if (formData.name.trim().length < 2) {
@@ -79,23 +82,54 @@ export default function CompanyForm({
         "Company name must be at least 2 characters.";
     }
 
-    // Industry
+    /* =====================================================
+       INDUSTRY
+       ===================================================== */
+
     if (!formData.industry.trim()) {
       newErrors.industry = "Industry is required.";
     }
 
-    // Website
-    if (formData.website.trim()) {
+    /* =====================================================
+       WEBSITE
+       ===================================================== */
+
+    if (!formData.website.trim()) {
+      newErrors.website = "Website is required.";
+    } else {
       try {
-        new URL(formData.website.trim());
+        const website = formData.website.trim();
+
+        // URL must contain protocol
+        new URL(website);
       } catch {
         newErrors.website =
           "Please enter a valid website URL.";
       }
     }
 
-    // Email
-    if (formData.email.trim()) {
+    /* =====================================================
+       PHONE
+       ===================================================== */
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Phone number is required.";
+    } else {
+      const phoneRegex = /^[+0-9\s()-]{7,20}$/;
+
+      if (!phoneRegex.test(formData.phone.trim())) {
+        newErrors.phone =
+          "Please enter a valid phone number.";
+      }
+    }
+
+    /* =====================================================
+       EMAIL
+       ===================================================== */
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required.";
+    } else {
       const emailRegex =
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -105,21 +139,12 @@ export default function CompanyForm({
       }
     }
 
-    // Phone
-    if (formData.phone.trim()) {
-      const phoneRegex =
-        /^[+0-9\s()-]{7,20}$/;
+    /* =====================================================
+       ADDRESS
+       ===================================================== */
 
-      if (!phoneRegex.test(formData.phone.trim())) {
-        newErrors.phone =
-          "Please enter a valid phone number.";
-      }
-    }
-
-    // Address
     if (!formData.address.trim()) {
-      newErrors.address =
-        "Address is required.";
+      newErrors.address = "Address is required.";
     }
 
     setErrors(newErrors);
@@ -132,6 +157,7 @@ export default function CompanyForm({
   ) => {
     e.preventDefault();
 
+    // Stop submission if validation fails
     if (!validate()) {
       return;
     }
@@ -147,34 +173,31 @@ export default function CompanyForm({
   };
 
   return (
-    <div className="company-form-card">
+    <>
       {/* Error Message */}
       {error && (
-        <div
-          className="msg-error"
-          role="alert"
-        >
+        <div className="msg-error" role="alert">
           ❌ {error}
         </div>
       )}
 
       {/* Success Message */}
       {success && (
-        <div
-          className="msg-success"
-          role="status"
-        >
+        <div className="msg-success" role="status">
           ✅ {success}
         </div>
       )}
 
-      <form
-        onSubmit={handleSubmit}
-        noValidate
-      >
-        {/* Company Name */}
+      <form onSubmit={handleSubmit} noValidate>
+        {/* =================================================
+            COMPANY NAME
+            ================================================= */}
+
         <div className="form-group">
-          <label htmlFor="name">
+          <label
+            className="form-label"
+            htmlFor="name"
+          >
             Company Name *
           </label>
 
@@ -185,22 +208,29 @@ export default function CompanyForm({
             value={formData.name}
             onChange={handleChange}
             placeholder="e.g. SoftiqTech"
-            className={
-              errors.name ? "input-error" : ""
-            }
+            className={`form-input ${
+              errors.name ? "error" : ""
+            }`}
             disabled={loading}
+            required
           />
 
           {errors.name && (
-            <span className="form-field-error">
+            <span className="form-error">
               {errors.name}
             </span>
           )}
         </div>
 
-        {/* Industry */}
+        {/* =================================================
+            INDUSTRY
+            ================================================= */}
+
         <div className="form-group">
-          <label htmlFor="industry">
+          <label
+            className="form-label"
+            htmlFor="industry"
+          >
             Industry *
           </label>
 
@@ -211,24 +241,33 @@ export default function CompanyForm({
             value={formData.industry}
             onChange={handleChange}
             placeholder="e.g. Software"
-            className={
-              errors.industry ? "input-error" : ""
-            }
+            className={`form-input ${
+              errors.industry ? "error" : ""
+            }`}
             disabled={loading}
+            required
           />
 
           {errors.industry && (
-            <span className="form-field-error">
+            <span className="form-error">
               {errors.industry}
             </span>
           )}
         </div>
 
-        {/* Website + Phone */}
-        <div className="form-row">
+        {/* =================================================
+            WEBSITE + PHONE
+            ================================================= */}
+
+        <div className="form-row-2">
+          {/* Website */}
+
           <div className="form-group">
-            <label htmlFor="website">
-              Website
+            <label
+              className="form-label"
+              htmlFor="website"
+            >
+              Website *
             </label>
 
             <input
@@ -238,22 +277,28 @@ export default function CompanyForm({
               value={formData.website}
               onChange={handleChange}
               placeholder="e.g. https://example.com"
-              className={
-                errors.website ? "input-error" : ""
-              }
+              className={`form-input ${
+                errors.website ? "error" : ""
+              }`}
               disabled={loading}
+              required
             />
 
             {errors.website && (
-              <span className="form-field-error">
+              <span className="form-error">
                 {errors.website}
               </span>
             )}
           </div>
 
+          {/* Phone */}
+
           <div className="form-group">
-            <label htmlFor="phone">
-              Phone
+            <label
+              className="form-label"
+              htmlFor="phone"
+            >
+              Phone *
             </label>
 
             <input
@@ -263,24 +308,31 @@ export default function CompanyForm({
               value={formData.phone}
               onChange={handleChange}
               placeholder="e.g. +92 300 1234567"
-              className={
-                errors.phone ? "input-error" : ""
-              }
+              className={`form-input ${
+                errors.phone ? "error" : ""
+              }`}
               disabled={loading}
+              required
             />
 
             {errors.phone && (
-              <span className="form-field-error">
+              <span className="form-error">
                 {errors.phone}
               </span>
             )}
           </div>
         </div>
 
-        {/* Email */}
+        {/* =================================================
+            EMAIL
+            ================================================= */}
+
         <div className="form-group">
-          <label htmlFor="email">
-            Email
+          <label
+            className="form-label"
+            htmlFor="email"
+          >
+            Email *
           </label>
 
           <input
@@ -290,22 +342,29 @@ export default function CompanyForm({
             value={formData.email}
             onChange={handleChange}
             placeholder="e.g. company@email.com"
-            className={
-              errors.email ? "input-error" : ""
-            }
+            className={`form-input ${
+              errors.email ? "error" : ""
+            }`}
             disabled={loading}
+            required
           />
 
           {errors.email && (
-            <span className="form-field-error">
+            <span className="form-error">
               {errors.email}
             </span>
           )}
         </div>
 
-        {/* Address */}
+        {/* =================================================
+            ADDRESS
+            ================================================= */}
+
         <div className="form-group">
-          <label htmlFor="address">
+          <label
+            className="form-label"
+            htmlFor="address"
+          >
             Address *
           </label>
 
@@ -315,23 +374,27 @@ export default function CompanyForm({
             value={formData.address}
             onChange={handleChange}
             placeholder="e.g. Karachi, Pakistan"
-            className={
-              errors.address ? "input-error" : ""
-            }
+            className={`form-input ${
+              errors.address ? "error" : ""
+            }`}
             disabled={loading}
+            required
           />
 
           {errors.address && (
-            <span className="form-field-error">
+            <span className="form-error">
               {errors.address}
             </span>
           )}
         </div>
 
-        {/* Submit Button */}
+        {/* =================================================
+            SUBMIT BUTTON
+            ================================================= */}
+
         <button
           type="submit"
-          className="save-company-btn"
+          className="btn-primary"
           disabled={loading}
         >
           {loading ? (
@@ -340,13 +403,13 @@ export default function CompanyForm({
                 className="company-form-spinner"
                 aria-hidden="true"
               />
-              Saving...
+              Updating...
             </>
           ) : (
             submitText
           )}
         </button>
       </form>
-    </div>
+    </>
   );
 }

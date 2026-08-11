@@ -8,6 +8,7 @@ import {
   TrendingUp,
   UserRoundPlus,
   Plus,
+  Trash2,
 } from "lucide-react";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -22,6 +23,9 @@ export default function CompanyPage() {
   const [industryFilter, setIndustryFilter] = useState("All");
   const [sizeFilter, setSizeFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Company pending delete confirmation (drives the modal)
+  const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
 
   const companiesPerPage = 10;
 
@@ -135,17 +139,20 @@ export default function CompanyPage() {
     setCurrentPage(1);
   };
 
+  // Opens the confirmation modal instead of deleting immediately
   const handleDelete = (company: Company) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete ${company.name}?`
-    );
+    setDeleteTarget(company);
+  };
 
-    if (!confirmed) return;
+  // Runs when the user confirms deletion inside the modal
+  const handleDeleteConfirmed = () => {
+    if (!deleteTarget) return;
 
     setCompanies((previousCompanies) =>
-      previousCompanies.filter((item) => item.id !== company.id)
+      previousCompanies.filter((item) => item.id !== deleteTarget.id)
     );
 
+    setDeleteTarget(null);
     setCurrentPage(1);
   };
 
@@ -428,6 +435,53 @@ export default function CompanyPage() {
           )}
         </div>
       </div>
+
+      {/* =========================================
+          DELETE CONFIRMATION MODAL
+      ========================================== */}
+
+      {deleteTarget && (
+        <div
+          className="contacts-modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setDeleteTarget(null);
+            }
+          }}
+        >
+          <div className="contacts-modal">
+            <div className="contacts-modal-icon">
+              <Trash2 size={22} />
+            </div>
+
+            <h2 className="contacts-modal-title">Delete Company</h2>
+
+            <p className="contacts-modal-text">
+              Are you sure you want to delete{" "}
+              <strong>{deleteTarget.name}</strong>? This action cannot be
+              undone.
+            </p>
+
+            <div className="contacts-modal-actions">
+              <button
+                type="button"
+                className="contacts-modal-cancel"
+                onClick={() => setDeleteTarget(null)}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="contacts-modal-delete"
+                onClick={handleDeleteConfirmed}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
