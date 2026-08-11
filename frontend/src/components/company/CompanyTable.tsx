@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Company } from "@/data/company";
 
 interface CompanyTableProps {
@@ -8,31 +9,18 @@ interface CompanyTableProps {
   onDelete: (company: Company) => void;
 }
 
-export default function CompanyTable({
-  companies,
-  onDelete,
-}: CompanyTableProps) {
+export default function CompanyTable({ companies, onDelete }: CompanyTableProps) {
   return (
     <div className="company-table-container">
-      <table className="company-table">
+      <table className="data-table company-table">
         <thead>
           <tr>
-            <th>
-              <span className="th-inner">Company <span aria-hidden="true">▲</span></span>
-            </th>
-            <th>
-              <span className="th-inner">Industry <span aria-hidden="true">▽</span></span>
-            </th>
-            <th>
-              <span className="th-inner">Contacts <span aria-hidden="true">▽</span></span>
-            </th>
-            <th>
-              <span className="th-inner">Deals <span aria-hidden="true">▽</span></span>
-            </th>
+            <th><span className="th-inner">Company</span></th>
+            <th><span className="th-inner">Industry</span></th>
+            <th><span className="th-inner">Contacts</span></th>
+            <th><span className="th-inner">Deals</span></th>
             <th>Status</th>
-            <th>
-              <span className="th-inner">Created On <span aria-hidden="true">▽</span></span>
-            </th>
+            <th><span className="th-inner">Created On</span></th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -42,64 +30,35 @@ export default function CompanyTable({
             <tr key={company.id}>
               <td>
                 <div className="cell-user">
-                  <div className="company-avatar">
-                    {company.name.substring(0, 2).toUpperCase()}
-                  </div>
-
+                  <div className="cell-avatar company-avatar">{company.name.substring(0, 2).toUpperCase()}</div>
                   <div>
                     <p className="cell-name">{company.name}</p>
                   </div>
                 </div>
               </td>
 
-              <td>{company.industry}</td>
-
-              <td>{company.contacts}</td>
-
-              <td>{company.deals}</td>
+              <td className="cell-primary">{company.industry}</td>
+              <td className="cell-primary">{company.contacts}</td>
+              <td className="cell-primary">{company.deals}</td>
 
               <td>
-                <span
-                  className={
-                    company.status === "Active"
-                      ? "status-badge status-active"
-                      : "status-badge status-inactive"
-                  }
-                >
+                <span className={`badge ${company.status === "Active" ? "badge-active" : "badge-inactive"}`}>
                   {company.status}
                 </span>
               </td>
 
-              <td>{company.createdOn}</td>
+              <td className="cell-muted">{company.createdOn}</td>
 
               <td>
-                <div className="table-actions">
-                  {/* View */}
-                  <Link
-                    href={`/company/${company.id}`}
-                    className="company-action-btn view-btn"
-                    title="View Company"
-                  >
-                    👁
+                <div className="contacts-actions">
+                  <Link href={`/company/${company.id}`} className="contacts-action-button contacts-action-view" title="View Company" aria-label="View Company">
+                    <Eye size={16} strokeWidth={2} />
                   </Link>
-
-                  {/* Edit */}
-                  <Link
-                    href={`/company/${company.id}/edit`}
-                    className="company-action-btn edit-btn"
-                    title="Edit Company"
-                  >
-                    ✏️
+                  <Link href={`/company/${company.id}/edit`} className="contacts-action-button contacts-action-edit" title="Edit Company" aria-label="Edit Company">
+                    <Pencil size={16} strokeWidth={2} />
                   </Link>
-
-                  {/* Delete */}
-                  <button
-                    type="button"
-                    className="company-action-btn delete-btn"
-                    title="Delete Company"
-                    onClick={() => onDelete(company)}
-                  >
-                    🗑️
+                  <button type="button" className="contacts-action-button contacts-action-delete" title="Delete Company" aria-label="Delete Company" onClick={() => onDelete(company)}>
+                    <Trash2 size={16} strokeWidth={2} />
                   </button>
                 </div>
               </td>

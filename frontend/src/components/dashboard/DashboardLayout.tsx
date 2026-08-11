@@ -6,6 +6,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Settings, LogOut, ChevronDown } from "lucide-react";
 
+/* ── Palette (matches reference: deep navy sidebar + violet accent) ── */
+const SIDEBAR_BG = "#1e1b4b"; // deep indigo/navy
+const SIDEBAR_BG_SOFT = "#211d55";
+const ACCENT_FROM = "#7c5cff";
+const ACCENT_TO = "#5b3df0";
+
 /* ── User Dropdown Component ── */
 interface UserDropdownProps {
   initials: string;
@@ -57,15 +63,12 @@ function UserDropdown({
           background: "#fff",
           cursor: "pointer",
           fontFamily: "inherit",
-          boxShadow: open
-            ? "0 0 0 3px rgba(79,70,229,0.08)"
-            : "none",
+          boxShadow: open ? "0 0 0 3px rgba(91,61,240,0.08)" : "none",
           transition: "border-color 0.15s, box-shadow 0.15s",
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.borderColor = "#a5b4fc";
-          e.currentTarget.style.boxShadow =
-            "0 0 0 3px rgba(79,70,229,0.08)";
+          e.currentTarget.style.boxShadow = "0 0 0 3px rgba(91,61,240,0.08)";
         }}
         onMouseLeave={(e) => {
           if (!open) {
@@ -286,16 +289,7 @@ const NAV_ITEMS = [
     label: "Dashboard",
     href: "/dashboard",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" />
         <rect x="14" y="3" width="7" height="7" />
         <rect x="3" y="14" width="7" height="7" />
@@ -307,16 +301,7 @@ const NAV_ITEMS = [
     label: "Customers",
     href: "/customers",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
         <circle cx="9" cy="7" r="4" />
         <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -325,19 +310,23 @@ const NAV_ITEMS = [
     ),
   },
   {
+    label: "Contacts",
+    href: "/contacts",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <circle cx="9" cy="10" r="2" />
+        <path d="M6 17c0-1.7 1.3-3 3-3s3 1.3 3 3" />
+        <line x1="14" y1="9" x2="18" y2="9" />
+        <line x1="14" y1="13" x2="18" y2="13" />
+      </svg>
+    ),
+  },
+  {
     label: "Opportunities",
     href: "/opportunities",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" />
         <path d="M12 8v8" />
         <path d="M8 12h8" />
@@ -348,16 +337,7 @@ const NAV_ITEMS = [
     label: "Leads",
     href: "/leads",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
         <circle cx="12" cy="7" r="4" />
       </svg>
@@ -367,16 +347,7 @@ const NAV_ITEMS = [
     label: "Deals",
     href: "/deals",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 12V8H6a2 2 0 1 1 2-2h12v4" />
         <path d="M4 6v14a2 2 0 0 0 2 2h14v-4" />
         <path d="M18 12a2 2 0 0 1 0 4h-2v-4z" />
@@ -388,16 +359,7 @@ const NAV_ITEMS = [
     label: "Sales Pipeline",
     href: "/Sales-Pipeline",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 6h18" />
         <path d="M6 12h12" />
         <path d="M10 18h4" />
@@ -408,16 +370,7 @@ const NAV_ITEMS = [
     label: "Companies",
     href: "/company",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 21h18" />
         <path d="M5 21V5l7-3v19" />
         <path d="M19 21V9l-7-3" />
@@ -467,16 +420,7 @@ const NAV_ITEMS = [
     label: "Reports",
     href: "/reports",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10" />
         <line x1="12" y1="20" x2="12" y2="4" />
         <line x1="6" y1="20" x2="6" y2="14" />
@@ -487,16 +431,7 @@ const NAV_ITEMS = [
     label: "Tasks",
     href: "/tasks",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="9 11 12 14 22 4" />
         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
       </svg>
@@ -507,16 +442,7 @@ const NAV_ITEMS = [
     label: "Messages",
     href: "/messages",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
       </svg>
     ),
@@ -534,9 +460,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-export default function DashboardLayout({
-  children,
-}: DashboardLayoutProps) {
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -549,61 +473,71 @@ export default function DashboardLayout({
     setIsMobileOpen(false);
   }, [pathname]);
 
+  // Mobile par sidebar hamesha full-width (CSS se forced) hoti hai, is liye
+  // collapsed (icon-only) content wahan mismatch/broken lagega — mobile
+  // breakpoint par collapsed ko hamesha false rakhte hain.
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+
+    function syncCollapsed(e: MediaQueryList | MediaQueryListEvent) {
+      if (e.matches) setCollapsed(false);
+    }
+
+    syncCollapsed(mq);
+    mq.addEventListener("change", syncCollapsed);
+
+    return () => mq.removeEventListener("change", syncCollapsed);
+  }, []);
+
   function handleLogout() {
     logout();
     router.push("/login");
   }
 
   const initials = user
-    ? `${user.firstName.charAt(0)}${
-        user.lastName?.charAt(0) || ""
-      }`.toUpperCase()
+    ? `${user.firstName.charAt(0)}${user.lastName?.charAt(0) || ""}`.toUpperCase()
     : "?";
 
   const avatarColors: [string, string][] = [
-    ["#4f46e5", "#7c3aed"],
+    [ACCENT_FROM, ACCENT_TO],
     ["#0891b2", "#0e7490"],
     ["#059669", "#047857"],
     ["#d97706", "#b45309"],
   ];
 
   const ci = user
-    ? (user.firstName.charCodeAt(0) +
-        (user.lastName?.charCodeAt(0) || 0)) %
+    ? (user.firstName.charCodeAt(0) + (user.lastName?.charCodeAt(0) || 0)) %
       avatarColors.length
     : 0;
 
   const [c1, c2] = avatarColors[ci];
 
-  const sidebarW = collapsed ? 72 : 240;
+  const sidebarW = collapsed ? 76 : 250;
 
   return (
     <div
       style={{
         display: "flex",
         minHeight: "100vh",
-        background: "#f8fafc",
-        fontFamily:
-          "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
+        background: "#f7f7fb",
+        fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
       }}
     >
       {/* Mobile overlay */}
       <div
-        className={`sidebar-overlay ${
-          isMobileOpen ? "active" : ""
-        }`}
+        className={`sidebar-overlay ${isMobileOpen ? "active" : ""}`}
         onClick={() => setIsMobileOpen(false)}
       />
 
       {/* Sidebar */}
       <aside
-        className={`dashboard-sidebar ${
-          collapsed ? "collapsed" : ""
-        } ${isMobileOpen ? "mobile-open" : ""}`}
+        className={`dashboard-sidebar ${collapsed ? "collapsed" : ""} ${
+          isMobileOpen ? "mobile-open" : ""
+        }`}
         style={{
           width: sidebarW,
           minWidth: sidebarW,
-          background: "#4f46e5",
+          background: SIDEBAR_BG,
           borderRight: "none",
           display: "flex",
           flexDirection: "column",
@@ -613,7 +547,7 @@ export default function DashboardLayout({
           overflowY: "auto",
           overflowX: "hidden",
           transition:
-            "width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1)",
+            "width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1), left 0.25s cubic-bezier(0.4,0,0.2,1)",
           zIndex: 50,
           flexShrink: 0,
         }}
@@ -621,15 +555,10 @@ export default function DashboardLayout({
         {/* Logo */}
         <div
           style={{
-            height: 64,
+            padding: collapsed ? "26px 0 20px" : "28px 24px 20px",
             display: "flex",
             alignItems: "center",
-            padding: collapsed ? "0 18px" : "0 20px",
-            borderBottom:
-              "1px solid rgba(255,255,255,0.15)",
-            justifyContent: collapsed
-              ? "center"
-              : "space-between",
+            justifyContent: collapsed ? "center" : "space-between",
             flexShrink: 0,
             position: "relative",
           }}
@@ -640,35 +569,24 @@ export default function DashboardLayout({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
+                gap: 12,
                 textDecoration: "none",
               }}
             >
               <div
                 style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 9,
-                  background:
-                    "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                  width: 38,
+                  height: 38,
+                  borderRadius: 10,
+                  background: `linear-gradient(135deg, ${ACCENT_FROM} 0%, ${ACCENT_TO} 100%)`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
-                  boxShadow:
-                    "0 4px 10px rgba(79,70,229,0.3)",
+                  boxShadow: "0 4px 12px rgba(91,61,240,0.4)",
                 }}
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#fff"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                   <circle cx="9" cy="7" r="4" />
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -680,59 +598,47 @@ export default function DashboardLayout({
                 <p
                   style={{
                     margin: 0,
-                    fontWeight: 700,
-                    fontSize: "0.95rem",
+                    fontWeight: 800,
+                    fontSize: "1.05rem",
                     color: "#ffffff",
-                    lineHeight: 1.2,
+                    lineHeight: 1.1,
                     letterSpacing: "-0.02em",
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  Softiq CRM
+                  Softiq Tech
                 </p>
-
                 <p
                   style={{
-                    margin: 0,
-                    fontSize: "0.7rem",
-                    color: "rgba(255,255,255,0.6)",
-                    fontWeight: 500,
+                    margin: "3px 0 0",
+                    fontSize: "0.65rem",
+                    color: "rgba(255,255,255,0.45)",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.12em",
                   }}
                 >
-                  Business Suite
+                  Customer Management
                 </p>
               </div>
             </Link>
           )}
 
           {collapsed && (
-            <Link
-              href="/dashboard"
-              style={{ textDecoration: "none" }}
-            >
+            <Link href="/dashboard" style={{ textDecoration: "none" }}>
               <div
                 style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 9,
-                  background:
-                    "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                  width: 38,
+                  height: 38,
+                  borderRadius: 10,
+                  background: `linear-gradient(135deg, ${ACCENT_FROM} 0%, ${ACCENT_TO} 100%)`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow:
-                    "0 4px 10px rgba(79,70,229,0.3)",
+                  boxShadow: "0 4px 12px rgba(91,61,240,0.4)",
                 }}
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#fff"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                   <circle cx="9" cy="7" r="4" />
                 </svg>
@@ -742,95 +648,89 @@ export default function DashboardLayout({
 
           {!collapsed && (
             <button
+              className="sidebar-collapse-btn"
               onClick={() => setCollapsed(true)}
               style={{
                 background: "none",
                 border: "none",
                 cursor: "pointer",
                 padding: 4,
-                color: "rgba(255,255,255,0.7)",
+                color: "rgba(255,255,255,0.5)",
                 borderRadius: 6,
                 display: "flex",
                 alignItems: "center",
-                transition:
-                  "color 0.15s, background 0.15s",
+                transition: "color 0.15s, background 0.15s",
               }}
               title="Collapse sidebar"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
           )}
 
-          {collapsed && (
+        </div>
+
+        {collapsed && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              padding: "0 0 14px",
+              flexShrink: 0,
+            }}
+          >
             <button
               onClick={() => setCollapsed(false)}
               style={{
-                position: "absolute",
-                right: -12,
-                top: 20,
-                background: "#fff",
-                border: "1px solid #e2e8f0",
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.15)",
                 borderRadius: "50%",
-                width: 24,
-                height: 24,
+                width: 26,
+                height: 26,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
-                boxShadow:
-                  "0 1px 4px rgba(0,0,0,0.1)",
-                color: "#64748b",
-                transition: "color 0.15s",
-                zIndex: 60,
+                color: "rgba(255,255,255,0.7)",
+                transition: "background 0.15s, color 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.16)";
+                e.currentTarget.style.color = "#ffffff";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                e.currentTarget.style.color = "rgba(255,255,255,0.7)";
               }}
               title="Expand sidebar"
             >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="9 18 15 12 9 6" />
               </svg>
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Main Nav */}
         <nav
           style={{
             flex: 1,
-            padding: "12px 10px",
+            padding: collapsed ? "8px 10px" : "8px 16px",
             display: "flex",
             flexDirection: "column",
-            gap: 2,
+            gap: 4,
           }}
         >
           {!collapsed && (
             <p
               style={{
-                fontSize: "0.7rem",
-                fontWeight: 600,
-                color: "rgba(255,255,255,0.5)",
+                fontSize: "0.68rem",
+                fontWeight: 700,
+                color: "rgba(255,255,255,0.35)",
                 textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                padding: "4px 10px 8px",
+                letterSpacing: "0.1em",
+                padding: "6px 8px 10px",
               }}
             >
               Main Menu
@@ -840,8 +740,7 @@ export default function DashboardLayout({
           {NAV_ITEMS.map((item) => {
             const active =
               pathname === item.href ||
-              (item.href !== "/dashboard" &&
-                pathname.startsWith(item.href));
+              (item.href !== "/dashboard" && pathname.startsWith(item.href));
 
             return (
               <Link
@@ -851,65 +750,53 @@ export default function DashboardLayout({
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: collapsed ? 0 : 10,
-                  justifyContent: collapsed
-                    ? "center"
-                    : "flex-start",
-                  padding: collapsed
-                    ? "10px 0"
-                    : "9px 10px",
-                  borderRadius: 8,
+                  gap: collapsed ? 0 : 12,
+                  justifyContent: collapsed ? "center" : "flex-start",
+                  padding: collapsed ? "11px 0" : "10px 12px",
+                  borderRadius: 12,
                   textDecoration: "none",
-                  color: active
-                    ? "#ffffff"
-                    : "rgba(255,255,255,0.75)",
+                  color: active ? "#ffffff" : "rgba(255,255,255,0.6)",
                   background: active
-                    ? "rgba(255,255,255,0.18)"
+                    ? `linear-gradient(135deg, ${ACCENT_FROM} 0%, ${ACCENT_TO} 100%)`
                     : "transparent",
-                  fontWeight: active ? 600 : 500,
+                  boxShadow: active
+                    ? "0 8px 20px -6px rgba(91,61,240,0.55)"
+                    : "none",
+                  fontWeight: active ? 700 : 500,
                   fontSize: "0.875rem",
-                  transition:
-                    "background 0.15s ease, color 0.15s ease",
+                  transition: "background 0.15s ease, color 0.15s ease",
                   position: "relative",
                 }}
                 onMouseEnter={(e) => {
                   if (!active) {
-                    e.currentTarget.style.background =
-                      "rgba(255,255,255,0.12)";
+                    e.currentTarget.style.background = SIDEBAR_BG_SOFT;
                     e.currentTarget.style.color = "#ffffff";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!active) {
-                    e.currentTarget.style.background =
-                      "transparent";
-                    e.currentTarget.style.color =
-                      "rgba(255,255,255,0.75)";
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "rgba(255,255,255,0.6)";
                   }
                 }}
               >
                 <span
                   style={{
                     flexShrink: 0,
-                    opacity: active ? 1 : 0.75,
+                    display: "flex",
+                    opacity: active ? 1 : 0.8,
                   }}
                 >
                   {item.icon}
                 </span>
 
-                {!collapsed && (
-                  <span style={{ flex: 1 }}>
-                    {item.label}
-                  </span>
-                )}
+                {!collapsed && <span style={{ flex: 1 }}>{item.label}</span>}
 
                 {!collapsed && item.badge && (
                   <span
                     style={{
-                      background: active
-                        ? "#4f46e5"
-                        : "#e2e8f0",
-                      color: active ? "#fff" : "#64748b",
+                      background: active ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.1)",
+                      color: "#fff",
                       borderRadius: 9999,
                       fontSize: "0.7rem",
                       fontWeight: 700,
@@ -927,7 +814,7 @@ export default function DashboardLayout({
                       position: "absolute",
                       top: 4,
                       right: 8,
-                      background: "#4f46e5",
+                      background: ACCENT_FROM,
                       color: "#fff",
                       borderRadius: 9999,
                       fontSize: "0.6rem",
@@ -944,62 +831,47 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        {/* Bottom Nav */}
-        <div
-          style={{
-            padding: "10px 10px",
-            borderTop:
-              "1px solid rgba(255,255,255,0.15)",
-          }}
-        >
-          {BOTTOM_ITEMS.map((item) => {
-            const active = pathname === item.href;
+        {/* Bottom Nav (extra links, if any) */}
+        {BOTTOM_ITEMS.length > 0 && (
+          <div
+            style={{
+              padding: collapsed ? "10px" : "10px 16px 0",
+            }}
+          >
+            {BOTTOM_ITEMS.map((item) => {
+              const active = pathname === item.href;
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={collapsed ? item.label : undefined}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: collapsed ? 0 : 10,
-                  justifyContent: collapsed
-                    ? "center"
-                    : "flex-start",
-                  padding: collapsed
-                    ? "10px 0"
-                    : "9px 10px",
-                  borderRadius: 8,
-                  textDecoration: "none",
-                  color: active
-                    ? "#4f46e5"
-                    : "#475569",
-                  background: active
-                    ? "#eef2ff"
-                    : "transparent",
-                  fontWeight: 500,
-                  fontSize: "0.875rem",
-                  transition:
-                    "background 0.15s ease, color 0.15s ease",
-                }}
-              >
-                <span
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  title={collapsed ? item.label : undefined}
                   style={{
-                    flexShrink: 0,
-                    opacity: active ? 1 : 0.75,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: collapsed ? 0 : 12,
+                    justifyContent: collapsed ? "center" : "flex-start",
+                    padding: collapsed ? "10px 0" : "10px 12px",
+                    borderRadius: 12,
+                    textDecoration: "none",
+                    color: active ? "#ffffff" : "rgba(255,255,255,0.6)",
+                    background: active ? SIDEBAR_BG_SOFT : "transparent",
+                    fontWeight: 500,
+                    fontSize: "0.875rem",
+                    transition: "background 0.15s ease, color 0.15s ease",
                   }}
                 >
-                  {item.icon}
-                </span>
+                  <span style={{ flexShrink: 0, opacity: active ? 1 : 0.8 }}>
+                    {item.icon}
+                  </span>
 
-                {!collapsed && (
-                  <span>{item.label}</span>
-                )}
-              </Link>
-            );
-          })}
-        </div>
+                  {!collapsed && <span>{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
       </aside>
 
       {/* Main content */}
@@ -1020,33 +892,20 @@ export default function DashboardLayout({
             borderBottom: "1px solid #e2e8f0",
             display: "flex",
             alignItems: "center",
-            padding: "0 24px",
             justifyContent: "space-between",
             position: "sticky",
             top: 0,
             zIndex: 30,
             flexShrink: 0,
-            gap: 12,
           }}
         >
           {/* Hamburger — sirf mobile pe dikhega */}
           <button
             className="mobile-menu-button"
-            onClick={() =>
-              setIsMobileOpen((v) => !v)
-            }
+            onClick={() => setIsMobileOpen((v) => !v)}
             aria-label="Toggle menu"
           >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="3" y1="6" x2="21" y2="6" />
               <line x1="3" y1="12" x2="21" y2="12" />
               <line x1="3" y1="18" x2="21" y2="18" />
@@ -1054,13 +913,7 @@ export default function DashboardLayout({
           </button>
 
           {/* Search */}
-          <div
-            style={{
-              position: "relative",
-              maxWidth: 340,
-              flex: 1,
-            }}
-          >
+          <div style={{ position: "relative", maxWidth: 340, flex: 1 }}>
             <svg
               style={{
                 position: "absolute",
@@ -1080,12 +933,7 @@ export default function DashboardLayout({
               strokeLinejoin="round"
             >
               <circle cx="11" cy="11" r="8" />
-              <line
-                x1="21"
-                y1="21"
-                x2="16.65"
-                y2="16.65"
-              />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
 
             <input
@@ -1101,34 +949,23 @@ export default function DashboardLayout({
                 fontSize: "0.875rem",
                 fontFamily: "inherit",
                 outline: "none",
-                transition:
-                  "border-color 0.15s, box-shadow 0.15s",
+                transition: "border-color 0.15s, box-shadow 0.15s",
               }}
               onFocus={(e) => {
-                e.currentTarget.style.borderColor =
-                  "#4f46e5";
-                e.currentTarget.style.boxShadow =
-                  "0 0 0 3px rgba(79,70,229,0.12)";
+                e.currentTarget.style.borderColor = ACCENT_TO;
+                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(91,61,240,0.12)";
                 e.currentTarget.style.background = "#fff";
               }}
               onBlur={(e) => {
-                e.currentTarget.style.borderColor =
-                  "#e2e8f0";
+                e.currentTarget.style.borderColor = "#e2e8f0";
                 e.currentTarget.style.boxShadow = "none";
-                e.currentTarget.style.background =
-                  "#f8fafc";
+                e.currentTarget.style.background = "#f8fafc";
               }}
             />
           </div>
 
           {/* Right actions */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button
               style={{
                 position: "relative",
@@ -1142,32 +979,18 @@ export default function DashboardLayout({
                 justifyContent: "center",
                 cursor: "pointer",
                 color: "#64748b",
-                transition:
-                  "border-color 0.15s, background 0.15s",
+                transition: "border-color 0.15s, background 0.15s",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor =
-                  "#c7d2fe";
-                e.currentTarget.style.background =
-                  "#f8fafc";
+                e.currentTarget.style.borderColor = "#c7d2fe";
+                e.currentTarget.style.background = "#f8fafc";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor =
-                  "#e2e8f0";
-                e.currentTarget.style.background =
-                  "none";
+                e.currentTarget.style.borderColor = "#e2e8f0";
+                e.currentTarget.style.background = "none";
               }}
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
@@ -1193,9 +1016,7 @@ export default function DashboardLayout({
               firstName={user?.firstName ?? "User"}
               email={user?.email ?? ""}
               onLogout={handleLogout}
-              onSettings={() =>
-                router.push("/settings")
-              }
+              onSettings={() => router.push("/settings")}
             />
           </div>
         </header>
@@ -1205,7 +1026,6 @@ export default function DashboardLayout({
           className="dashboard-main"
           style={{
             flex: 1,
-            padding: "28px 28px",
             overflowY: "auto",
           }}
         >

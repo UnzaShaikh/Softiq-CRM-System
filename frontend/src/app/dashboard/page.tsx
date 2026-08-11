@@ -4,6 +4,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import StatCard from "@/components/dashboard/StatCard";
 import RevenueChart from "@/components/dashboard/RevenueChart";
 import DealsPipeline from "@/components/dashboard/DealsPipeline";
+import SalesPipeline from "@/components/dashboard/SalesPipeline";
 import LeadsDonutChart from "@/components/dashboard/LeadsDonutChart";
 import RecentCustomers from "@/components/dashboard/RecentCustomers";
 import RecentLeads from "@/components/dashboard/RecentLeads";
@@ -20,31 +21,9 @@ import {
   salesOverviewToChart,
 } from "@/lib/dashboard";
 import { Users, Handshake, DollarSign, UserCheck } from "lucide-react";
-import ThemeLoader from "@/components/ui/ThemeLoader";
 
 export default function DashboardPage() {
-  const { data, loading, error, refresh } = useDashboardData();
-
-  if (loading && !data) {
-    return (
-      <DashboardLayout>
-        <ThemeLoader label="Loading dashboard..." />
-      </DashboardLayout>
-    );
-  }
-
-  if (error && !data) {
-    return (
-      <DashboardLayout>
-        <div className="not-found-state">
-          <p style={{ fontSize: "3rem", margin: "0 0 12px" }}>⚠️</p>
-          <h2>Dashboard unavailable</h2>
-          <p>{error}</p>
-          <button className="btn-primary" onClick={refresh}>Retry</button>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const { data, loading } = useDashboardData();
 
   const stats = [
     {
@@ -105,23 +84,8 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {error && data && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", padding: "0.875rem 1rem", borderRadius: "0.625rem", background: "#fef2f2", border: "1px solid rgba(239,68,68,0.25)", color: "#b91c1c", fontSize: "0.875rem" }}>
-            <span>Failed to refresh dashboard data: {error}</span>
-            <button
-              onClick={refresh}
-              style={{ padding: "0.375rem 0.875rem", borderRadius: "0.5rem", border: "1px solid rgba(239,68,68,0.3)", background: "#ffffff", color: "#b91c1c", fontWeight: 600, fontSize: "0.8125rem", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
-            >
-              Retry
-            </button>
-          </div>
-        )}
-
         {/* KPI Cards */}
-        <div
-          style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}
-          className="dashboard-stats-grid"
-        >
+        <div className="dashboard-stats-grid">
           {stats.map((item) => (
             <StatCard key={item.label} {...item} />
           ))}
