@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "contacts",
     "companies",
     "activities",
+    "notes",
 
 ]
 
