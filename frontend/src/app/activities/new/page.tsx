@@ -1,25 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import FormField from "@/components/customers/FormField";
-import { ActivityType, ActivityStatus, ActivityPriority } from "@/data/activities";
-
-interface FormValues {
-  title: string;
-  type: ActivityType | "";
-  status: ActivityStatus | "";
-  priority: ActivityPriority | "";
-  date: string;
-  time: string;
-  duration: string;
-  assignedTo: string;
-  relatedTo: string;
-  relatedType: "Customer" | "Lead" | "Opportunity" | "";
-  location: string;
-  description: string;
-}
+import {
+  ActivityType,
+  ActivityStatus,
+  ActivityPriority,
+  ActivityFormValues,
+  ActivityDropdowns,
+  toActivityApiPayload,
+  apiErrorMessage,
+} from "@/data/activity";
+import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
 
 interface FormErrors {
   title?: string;
@@ -32,25 +26,54 @@ interface FormErrors {
   relatedTo?: string;
 }
 
-const INITIAL: FormValues = {
+const INITIAL: ActivityFormValues = {
   title: "", type: "", status: "", priority: "",
   date: "", time: "", duration: "", assignedTo: "",
   relatedTo: "", relatedType: "", location: "", description: "",
 };
 
+const TYPE_OPTIONS: ActivityType[] = ["Call", "Meeting", "Email", "Task", "Follow-up"];
+const PRIORITY_OPTIONS: ActivityPriority[] = ["High", "Medium", "Low"];
+const STATUS_OPTIONS: ActivityStatus[] = ["Scheduled", "Completed", "Cancelled", "Overdue"];
+
 export default function AddActivityPage() {
   const router = useRouter();
-  const [form, setForm] = useState<FormValues>(INITIAL);
+  const [form, setForm] = useState<ActivityFormValues>(INITIAL);
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [dropdowns, setDropdowns] = useState<ActivityDropdowns>({ users: [], customers: [], leads: [], deals: [] });
+  const [dropdownsLoading, setDropdownsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadDropdowns = async () => {
+      try {
+        const data = await apiRequest<ActivityDropdowns>("/api/activities/dropdowns/");
+        if (!cancelled) setDropdowns(data);
+      } catch (err) {
+        if (cancelled) return;
+        setSubmitError(`Failed to load dropdown options: ${apiErrorMessage(err)}`);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setDropdownsLoading(false);
+      }
+    };
+    void loadDropdowns();
+    return () => { cancelled = true; };
+  }, [router]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
+    if (name === "relatedType") {
+      setForm(prev => ({ ...prev, relatedType: value as ActivityFormValues["relatedType"], relatedTo: "" }));
+    }
     if (errors[name as keyof FormErrors]) setErrors(prev => ({ ...prev, [name]: undefined }));
   }
+
+  const relatedOptions = useMemoRelated(form.relatedType, dropdowns);
 
   function validate(): boolean {
     const e: FormErrors = {};
@@ -62,7 +85,7 @@ export default function AddActivityPage() {
     if (!form.time) e.time = "Time is required";
     if (!form.duration.trim()) e.duration = "Duration is required";
     else if (isNaN(Number(form.duration)) || Number(form.duration) <= 0) e.duration = "Enter valid minutes";
-    if (!form.relatedTo.trim()) e.relatedTo = "Related contact is required";
+    if (form.relatedType && !form.relatedTo) e.relatedTo = "Please select the related record";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -72,10 +95,20 @@ export default function AddActivityPage() {
     setSubmitError("");
     if (!validate()) return;
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setLoading(false);
-    setSuccess(true);
-    setTimeout(() => router.push("/activities"), 1800);
+    try {
+      await apiRequest("/api/activities/", {
+        method: "POST",
+        body: toActivityApiPayload(form),
+      });
+      emitDataChanged();
+      setSuccess(true);
+      setTimeout(() => router.push("/activities"), 1800);
+    } catch (err) {
+      setSubmitError(apiErrorMessage(err));
+      if (!getAccessToken()) router.push("/login");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -108,15 +141,16 @@ export default function AddActivityPage() {
 
             <div className="form-row-2">
               <FormField label="Type" name="type" type="select" value={form.type} onChange={handleChange} error={errors.type} required
-                options={["Call","Meeting","Email","Task","Follow-up"].map(t => ({ label: t, value: t }))} />
+                options={TYPE_OPTIONS.map(t => ({ label: t, value: t }))} />
               <FormField label="Priority" name="priority" type="select" value={form.priority} onChange={handleChange} error={errors.priority} required
-                options={["High","Medium","Low"].map(p => ({ label: p, value: p }))} />
+                options={PRIORITY_OPTIONS.map(p => ({ label: p, value: p }))} />
             </div>
 
             <div className="form-row-2">
               <FormField label="Status" name="status" type="select" value={form.status} onChange={handleChange} error={errors.status} required
-                options={["Scheduled","Completed","Cancelled","Overdue"].map(s => ({ label: s, value: s }))} />
-              <FormField label="Assigned To" name="assignedTo" value={form.assignedTo} onChange={handleChange} placeholder="e.g. Khaanzadi" />
+                options={STATUS_OPTIONS.map(s => ({ label: s, value: s }))} />
+              <FormField label="Assigned To" name="assignedTo" type="select" value={form.assignedTo} onChange={handleChange} disabled={dropdownsLoading}
+                options={dropdowns.users.map(u => ({ label: u.name, value: String(u.id) }))} />
             </div>
 
             <div className="form-row-2">
@@ -140,9 +174,10 @@ export default function AddActivityPage() {
             </div>
 
             <div className="form-row-2">
-              <FormField label="Related To" name="relatedTo" value={form.relatedTo} onChange={handleChange} error={errors.relatedTo} placeholder="e.g. Ahmed Ali" required />
-              <FormField label="Related Type" name="relatedType" type="select" value={form.relatedType} onChange={handleChange}
-                options={["Customer","Lead","Opportunity"].map(t => ({ label: t, value: t }))} />
+              <FormField label="Related Type" name="relatedType" type="select" value={form.relatedType} onChange={handleChange} disabled={dropdownsLoading}
+                options={[{ label: "Customer", value: "Customer" }, { label: "Lead", value: "Lead" }, { label: "Deal", value: "Deal" }]} />
+              <FormField label="Related To" name="relatedTo" type="select" value={form.relatedTo} onChange={handleChange} error={errors.relatedTo} disabled={dropdownsLoading || !form.relatedType}
+                options={relatedOptions.map(o => ({ label: o.name, value: String(o.id) }))} />
             </div>
 
             <FormField label="Description" name="description" type="textarea" value={form.description} onChange={handleChange} placeholder="Add any notes or details…" />
@@ -161,4 +196,11 @@ export default function AddActivityPage() {
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </DashboardLayout>
   );
+}
+
+function useMemoRelated(relatedType: ActivityFormValues["relatedType"], dropdowns: ActivityDropdowns) {
+  if (relatedType === "Customer") return dropdowns.customers;
+  if (relatedType === "Lead") return dropdowns.leads;
+  if (relatedType === "Deal") return dropdowns.deals;
+  return [];
 }

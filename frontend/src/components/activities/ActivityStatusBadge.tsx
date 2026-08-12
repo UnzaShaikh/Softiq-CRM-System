@@ -1,4 +1,4 @@
-import { ActivityStatus, ActivityType, ActivityPriority } from "@/data/activities";
+import { ActivityStatus, ActivityType, ActivityPriority } from "@/data/activity";
 
 const STATUS_STYLES: Record<ActivityStatus, { bg: string; color: string; border: string; dot: string }> = {
   "Scheduled":  { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe", dot: "#3b82f6" },

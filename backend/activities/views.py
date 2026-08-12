@@ -1,11 +1,15 @@
+from django.contrib.auth import get_user_model
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound
+from django.db.models import Count, Q
 
 from .models import Activity
 from .serializers import ActivitySerializer, ActivityStatusUpdateSerializer
+
+User = get_user_model()
 
 
 class ActivityViewSet(viewsets.ModelViewSet):
@@ -13,7 +17,7 @@ class ActivityViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["title", "description", "location"]
-    ordering_fields = ["date", "time", "created_at", "priority"]
+    ordering_fields = ["date", "time", "created_at", "priority", "title", "type", "status", "assigned_to__username"]
     ordering = ["-date", "-time"]
 
     def get_queryset(self):
@@ -72,3 +76,56 @@ class ActivityViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(ActivitySerializer(instance).data)
+
+    @action(detail=False, methods=["get"], url_path="summary")
+    def summary(self, request):
+        counts = Activity.objects.aggregate(
+            total=Count("id"),
+            scheduled=Count("id", filter=Q(status="scheduled")),
+            completed=Count("id", filter=Q(status="completed")),
+            cancelled=Count("id", filter=Q(status="cancelled")),
+            overdue=Count("id", filter=Q(status="overdue")),
+        )
+        return Response(
+            {
+                "total_activities": counts["total"],
+                "scheduled": counts["scheduled"],
+                "completed": counts["completed"],
+                "cancelled": counts["cancelled"],
+                "overdue": counts["overdue"],
+            }
+        )
+
+    @action(detail=False, methods=["get"], url_path="dropdowns")
+    def dropdowns(self, request):
+        from customers.models import Customer
+        from leads.models import Lead
+        from deals.models import Deal
+
+        def _name(first, last):
+            return f"{first} {last}".strip()
+
+        return Response(
+            {
+                "users": [
+                    {
+                        "id": user.id,
+                        "username": user.username,
+                        "name": _name(user.first_name, user.last_name) or user.username,
+                    }
+                    for user in User.objects.order_by("username")
+                ],
+                "customers": [
+                    {"id": c.id, "name": _name(c.first_name, c.last_name)}
+                    for c in Customer.objects.order_by("first_name", "last_name")
+                ],
+                "leads": [
+                    {"id": lead.id, "name": _name(lead.first_name, lead.last_name)}
+                    for lead in Lead.objects.order_by("first_name", "last_name")
+                ],
+                "deals": [
+                    {"id": deal.id, "name": deal.name}
+                    for deal in Deal.objects.order_by("name")
+                ],
+            }
+        )

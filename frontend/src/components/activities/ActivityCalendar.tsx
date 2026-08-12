@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { Activity, ActivityType } from "@/data/activities";
+import { Activity, ActivityType } from "@/data/activity";
 
 interface ActivityCalendarProps {
   activities: Activity[];
   onActivityClick: (activity: Activity) => void;
+  year: number;
+  month: number; // 0-based
+  onMonthChange: (year: number, month: number) => void;
 }
 
 const TYPE_COLORS: Record<ActivityType, string> = {
@@ -19,23 +21,21 @@ const TYPE_COLORS: Record<ActivityType, string> = {
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-export default function ActivityCalendar({ activities, onActivityClick }: ActivityCalendarProps) {
+export default function ActivityCalendar({ activities, onActivityClick, year: currentYear, month: currentMonth, onMonthChange }: ActivityCalendarProps) {
   const today = new Date();
-  const [currentYear, setCurrentYear] = useState(today.getFullYear());
-  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
 
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
 
   function prevMonth() {
-    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1); }
-    else setCurrentMonth(m => m - 1);
+    if (currentMonth === 0) onMonthChange(currentYear - 1, 11);
+    else onMonthChange(currentYear, currentMonth - 1);
   }
 
   function nextMonth() {
-    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1); }
-    else setCurrentMonth(m => m + 1);
+    if (currentMonth === 11) onMonthChange(currentYear + 1, 0);
+    else onMonthChange(currentYear, currentMonth + 1);
   }
 
   function getActivitiesForDay(day: number): Activity[] {
