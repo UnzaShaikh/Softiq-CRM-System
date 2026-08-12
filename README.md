@@ -6,7 +6,7 @@ A modern **Customer Relationship Management (CRM)** system built using **Next.js
 
 # 🚀 Project Status
 
-**Current Progress:** 🟢 **Day 11 Completed**
+**Current Progress:** 🟢 **Day 12 Completed**
 
 ## Completed Modules
 
@@ -37,6 +37,8 @@ A modern **Customer Relationship Management (CRM)** system built using **Next.js
 - ✅ Activity CRUD APIs
 - ✅ Activity Search, Filtering & Supporting APIs
 - ✅ Notes APIs
+- ✅ Notes Search, Filtering & Supporting APIs
+- ✅ Profile Settings Module UI
 
 ---
 
@@ -485,11 +487,68 @@ Returns all deals belonging to a selected pipeline stage.
 
 ## Backend
 
-- Notes APIs
-- Notes data handling
-- API validation
+### Notes CRUD APIs
+
+- Note Model
+- Note Serializer
+- Note Category Support
+- Create Note
+- Get All Notes
+- Get Note by ID
+- Update Note
+- Delete Note
+- Pin / Unpin Note
+- Archive / Unarchive Note
+- Field Validation
 - JWT Authentication
-- Backend testing
+- API Error Handling
+- Optimized Database Queries
+- Postman API Testing
+- Backend Test Cases
+
+### Notes Search, Filtering & Supporting APIs
+
+- Search Notes by Title and Content
+- Category Filtering
+- Priority Filtering
+- Pinned / Unpinned Filtering
+- Archived / Active Filtering
+- Tag Filtering
+- Pagination
+- Ordering
+- Total Records Count
+- Notes Summary / Statistics API
+- Notes Options / Supporting Data API
+- Category Options
+- Priority Options
+- Pinned Status Options
+- Archived Status Options
+- Serializer Validation
+- JWT Authentication
+- Optimized Database Queries
+- Postman API Testing
+- Backend Test Cases
+
+# 👤 Profile Settings
+
+## Frontend
+
+- Profile Information UI
+- Edit Profile UI
+- Change Password UI
+- Password Strength and Validation UI
+- Preferences UI
+- Language and Region Preferences
+- Date & Time Format Preferences
+- Default Currency Preference
+- Theme Preferences
+- Items Per Page Preference
+- Other Application Preferences
+- Activity Log UI
+- Activity Summary UI
+- Profile Settings Navigation
+- Responsive Design
+- UI/UX Consistency with the existing Softiq CRM design system
 
 # 📊 Reports & Revenue
 
@@ -622,6 +681,37 @@ Supports:
 - Ordering
 - Pagination
 - Total Records Count
+- Supporting Filter Options
+- JWT Authentication
+- Validation
+
+## Notes
+
+| Method | Endpoint |
+|---------|----------|
+| POST | `/api/notes/` |
+| GET | `/api/notes/` |
+| GET | `/api/notes/{id}/` |
+| PATCH | `/api/notes/{id}/` |
+| DELETE | `/api/notes/{id}/` |
+| PATCH | `/api/notes/{id}/pin/` |
+| PATCH | `/api/notes/{id}/unpin/` |
+| PATCH | `/api/notes/{id}/archive/` |
+| PATCH | `/api/notes/{id}/unarchive/` |
+| GET | `/api/notes/summary/` |
+| GET | `/api/notes/options/` |
+
+Supports:
+
+- Search by title and content
+- Category Filtering
+- Priority Filtering
+- Pinned / Archived Filtering
+- Tag Filtering
+- Ordering
+- Pagination
+- Total Records Count
+- Summary Statistics
 - Supporting Filter Options
 - JWT Authentication
 - Validation
@@ -800,6 +890,25 @@ API testing completed using **Postman**.
 - Ordering
 - Pagination
 - Total Records Count
+- JWT Authentication
+- Validation
+- Error Handling
+
+### Notes APIs
+
+- Notes CRUD Operations
+- Search by Title and Content
+- Category Filtering
+- Priority Filtering
+- Pinned / Archived Filtering
+- Tag Filtering
+- Pagination
+- Ordering
+- Total Records Count
+- Notes Summary / Statistics
+- Supporting Filter Options
+- Pin / Unpin
+- Archive / Unarchive
 - JWT Authentication
 - Validation
 - Error Handling
@@ -1151,6 +1260,51 @@ Supports:
 - End-to-end testing of Activity and Notes functionality
 - Git branch synchronization and Pull Request preparation
 
+
+## Day 12
+
+### Backend
+
+- Notes CRUD APIs
+- Note Serializer and Validation
+- Note Category Support
+- Pin / Unpin Note APIs
+- Archive / Unarchive Note APIs
+- Notes Search by Title and Content
+- Category Filtering
+- Priority Filtering
+- Pinned / Archived Filtering
+- Tag Filtering
+- Pagination and Ordering
+- Total Records Count
+- Notes Summary / Statistics API
+- Notes Options / Supporting Data API
+- JWT Authentication
+- Optimized Database Queries
+- Postman API Testing
+- Backend Test Cases
+- Notes Database Migrations and Validation
+
+### Frontend
+
+- Profile Settings Module UI
+- Profile Information UI
+- Change Password UI
+- Preferences UI
+- Activity Log UI
+- Profile Settings Navigation
+- Responsive UI implementation
+- UI/UX consistency with the existing Softiq CRM design system
+
+### Integration
+
+- Notes module integration support
+- Profile Settings integration support
+- Frontend-backend request and response verification
+- API validation and error handling
+- End-to-end testing of Notes functionality
+- Git branch synchronization and Pull Request preparation
+
 # 📌 Current Status
 
 | Module | Status |
@@ -1182,6 +1336,8 @@ Supports:
 | Revenue Module UI | ✅ Completed |
 | Activity APIs | ✅ Completed |
 | Notes APIs | ✅ Completed |
+| Notes Search & Supporting APIs | ✅ Completed |
+| Profile Settings UI | ✅ Completed |
 
 ---
 
