@@ -19,31 +19,67 @@ class NoteCategory(models.Model):
 
 
 class Note(models.Model):
+
+    PRIORITY_CHOICES = [
+        ("low", "Low"),
+        ("medium", "Medium"),
+        ("high", "High"),
+    ]
+
     title = models.CharField(max_length=255)
     content = models.TextField(blank=True)
+
     category = models.ForeignKey(
-        NoteCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name="notes"
+        NoteCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="notes",
     )
-    tags = models.JSONField(default=list, blank=True)  # e.g. ["urgent", "follow-up"]
+
+    priority = models.CharField(
+        max_length=20,
+        choices=PRIORITY_CHOICES,
+        default="medium",
+    )
+
+    tags = models.JSONField(default=list, blank=True)
 
     pinned = models.BooleanField(default=False)
     archived = models.BooleanField(default=False)
 
-    # Optional association with CRM records — mutually exclusive, same pattern as Activity
     customer = models.ForeignKey(
-        "customers.Customer", on_delete=models.CASCADE, null=True, blank=True, related_name="notes"
+        "customers.Customer",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="notes",
     )
+
     lead = models.ForeignKey(
-        "leads.Lead", on_delete=models.CASCADE, null=True, blank=True, related_name="notes"
+        "leads.Lead",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="notes",
     )
+
     deal = models.ForeignKey(
-        "deals.Deal", on_delete=models.CASCADE, null=True, blank=True, related_name="related_notes"
+        "deals.Deal",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="related_notes",
     )
 
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-        related_name="notes"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="notes",
     )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
