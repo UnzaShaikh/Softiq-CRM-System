@@ -1,76 +1,223 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ActivityCalendar from "@/components/activities/ActivityCalendar";
 import ActivityTable from "@/components/activities/ActivityTable";
 import SearchBar from "@/components/customers/SearchBar";
 import Pagination from "@/components/customers/Pagination";
-import activitiesData, { Activity, ActivityStatus, ActivityType } from "@/data/activities";
-import { ActivityStatusBadge } from "@/components/activities/ActivityStatusBadge";
-import { Calendar, List, CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react";
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import {
+  Activity,
+  ActivityStatus,
+  ActivityType,
+  ActivityPriority,
+  ApiActivityList,
+  ApiActivitySummary,
+  toActivity,
+  STATUS_TO_API,
+  TYPE_TO_API,
+  PRIORITY_TO_API,
+} from "@/data/activity";
+import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
+import { Calendar, List, CheckCircle, Clock, AlertCircle } from "lucide-react";
 
-const ITEMS_PER_PAGE = 8;
+const PAGE_SIZE = 8;
 type FilterStatus = "All" | ActivityStatus;
 type FilterType = "All" | ActivityType;
+type FilterPriority = "All" | ActivityPriority;
 type ViewMode = "list" | "calendar";
+type SortKey = "title" | "type" | "status" | "priority" | "date" | "assignedTo";
+type SortDir = "asc" | "desc";
 
 const ALL_STATUSES: ActivityStatus[] = ["Scheduled", "Completed", "Cancelled", "Overdue"];
 const ALL_TYPES: ActivityType[] = ["Call", "Meeting", "Email", "Task", "Follow-up"];
+const ALL_PRIORITIES: ActivityPriority[] = ["High", "Medium", "Low"];
+
+const ORDERING_FIELD: Record<SortKey, string> = {
+  title: "title",
+  type: "type",
+  status: "status",
+  priority: "priority",
+  date: "date",
+  assignedTo: "assigned_to__username",
+};
 
 export default function ActivitiesPage() {
   const router = useRouter();
-  const [activities, setActivities] = useState<Activity[]>(activitiesData);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [calendarActivities, setCalendarActivities] = useState<Activity[]>([]);
+  const [summary, setSummary] = useState<ApiActivitySummary>({ total_activities: 0, scheduled: 0, completed: 0, cancelled: 0, overdue: 0 });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("All");
   const [typeFilter, setTypeFilter] = useState<FilterType>("All");
+  const [priorityFilter, setPriorityFilter] = useState<FilterPriority>("All");
+  const [assignedToFilter, setAssignedToFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [totalCount, setTotalCount] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear());
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date().getMonth());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [deleteModal, setDeleteModal] = useState<Activity | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    return activities.filter((a) => {
-      const matchSearch = !q || a.title.toLowerCase().includes(q) || a.relatedTo.toLowerCase().includes(q) || a.assignedTo.toLowerCase().includes(q);
-      const matchStatus = statusFilter === "All" || a.status === statusFilter;
-      const matchType = typeFilter === "All" || a.type === typeFilter;
-      const matchDateFrom = !dateFrom || a.date >= dateFrom;
-      const matchDateTo = !dateTo || a.date <= dateTo;
-      return matchSearch && matchStatus && matchType && matchDateFrom && matchDateTo;
-    });
-  }, [activities, search, statusFilter, typeFilter, dateFrom, dateTo]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginated = useMemo(() => filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [filtered, currentPage]);
+  const ordering = useMemo(() => `${sortDir === "asc" ? "" : "-"}${ORDERING_FIELD[sortKey]}`, [sortKey, sortDir]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadUsers = async () => {
+      try {
+        const data = await apiRequest<{ users: { id: number; name: string }[] }>("/api/activities/dropdowns/");
+        if (!cancelled) setUsers(data.users ?? []);
+      } catch {
+        // dropdown failure is non-fatal
+      }
+    };
+    void loadUsers();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    if (statusFilter !== "All") params.set("status", STATUS_TO_API[statusFilter]);
+    if (typeFilter !== "All") params.set("type", TYPE_TO_API[typeFilter]);
+    if (priorityFilter !== "All") params.set("priority", PRIORITY_TO_API[priorityFilter]);
+    if (assignedToFilter) params.set("assigned_to", assignedToFilter);
+    if (dateFrom) params.set("date_from", dateFrom);
+    if (dateTo) params.set("date_to", dateTo);
+    params.set("ordering", ordering);
+    params.set("page", String(currentPage));
+    params.set("page_size", String(PAGE_SIZE));
+
+    const run = async () => {
+      try {
+        const data = await apiRequest<ApiActivityList>(`/api/activities/?${params.toString()}`);
+        if (cancelled) return;
+        setActivities(data.results.map(toActivity));
+        setTotalCount(data.count);
+        setError(null);
+        const maxPage = Math.max(1, Math.ceil(data.count / PAGE_SIZE));
+        if (currentPage > maxPage) setCurrentPage(maxPage);
+      } catch (err) {
+        if (cancelled) return;
+        setError((err as Error).message);
+        if (!getAccessToken()) router.push("/login");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void run();
+    return () => { cancelled = true; };
+  }, [search, statusFilter, typeFilter, priorityFilter, assignedToFilter, dateFrom, dateTo, currentPage, ordering, refreshKey, router]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchSummary = async () => {
+      try {
+        const s = await apiRequest<ApiActivitySummary>("/api/activities/summary/");
+        if (!cancelled) setSummary(s);
+      } catch { /* keep last known values */ }
+    };
+    void fetchSummary();
+    return () => { cancelled = true; };
+  }, [refreshKey]);
+
+  useEffect(() => {
+    if (viewMode !== "calendar") return;
+    let cancelled = false;
+    const lastDay = new Date(calendarYear, calendarMonth + 1, 0);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const dateFromCal = `${calendarYear}-${pad(calendarMonth + 1)}-01`;
+    const dateToCal = `${calendarYear}-${pad(calendarMonth + 1)}-${pad(lastDay.getDate())}`;
+
+    const params = new URLSearchParams();
+    params.set("date_from", dateFromCal);
+    params.set("date_to", dateToCal);
+    params.set("page_size", "200");
+    if (search.trim()) params.set("search", search.trim());
+    if (statusFilter !== "All") params.set("status", STATUS_TO_API[statusFilter]);
+    if (typeFilter !== "All") params.set("type", TYPE_TO_API[typeFilter]);
+    if (priorityFilter !== "All") params.set("priority", PRIORITY_TO_API[priorityFilter]);
+    if (assignedToFilter) params.set("assigned_to", assignedToFilter);
+    if (dateFrom) params.set("date_from", dateFrom > dateFromCal ? dateFrom : dateFromCal);
+    if (dateTo) params.set("date_to", dateTo && dateTo < dateToCal ? dateTo : dateToCal);
+
+    const run = async () => {
+      try {
+        const data = await apiRequest<ApiActivityList>(`/api/activities/?${params.toString()}`);
+        if (!cancelled) setCalendarActivities(data.results.map(toActivity));
+      } catch { /* keep last known values */ }
+    };
+    void run();
+    return () => { cancelled = true; };
+  }, [viewMode, calendarYear, calendarMonth, search, statusFilter, typeFilter, priorityFilter, assignedToFilter, dateFrom, dateTo, refreshKey]);
 
   function handleSearch(val: string) { setSearch(val); setCurrentPage(1); }
+  function handleStatusFilter(val: FilterStatus) { setStatusFilter(val); setCurrentPage(1); }
+  function handleTypeFilter(val: FilterType) { setTypeFilter(val); setCurrentPage(1); }
+  function handlePriorityFilter(val: FilterPriority) { setPriorityFilter(val); setCurrentPage(1); }
+  function handleAssignedToFilter(val: string) { setAssignedToFilter(val); setCurrentPage(1); }
+
+  function handleSort(key: SortKey) {
+    if (key === sortKey) setSortDir(d => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("asc"); }
+    setCurrentPage(1);
+  }
 
   function showToast(msg: string) {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 3000);
   }
 
-  function handleDeleteConfirmed() {
+  async function handleDeleteConfirmed() {
     if (!deleteModal) return;
-    setActivities(prev => prev.filter(a => a.id !== deleteModal.id));
-    showToast(`"${deleteModal.title}" has been deleted.`);
-    setDeleteModal(null);
+    setDeleting(true);
+    try {
+      await apiRequest(`/api/activities/${deleteModal.id}/`, { method: "DELETE" });
+      emitDataChanged();
+      showToast(`"${deleteModal.title}" has been deleted.`);
+      setDeleteModal(null);
+      setRefreshKey(k => k + 1);
+    } catch (err) {
+      showToast(`Failed to delete: ${(err as Error).message}`);
+    } finally {
+      setDeleting(false);
+    }
   }
 
-  const scheduled = activities.filter(a => a.status === "Scheduled").length;
-  const completed = activities.filter(a => a.status === "Completed").length;
-  const overdue = activities.filter(a => a.status === "Overdue").length;
-  const cancelled = activities.filter(a => a.status === "Cancelled").length;
+  async function handleStatusChange(activity: Activity, status: ActivityStatus) {
+    try {
+      await apiRequest(`/api/activities/${activity.id}/status/`, {
+        method: "PATCH",
+        body: { status: STATUS_TO_API[status] },
+      });
+      emitDataChanged();
+      showToast(`"${activity.title}" marked as ${status.toLowerCase()}.`);
+      setRefreshKey(k => k + 1);
+    } catch (err) {
+      showToast(`Failed to update status: ${(err as Error).message}`);
+    }
+  }
 
   const STAT_CARDS = [
-    { label: "Total Activities", value: activities.length, icon: <Calendar size={20} />, color: "#4f46e5", bg: "#eef2ff" },
-    { label: "Scheduled",        value: scheduled,         icon: <Clock size={20} />,    color: "#0891b2", bg: "#ecfeff" },
-    { label: "Completed",        value: completed,         icon: <CheckCircle size={20} />, color: "#16a34a", bg: "#dcfce7" },
-    { label: "Overdue",          value: overdue,           icon: <AlertCircle size={20} />, color: "#dc2626", bg: "#fef2f2" },
+    { label: "Total Activities", value: summary.total_activities, icon: <Calendar size={20} />, color: "#4f46e5", bg: "#eef2ff" },
+    { label: "Scheduled",        value: summary.scheduled,        icon: <Clock size={20} />,        color: "#0891b2", bg: "#ecfeff" },
+    { label: "Completed",        value: summary.completed,        icon: <CheckCircle size={20} />,  color: "#16a34a", bg: "#dcfce7" },
+    { label: "Overdue",          value: summary.overdue,          icon: <AlertCircle size={20} />,  color: "#dc2626", bg: "#fef2f2" },
   ];
 
   return (
@@ -89,13 +236,26 @@ export default function ActivitiesPage() {
           </button>
         </div>
 
+        {/* Error banner */}
+        {error && (
+          <div className="msg-error" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+            <span>Failed to load activities: {error}</span>
+            <button
+              onClick={() => setRefreshKey(k => k + 1)}
+              style={{ flexShrink: 0, padding: "6px 14px", borderRadius: "8px", border: "1px solid rgba(239,68,68,0.3)", background: "#fff", color: "#b91c1c", fontWeight: 600, fontSize: "0.8125rem", cursor: "pointer", fontFamily: "inherit" }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="stats-grid">
           {STAT_CARDS.map((card) => (
             <div key={card.label} className="stat-card">
-              <div className="stat-card-icon" style={{ background: card.bg, color: card.color }}>{card.icon}</div>
+              <div className="stat-card-icon" style={{ background: card.bg }}>{card.icon}</div>
               <div>
-                <p className="stat-card-value" style={{ color: card.color }}>{card.value}</p>
+                <p className="stat-card-value" style={{ color: card.color }}>{loading && !error ? "…" : card.value}</p>
                 <p className="stat-card-label">{card.label}</p>
               </div>
             </div>
@@ -116,7 +276,13 @@ export default function ActivitiesPage() {
 
         {/* Calendar View */}
         {viewMode === "calendar" && (
-          <ActivityCalendar activities={filtered} onActivityClick={(a) => router.push(`/activities/${a.id}`)} />
+          <ActivityCalendar
+            activities={calendarActivities}
+            onActivityClick={(a) => router.push(`/activities/${a.id}`)}
+            year={calendarYear}
+            month={calendarMonth}
+            onMonthChange={(y, m) => { setCalendarYear(y); setCalendarMonth(m); }}
+          />
         )}
 
         {/* List View */}
@@ -126,30 +292,51 @@ export default function ActivitiesPage() {
             <div className="table-toolbar" style={{ flexDirection: "column", alignItems: "stretch" }}>
               <div className="table-toolbar-row">
                 <div className="table-search-wrap">
-                  <SearchBar value={search} onChange={handleSearch} placeholder="Search activities…" resultCount={filtered.length} />
+                  <SearchBar value={search} onChange={handleSearch} placeholder="Search activities…" resultCount={totalCount} />
                 </div>
-                {/* Status filter */}
                 <div className="filter-tabs">
                   {(["All", ...ALL_STATUSES] as FilterStatus[]).map(tab => (
-                    <button key={tab} className={`filter-tab${statusFilter === tab ? " active" : ""}`} onClick={() => { setStatusFilter(tab); setCurrentPage(1); }}>
+                    <button key={tab} className={`filter-tab${statusFilter === tab ? " active" : ""}`} onClick={() => handleStatusFilter(tab)}>
                       {tab}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Type + Date filters */}
-              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
                 <div className="stage-filters">
                   <span className="stage-filter-label">Type:</span>
                   {(["All", ...ALL_TYPES] as FilterType[]).map(tab => (
-                    <button key={tab} className={`stage-tab${typeFilter === tab ? " active" : ""}`} onClick={() => { setTypeFilter(tab); setCurrentPage(1); }}>
+                    <button key={tab} className={`stage-tab${typeFilter === tab ? " active" : ""}`} onClick={() => handleTypeFilter(tab)}>
                       {tab}
                     </button>
                   ))}
                 </div>
 
-                {/* Date range */}
+                <div className="stage-filters">
+                  <span className="stage-filter-label">Priority:</span>
+                  {(["All", ...ALL_PRIORITIES] as FilterPriority[]).map(tab => (
+                    <button key={tab} className={`stage-tab${priorityFilter === tab ? " active" : ""}`} onClick={() => handlePriorityFilter(tab)}>
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+                <label style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: 500 }}>Assigned To:</label>
+                <select
+                  value={assignedToFilter}
+                  onChange={e => handleAssignedToFilter(e.target.value)}
+                  className="form-input"
+                  style={{ padding: "5px 10px", fontSize: "0.8rem", width: "160px" }}
+                >
+                  <option value="">All users</option>
+                  {users.map(u => (
+                    <option key={u.id} value={String(u.id)}>{u.name}</option>
+                  ))}
+                </select>
+
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}>
                   <label style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: 500 }}>From:</label>
                   <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setCurrentPage(1); }}
@@ -158,31 +345,33 @@ export default function ActivitiesPage() {
                   <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setCurrentPage(1); }}
                     className="form-input" style={{ padding: "5px 10px", fontSize: "0.8rem", width: "140px" }} />
                   {(dateFrom || dateTo) && (
-                    <button onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ fontSize: "0.78rem", color: "#ef4444", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>Clear</button>
+                    <button onClick={() => { setDateFrom(""); setDateTo(""); setCurrentPage(1); }} style={{ fontSize: "0.78rem", color: "#ef4444", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>Clear</button>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Table */}
-            {filtered.length === 0 ? (
-              <div className="empty-state">
-                <p className="empty-state-title">No activities found.</p>
-                <p className="empty-state-sub">Try adjusting your search or filters.</p>
-              </div>
+            {loading && !error ? (
+              <ThemeLoader label="Loading activities..." minHeight={200} />
             ) : (
-              <ActivityTable
-                activities={paginated}
-                onView={(a) => router.push(`/activities/${a.id}`)}
-                onEdit={(a) => router.push(`/activities/${a.id}/edit`)}
-                onDelete={setDeleteModal}
-              />
-            )}
+              <>
+                <ActivityTable
+                  activities={activities}
+                  onView={(a) => router.push(`/activities/${a.id}`)}
+                  onEdit={(a) => router.push(`/activities/${a.id}/edit`)}
+                  onDelete={setDeleteModal}
+                  onStatusChange={handleStatusChange}
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                />
 
-            {filtered.length > 0 && (
-              <div className="pagination-wrap">
-                <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={filtered.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setCurrentPage} />
-              </div>
+                {totalCount > 0 && (
+                  <div className="pagination-wrap">
+                    <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalCount} itemsPerPage={PAGE_SIZE} onPageChange={setCurrentPage} />
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -201,8 +390,10 @@ export default function ActivitiesPage() {
             <h2 className="modal-title">Delete Activity</h2>
             <p className="modal-text">Are you sure you want to delete <strong style={{ color: "var(--foreground)" }}>{deleteModal.title}</strong>? This cannot be undone.</p>
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => setDeleteModal(null)}>Cancel</button>
-              <button className="btn-danger" onClick={handleDeleteConfirmed}>Delete</button>
+              <button className="btn-secondary" onClick={() => setDeleteModal(null)} disabled={deleting}>Cancel</button>
+              <button className="btn-danger" onClick={handleDeleteConfirmed} disabled={deleting}>
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
             </div>
           </div>
         </div>
