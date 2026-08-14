@@ -176,316 +176,370 @@ export default function CompanyForm({
   };
 
   return (
-    <>
-      {/* Error Message */}
-      {error && (
-        <div className="msg-error" role="alert">
-          ❌ {error}
-        </div>
-      )}
+  <>
+    {/* Error Message */}
+    {error && (
+      <div className="msg-error" role="alert">
+        ❌ {error}
+      </div>
+    )}
 
-      {/* Success Message */}
-      {success && (
-        <div className="msg-success" role="status">
-          ✅ {success}
-        </div>
-      )}
+    {/* Success Message */}
+    {success && (
+      <div className="msg-success" role="status">
+        ✅ {success}
+      </div>
+    )}
+
+    <div className="form-card">
+      {/* Form Header */}
+      <div className="form-card-header">
+        <h2 className="form-card-title">
+          Company Information
+        </h2>
+      </div>
 
       <form onSubmit={handleSubmit} noValidate>
-        {/* =================================================
-            COMPANY NAME
-            ================================================= */}
+        <div className="form-card-body">
 
-        <div className="form-group">
-          <label
-            className="form-label"
-            htmlFor="name"
-          >
-            Company Name *
-          </label>
+          {/* Company Name + Industry */}
+          <div className="form-row-2">
+            <div className="form-group">
+              <label
+                className="form-label"
+                htmlFor="name"
+              >
+                Company Name *
+              </label>
 
-          <input
-            id="name"
-            name="name"
-            type="text"
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="e.g. SoftiqTech"
-            className={`form-input ${
-              errors.name ? "error" : ""
-            }`}
-            disabled={loading}
-            required
-          />
+              <input
+                id="name"
+                name="name"
+                type="text"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="e.g. SoftiqTech"
+                className={`form-input ${
+                  errors.name ? "error" : ""
+                }`}
+                disabled={loading}
+                required
+              />
 
-          {errors.name && (
-            <span className="form-error">
-              {errors.name}
-            </span>
-          )}
-        </div>
+              {errors.name && (
+                <span className="form-error">
+                  {errors.name}
+                </span>
+              )}
+            </div>
 
-        {/* =================================================
-            INDUSTRY
-            ================================================= */}
+            <div className="form-group">
+              <label
+                className="form-label"
+                htmlFor="industry"
+              >
+                Industry *
+              </label>
 
-        <div className="form-group">
-          <label
-            className="form-label"
-            htmlFor="industry"
-          >
-            Industry *
-          </label>
+              <input
+                id="industry"
+                name="industry"
+                type="text"
+                value={formData.industry}
+                onChange={handleChange}
+                placeholder="e.g. Software"
+                className={`form-input ${
+                  errors.industry ? "error" : ""
+                }`}
+                disabled={loading}
+                required
+              />
 
-          <input
-            id="industry"
-            name="industry"
-            type="text"
-            value={formData.industry}
-            onChange={handleChange}
-            placeholder="e.g. Software"
-            className={`form-input ${
-              errors.industry ? "error" : ""
-            }`}
-            disabled={loading}
-            required
-          />
+              {errors.industry && (
+                <span className="form-error">
+                  {errors.industry}
+                </span>
+              )}
+            </div>
+          </div>
 
-          {errors.industry && (
-            <span className="form-error">
-              {errors.industry}
-            </span>
-          )}
-        </div>
+          {/* Website + Phone */}
+          <div className="form-row-2">
+            <div className="form-group">
+              <label
+                className="form-label"
+                htmlFor="website"
+              >
+                Website *
+              </label>
 
-        {/* =================================================
-            WEBSITE + PHONE
-            ================================================= */}
+              <input
+                id="website"
+                name="website"
+                type="url"
+                value={formData.website}
+                onChange={handleChange}
+                placeholder="e.g. https://example.com"
+                className={`form-input ${
+                  errors.website ? "error" : ""
+                }`}
+                disabled={loading}
+                required
+              />
 
-        <div className="form-row-2">
-          {/* Website */}
+              {errors.website && (
+                <span className="form-error">
+                  {errors.website}
+                </span>
+              )}
+            </div>
 
+            <div className="form-group">
+              <label
+                className="form-label"
+                htmlFor="phone"
+              >
+                Phone *
+              </label>
+
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="e.g. +92 300 1234567"
+                className={`form-input ${
+                  errors.phone ? "error" : ""
+                }`}
+                disabled={loading}
+                required
+              />
+
+              {errors.phone && (
+                <span className="form-error">
+                  {errors.phone}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Email + Company Size */}
+          <div className="form-row-2">
+            <div className="form-group">
+              <label
+                className="form-label"
+                htmlFor="email"
+              >
+                Email *
+              </label>
+
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="e.g. company@email.com"
+                className={`form-input ${
+                  errors.email ? "error" : ""
+                }`}
+                disabled={loading}
+                required
+              />
+
+              {errors.email && (
+                <span className="form-error">
+                  {errors.email}
+                </span>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label
+                className="form-label"
+                htmlFor="size"
+              >
+                Company Size
+              </label>
+
+              <input
+                id="size"
+                name="size"
+                type="text"
+                value={formData.size}
+                onChange={handleChange}
+                placeholder="e.g. 51 - 200 Employees"
+                className={`form-input ${
+                  errors.size ? "error" : ""
+                }`}
+                disabled={loading}
+              />
+
+              {errors.size && (
+                <span className="form-error">
+                  {errors.size}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Address + Status */}
+          <div className="form-row-2">
+            <div className="form-group">
+              <label
+                className="form-label"
+                htmlFor="address"
+              >
+                Address *
+              </label>
+
+              <textarea
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                placeholder="e.g. Karachi, Pakistan"
+                className={`form-input ${
+                  errors.address ? "error" : ""
+                }`}
+                disabled={loading}
+                required
+              />
+
+              {errors.address && (
+                <span className="form-error">
+                  {errors.address}
+                </span>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label
+                className="form-label"
+                htmlFor="status"
+              >
+                Status *
+              </label>
+
+              <select
+                id="status"
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className={`form-input ${
+                  errors.status ? "error" : ""
+                }`}
+                disabled={loading}
+                required
+              >
+                <option value="Active">
+                  Active
+                </option>
+                <option value="Inactive">
+                  Inactive
+                </option>
+              </select>
+
+              {errors.status && (
+                <span className="form-error">
+                  {errors.status}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Description */}
           <div className="form-group">
             <label
               className="form-label"
-              htmlFor="website"
+              htmlFor="description"
             >
-              Website *
+              Description
             </label>
 
-            <input
-              id="website"
-              name="website"
-              type="url"
-              value={formData.website}
+            <textarea
+              id="description"
+              name="description"
+              value={formData.description}
               onChange={handleChange}
-              placeholder="e.g. https://example.com"
+              placeholder="Brief description of the company"
               className={`form-input ${
-                errors.website ? "error" : ""
+                errors.description ? "error" : ""
               }`}
               disabled={loading}
-              required
+              rows={4}
             />
 
-            {errors.website && (
+            {errors.description && (
               <span className="form-error">
-                {errors.website}
-              </span>
-            )}
-          </div>
-
-          {/* Phone */}
-
-          <div className="form-group">
-            <label
-              className="form-label"
-              htmlFor="phone"
-            >
-              Phone *
-            </label>
-
-            <input
-              id="phone"
-              name="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="e.g. +92 300 1234567"
-              className={`form-input ${
-                errors.phone ? "error" : ""
-              }`}
-              disabled={loading}
-              required
-            />
-
-            {errors.phone && (
-              <span className="form-error">
-                {errors.phone}
+                {errors.description}
               </span>
             )}
           </div>
         </div>
 
-        {/* =================================================
-            EMAIL
-            ================================================= */}
-
-        <div className="form-group">
-          <label
-            className="form-label"
-            htmlFor="email"
-          >
-            Email *
-          </label>
-
-          <input
-            id="email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="e.g. company@email.com"
-            className={`form-input ${
-              errors.email ? "error" : ""
-            }`}
-            disabled={loading}
-            required
-          />
-
-          {errors.email && (
-            <span className="form-error">
-              {errors.email}
-            </span>
-          )}
-        </div>
-
-        {/* =================================================
-            ADDRESS
-            ================================================= */}
-
-        <div className="form-group">
-          <label
-            className="form-label"
-            htmlFor="address"
-          >
-            Address *
-          </label>
-
-          <textarea
-            id="address"
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            placeholder="e.g. Karachi, Pakistan"
-            className={`form-input ${
-              errors.address ? "error" : ""
-            }`}
-            disabled={loading}
-            required
-          />
-
-          {errors.address && (
-            <span className="form-error">
-              {errors.address}
-            </span>
-          )}
-        </div>
-
-        {/* Size + Status */}
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="size">
-              Company Size
-            </label>
-
-            <input
-              id="size"
-              name="size"
-              type="text"
-              value={formData.size}
-              onChange={handleChange}
-              placeholder="e.g. 51 - 200 Employees"
-              className={
-                errors.size ? "input-error" : ""
-              }
-              disabled={loading}
-            />
-
-            {errors.size && (
-              <span className="form-field-error">
-                {errors.size}
-              </span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="status">
-              Status *
-            </label>
-
-            <select
-              id="status"
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              disabled={loading}
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-
-            {errors.status && (
-              <span className="form-field-error">
-                {errors.status}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Description */}
-        <div className="form-group">
-          <label htmlFor="description">
-            Description
-          </label>
-
-          <textarea
-            id="description"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            placeholder="Brief description of the company"
-            className={
-              errors.description ? "input-error" : ""
+        {/* Footer */}
+        <div className="form-card-footer">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() =>
+              window.history.back()
             }
             disabled={loading}
-          />
+          >
+            Cancel
+          </button>
 
-          {errors.description && (
-            <span className="form-field-error">
-              {errors.description}
-            </span>
-          )}
+          <button
+            type="submit"
+            className="btn-add"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{
+                    animation:
+                      "spin 0.8s linear infinite",
+                  }}
+                  aria-hidden="true"
+                >
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
+
+                {submitText.includes("Update")
+                  ? "Updating..."
+                  : "Saving..."}
+              </>
+            ) : (
+              submitText
+            )}
+          </button>
         </div>
-
-        {/* Submit Button */}
-        <button
-          type="submit"
-          className="btn-primary"
-          disabled={loading}
-        >
-          {loading ? (
-            <>
-              <span
-                className="company-form-spinner"
-                aria-hidden="true"
-              />
-              Updating...
-            </>
-          ) : (
-            submitText
-          )}
-        </button>
       </form>
-    </>
-  );
+    </div>
+
+    <style>{`
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    `}</style>
+  </>
+);
 }
