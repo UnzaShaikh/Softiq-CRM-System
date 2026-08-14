@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { key: "prefs",     label: "Preferences",         icon: <HiCog size={16} />,           href: "/settings/preferences" },
   { key: "notifs",    label: "Notifications",       icon: <HiBell size={16} />,          href: "/settings/notifications" },
   { key: "activity",  label: "Activity Log",        icon: <HiClipboardList size={16} />, href: "/settings/activity-log" },
+  { key: "project",   label: "Project Settings",    icon: <HiCog size={16} />,           href: "/settings/project" },
 ];
 
 export function ProfileNav({ active }: { active: string }) {
