@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "activities",
     "notes",
     "followups",
+    "email_templates",
 ]
 
 MIDDLEWARE = [
