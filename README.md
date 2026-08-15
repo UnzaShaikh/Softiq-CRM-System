@@ -6,7 +6,7 @@ A modern **Customer Relationship Management (CRM)** system built using **Next.js
 
 # 🚀 Project Status
 
-**Current Progress:** 🟢 **Day 12 Completed**
+**Current Progress:** 🟢 **Day 14 Completed**
 
 ## Completed Modules
 
@@ -39,6 +39,9 @@ A modern **Customer Relationship Management (CRM)** system built using **Next.js
 - ✅ Notes APIs
 - ✅ Notes Search, Filtering & Supporting APIs
 - ✅ Profile Settings Module UI
+- ✅ Follow-ups Search, Filtering & Supporting APIs
+- ✅ Email Templates Backend APIs
+- ✅ Project Settings Module UI
 
 ---
 
@@ -337,6 +340,31 @@ Returns all deals belonging to a selected pipeline stage.
 
 # 📅 Follow-ups Management
 
+## Backend
+
+### Follow-up Search, Filtering & Supporting APIs
+
+- Follow-up Search by Subject, Related To, Company, and Notes
+- Type, Status, Priority, and Date Range Filtering
+- Combined Search and Filtering
+- Server-side Pagination
+- Ordering / Sorting
+- Total Records Count
+- Dashboard Statistics
+- Upcoming, Completed, and Overdue Counts
+- Conversion Rate Support
+- Follow-up Insights
+- Upcoming Reminders
+- Reminder Ordering and Limits
+- Supporting Options APIs
+- Export Support
+- Aggregation Queries
+- Query Optimization
+- JWT Authentication and Authorization
+- API Validation and Error Handling
+- Postman API Testing
+- Backend Automated Test Cases
+
 ## Frontend
 
 - Follow-ups Listing UI
@@ -401,14 +429,61 @@ Returns all deals belonging to a selected pipeline stage.
 - Company Details
 - Search Companies
 - Company Filters
-- Pagination
+- Active / Inactive Status Filtering
+- Industry Filtering
+- Company Size Filtering
+- Reset Filters
+- Shared CRM Pagination
+- Company Statistics Cards
+- Company Avatar Styling
+- Status Indicator Dots
+- Consistent Action Buttons and Hover States
 - Responsive Design
 - Loading States
 - Client-side Validation
+- Company Form UI Consistency
+- Company Details UI Refinement
+- Company-specific CSS Cleanup
+- Existing API Integration Preserved
 
 ---
 
 # 📧 Email Templates Management
+
+## Backend
+
+### Email Templates CRUD & Management APIs
+
+- Email Template Model and Serializer
+- Create, Get All, Get by ID, Update, and Delete APIs
+- Template Category and Type Support
+- Active / Inactive Status
+- Public / Private Visibility
+- Duplicate Template Support
+- Template Variables
+- Template Preview Support
+- Template Activity Tracking
+- Field Validation
+- JWT Authentication and Authorization
+- API Error Handling
+- Optimized Database Queries
+- Postman API Testing
+- Backend Automated Test Cases
+
+### Email Templates Search, Filtering & Supporting APIs
+
+- Search by Template Name and Subject
+- Category, Template Type, and Status Filtering
+- Combined Filtering
+- Pagination and Ordering
+- Total Records Count
+- Category, Template Type, Status, and Variable Options
+- Statistics / Supporting Data
+- Query Optimization
+- Validation
+- JWT Authentication
+- Postman API Testing
+- Backend Test Cases
 
 ## Frontend
 
@@ -426,6 +501,35 @@ Returns all deals belonging to a selected pipeline stage.
 - Delete Confirmation Popup
 - Responsive Design
 - UI/UX Consistency
+
+# ⚙️ Project Settings
+
+## Frontend
+
+- Project Settings Navigation
+- Company Information UI
+- Company Logo Upload and Preview
+- Company Favicon Management
+- Company Information Validation
+- Localization Settings
+- Language and Region Settings
+- Timezone and Fiscal Year Settings
+- Date & Time Format Settings
+- Number & Currency Format Settings
+- Localization Preview
+- Reset to Default Support
+- Email Settings UI
+- SMTP Configuration
+- Email Preferences
+- Reply-To Settings
+- Email Signature Editor
+- Test Email Functionality
+- Email Usage Information
+- Save, Loading, Success, and Error States
+- Responsive Design
+- Reusable Settings Components
+- Accessibility Support
+- UI/UX Consistency with the existing Softiq CRM design system
 
 # ✅ Task Management
 
@@ -776,6 +880,7 @@ frontend/
 │   ├── Contacts
 │   ├── Follow-ups
 │   ├── Email Templates
+│   ├── Project Settings
 │   └── Company Management
 │
 ├── context/
@@ -1305,6 +1410,142 @@ Supports:
 - End-to-end testing of Notes functionality
 - Git branch synchronization and Pull Request preparation
 
+## Day 13
+
+### Backend
+
+- Follow-up Search API
+- Search by Subject, Related To, Company, and Notes
+- Type, Status, Priority, and Date Range Filtering
+- Combined Filtering
+- Server-side Pagination
+- Ordering and Sorting
+- Total Records Count
+- Dashboard Statistics
+- Upcoming / Completed / Overdue Counts
+- Conversion Rate Support
+- Follow-up Insights API
+- Upcoming Reminders API
+- Reminder Ordering and Limits
+- Supporting Options APIs
+- Export API
+- Aggregation Queries
+- Query Optimization
+- JWT Authentication and Authorization
+- API Validation and Error Handling
+- Postman API Testing
+- Backend Automated Test Cases
+
+### Frontend
+
+- Project Settings Module UI
+- Project Settings Navigation
+- Company Information UI
+- Company Logo and Favicon Management
+- Localization UI and Preview
+- Email Settings UI
+- SMTP Configuration
+- Email Preferences
+- Reply-To Settings
+- Email Signature
+- Test Email UI
+- Responsive Design
+- Reusable Settings Components
+- Validation and State Handling
+
+### Integration
+
+- Follow-up API integration support
+- Search and Filter API contract verification
+- Pagination and ordering integration support
+- Dashboard statistics and reminders API verification
+- Frontend-backend request and response verification
+- API validation and error handling
+- End-to-end Follow-up testing
+- Git branch synchronization and Pull Request preparation
+
+## Day 14
+
+### Backend — Enzela
+
+- Email Templates CRUD APIs
+- Email Template Serializer and Validation
+- Template Category and Type Support
+- Active / Inactive Status
+- Public / Private Visibility
+- Duplicate Template Support
+- Template Variables
+- Template Preview Support
+- Template Activity Tracking
+- JWT Authentication and Authorization
+- API Error Handling
+- Optimized Database Queries
+- Postman API Testing
+- Backend Automated Test Cases
+
+### Backend — Unza
+
+- Email Template Search
+- Category, Template Type, and Status Filtering
+- Combined Filtering
+- Pagination and Ordering
+- Total Records Count
+- Supporting Options APIs
+- Template Statistics / Supporting Data
+- Query Optimization
+- Validation
+- JWT Authentication and Authorization
+- API Error Handling
+- Postman API Testing
+- Backend Automated Test Cases
+
+### Frontend — Khaanzadi
+
+- Completed Project Settings Navigation
+- Company Information UI
+- Company Logo and Favicon Upload / Preview
+- Company Information Validation
+- Localization Settings and Dynamic Preview
+- Date / Time and Number / Currency Format Settings
+- Reset to Default
+- Email Settings UI
+- SMTP Configuration
+- Email Preferences
+- Reply-To Settings
+- Email Signature Editor
+- Test Email Functionality
+- Email Usage Section
+- Loading, Success, Error and Unsaved-change States
+- Responsive and Accessible UI
+- Reusable Settings Components
+- Backend API Integration Support
+- Frontend Testing
+
+### Frontend — Unza
+
+- Refined Company Management UI according to the CRM / Customer design
+- Updated Company Listing Table and Visual Consistency
+- Improved Search, Filters and Reset Filters
+- Updated Shared Pagination and PAGE_SIZE Configuration
+- Improved Company Statistics Cards
+- Refined Company Add / Edit Forms
+- Improved Company Details Layout
+- Reviewed and Cleaned Company-specific CSS
+- Added Company Status Indicator Dots
+- Preserved Existing API Integration and Validation Logic
+- Prepared Company Module for Feature Branch and Pull Request
+
+### Integration
+
+- Email Templates frontend-backend API contract review
+- CRUD, Search, Filtering and Pagination integration support
+- Duplicate and Preview workflow integration support
+- Template Variables and Activity integration support
+- Authentication, validation and error handling verification
+- Frontend-backend request and response verification
+- End-to-end Email Templates testing
+- Git branch synchronization and Pull Request preparation
+
 # 📌 Current Status
 
 | Module | Status |
@@ -1329,7 +1570,10 @@ Supports:
 | Company Search & Supporting APIs | ✅ Completed |
 | Company API Integration | 🟡 In Progress |
 | Follow-ups UI | ✅ Completed |
+| Follow-ups Search & Supporting APIs | ✅ Completed |
 | Email Templates UI | ✅ Completed |
+| Email Templates Backend APIs | ✅ Completed |
+| Project Settings UI | ✅ Completed |
 | Task Management UI | 🟡 In Progress |
 | Dashboard Integration | 🟡 In Progress |
 | Reports & Analytics UI | ✅ Completed |

@@ -46,6 +46,7 @@ urlpatterns = [
     path("api/", include("activities.urls")),
     path("api/", include("notes.urls")),
     path("api/", include("followups.urls")),
+    path("api/", include("email_templates.urls")),
 
 # Pipeline
 path("api/", include("pipeline.urls")),

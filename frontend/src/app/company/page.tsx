@@ -16,6 +16,8 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import CompanyTable from "@/components/company/CompanyTable";
 import SearchBar from "@/components/company/SearchBar";
 import ThemeLoader from "@/components/ui/ThemeLoader";
+import Pagination from "@/components/customers/Pagination";
+const PAGE_SIZE = 10;
 import {
   ApiCompanyList,
   ApiCompanyStats,
@@ -252,45 +254,75 @@ export default function CompanyPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="company-stats-grid">
+        <div className="stats-grid">
           {statCards.map((card) => (
-            <div key={card.label} className="company-stat-card">
+            <div key={card.label} className="stat-card">
               <div
                 className="stat-card-icon"
-                style={{ background: card.background, color: card.color }}
+                style={{
+                  background: card.background,
+                  color: card.color,
+                }}
               >
                 {card.icon}
               </div>
 
               <div>
-                <p className="stat-card-value" style={{ color: card.color }}>
+                <p
+                  className="stat-card-value"
+                  style={{ color: card.color }}
+                >
                   {card.value}
                 </p>
-                <p className="stat-card-label">{card.label}</p>
+
+                <p className="stat-card-label">
+                  {card.label}
+                </p>
               </div>
             </div>
           ))}
         </div>
 
         {/* Company table card */}
-        <div className="company-table-card">
-          {/* Toolbar: search + results + status tabs */}
-          <div className="contacts-table-toolbar">
-            <SearchBar value={search} onChange={handleSearchChange} />
+        <div className="table-card">
 
-            <div className="contacts-toolbar-right">
-              <span className="contacts-results-count">
+          {/* Search + Results + Status Tabs */}
+          <div className="table-toolbar">
+
+            {/* Search */}
+            <div className="table-search-wrap">
+              <SearchBar
+                value={search}
+                onChange={handleSearchChange}
+                placeholder="Search companies..."
+              />
+            </div>
+
+            {/* Results + Status */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "16px",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "0.8125rem",
+                  color: "#64748b",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {totalCount} result{totalCount === 1 ? "" : "s"}
               </span>
 
-              <div className="contacts-filter-tabs">
+              <div className="filter-tabs">
                 {statusTabs.map((tab) => (
                   <button
                     key={tab}
                     type="button"
-                    className={`contacts-filter-tab ${
-                      statusFilter === tab ? "active" : ""
-                    }`}
+                    className={`filter-tab${statusFilter === tab ? " active" : ""
+                      }`}
                     onClick={() => handleStatusChange(tab)}
                   >
                     {tab}
@@ -300,15 +332,29 @@ export default function CompanyPage() {
             </div>
           </div>
 
-          {/* Industry + Size filters */}
-          <div className="company-filter-group">
+          {/* Industry + Company Size Filters */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              padding: "12px 16px",
+              borderTop: "1px solid #f1f5f9",
+              background: "#fff",
+              flexWrap: "wrap",
+            }}
+          >
+            {/* Industry */}
             <select
               className="filter-select"
               value={industryFilter}
-              onChange={(event) => handleIndustryChange(event.target.value)}
+              onChange={(event) =>
+                handleIndustryChange(event.target.value)
+              }
               aria-label="Filter by industry"
             >
-              <option value="All">All Industry</option>
+              <option value="All">All Industries</option>
+
               {industries.map((industry) => (
                 <option key={industry} value={industry}>
                   {industry}
@@ -316,13 +362,17 @@ export default function CompanyPage() {
               ))}
             </select>
 
+            {/* Company Size */}
             <select
               className="filter-select"
               value={sizeFilter}
-              onChange={(event) => handleSizeChange(event.target.value)}
+              onChange={(event) =>
+                handleSizeChange(event.target.value)
+              }
               aria-label="Filter by company size"
             >
-              <option value="All">All Size</option>
+              <option value="All">All Sizes</option>
+
               {companySizes.map((size) => (
                 <option key={size} value={size}>
                   {size}
@@ -330,18 +380,14 @@ export default function CompanyPage() {
               ))}
             </select>
 
+            {/* Reset */}
             <button
               type="button"
               className="btn-secondary"
               onClick={handleReset}
             >
-              Reset
+              Reset Filters
             </button>
-          </div>
-
-          {/* Result Information */}
-          <div className="company-result-info">
-            Showing {startIndex} to {endIndex} of {totalCount} companies
           </div>
 
           {error && (
@@ -369,49 +415,20 @@ export default function CompanyPage() {
             </div>
           )}
 
-          {totalPages > 1 && (
-            <div className="company-pagination">
-              <button
-                type="button"
-                className="pagination-btn"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                aria-label="Previous page"
-              >
-                ‹
-              </button>
-
-              <div className="pagination-pages">
-                {Array.from(
-                  { length: totalPages },
-                  (_, index) => index + 1
-                ).map((page) => (
-                  <button
-                    key={page}
-                    type="button"
-                    className={`pagination-page ${
-                      currentPage === page ? "active" : ""
-                    }`}
-                    onClick={() => setCurrentPage(page)}
-                  >
-                    {page}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                className="pagination-btn"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                aria-label="Next page"
-              >
-                ›
-              </button>
+          {!loading && !error && totalCount > 0 && (
+            <div className="pagination-wrap">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalCount}
+                itemsPerPage={PAGE_SIZE}
+                onPageChange={setCurrentPage}
+              />
             </div>
           )}
         </div>
       </div>
+
 
       {/* Delete confirmation modal */}
       {deleteTarget && (

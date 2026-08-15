@@ -143,63 +143,235 @@ export default function CompanyDetailPage() {
             <p className="page-subtitle">View company information</p>
           </div>
 
-          <div style={{ display: "flex", gap: "12px" }}>
-            <Link href="/company">
-              <button className="filter-btn">← Back</button>
-            </Link>
+          <div className="company-detail-actions">
+  <Link href="/company">
+    <button className="filter-btn">
+      ← Back to Companies
+    </button>
+  </Link>
 
-            <Link href={`/company/${company.id}/edit`}>
-              <button className="add-company-btn">Edit Company</button>
-            </Link>
-          </div>
+  <Link href={`/company/${company.id}/edit`}>
+    <button className="add-company-btn">
+      Edit Company
+    </button>
+  </Link>
+</div>
         </div>
 
         {/* Company Card */}
-        <div className="company-detail-card">
-          {/* Profile */}
-          <div className="company-profile">
-            <div className="company-avatar">
-              {company.name.substring(0, 2).toUpperCase()}
-            </div>
+        {/* Company Profile */}
+<div className="company-detail-card">
 
-            <div>
-              <h2>{company.name}</h2>
+  {/* Profile Header */}
+  <div className="company-profile">
+    <div className="company-avatar">
+      {company.name.substring(0, 2).toUpperCase()}
+    </div>
 
-              <span
-                className={
-                  company.status === "Active"
-                    ? "status-badge status-active"
-                    : "status-badge status-inactive"
-                }
-              >
-                {company.status}
-              </span>
-            </div>
-          </div>
+    <div className="company-profile-content">
+      <div className="company-profile-title-row">
+        <h2>{company.name}</h2>
 
-          {/* Information */}
-          <div className="company-info-grid">
-            {infoFields.map((field) => (
-              <div key={field.label} className="company-info-item">
-                <label>
-                  <span className="company-info-icon" aria-hidden="true">
-                    {field.icon}
-                  </span>
-                  {field.label}
-                </label>
-                <p>{field.value}</p>
-              </div>
-            ))}
+        <span
+          className={
+            company.status === "Active"
+              ? "status-badge status-active"
+              : "status-badge status-inactive"
+          }
+        >
+          {company.status}
+        </span>
+      </div>
 
-            <div style={{ gridColumn: "1 / -1" }} className="company-info-item">
-              <label>
-                <span className="company-info-icon" aria-hidden="true">📝</span>
-                Description
-              </label>
-              <p>{description}</p>
-            </div>
-          </div>
-        </div>
+      <p className="company-profile-meta">
+        {company.industry || "—"}
+        {company.size ? ` • ${company.size}` : ""}
+      </p>
+    </div>
+  </div>
+
+  {/* Company Information */}
+  <div className="company-detail-section">
+    <h3 className="company-detail-section-title">
+      Company Information
+    </h3>
+
+    <div className="company-info-grid">
+      <div className="company-info-item">
+        <label>
+          <span
+            className="company-info-icon"
+            aria-hidden="true"
+          >
+            🏭
+          </span>
+          Industry
+        </label>
+
+        <p>{company.industry || "—"}</p>
+      </div>
+
+      <div className="company-info-item">
+        <label>
+          <span
+            className="company-info-icon"
+            aria-hidden="true"
+          >
+            🏢
+          </span>
+          Company Size
+        </label>
+
+        <p>{company.size || "—"}</p>
+      </div>
+
+      <div className="company-info-item">
+        <label>
+          <span
+            className="company-info-icon"
+            aria-hidden="true"
+          >
+            🌐
+          </span>
+          Website
+        </label>
+
+        <p>
+          {company.website ? (
+            <a
+              href={company.website}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {company.website}
+            </a>
+          ) : (
+            "—"
+          )}
+        </p>
+      </div>
+
+      <div className="company-info-item">
+        <label>
+          <span
+            className="company-info-icon"
+            aria-hidden="true"
+          >
+            📅
+          </span>
+          Created On
+        </label>
+
+        <p>{company.createdOn || "—"}</p>
+      </div>
+    </div>
+  </div>
+
+  {/* Contact Information */}
+  <div className="company-detail-section">
+    <h3 className="company-detail-section-title">
+      Contact Information
+    </h3>
+
+    <div className="company-info-grid">
+      <div className="company-info-item">
+        <label>
+          <span
+            className="company-info-icon"
+            aria-hidden="true"
+          >
+            ✉️
+          </span>
+          Email
+        </label>
+
+        <p>
+          {company.email ? (
+            <a href={`mailto:${company.email}`}>
+              {company.email}
+            </a>
+          ) : (
+            "—"
+          )}
+        </p>
+      </div>
+
+      <div className="company-info-item">
+        <label>
+          <span
+            className="company-info-icon"
+            aria-hidden="true"
+          >
+            📞
+          </span>
+          Phone
+        </label>
+
+        <p>{company.phone || "—"}</p>
+      </div>
+
+      <div className="company-info-item">
+        <label>
+          <span
+            className="company-info-icon"
+            aria-hidden="true"
+          >
+            👥
+          </span>
+          Contacts
+        </label>
+
+        <p>{company.contacts ?? 0}</p>
+      </div>
+
+      <div className="company-info-item">
+        <label>
+          <span
+            className="company-info-icon"
+            aria-hidden="true"
+          >
+            💼
+          </span>
+          Deals
+        </label>
+
+        <p>{company.deals ?? 0}</p>
+      </div>
+    </div>
+  </div>
+
+  {/* Address */}
+  <div className="company-detail-section">
+    <h3 className="company-detail-section-title">
+      Address
+    </h3>
+
+    <div className="company-info-item company-info-full">
+      <label>
+        <span
+          className="company-info-icon"
+          aria-hidden="true"
+        >
+          📍
+        </span>
+        Address
+      </label>
+
+      <p>{company.address || "—"}</p>
+    </div>
+  </div>
+
+  {/* Description */}
+  <div className="company-detail-section">
+    <h3 className="company-detail-section-title">
+      Description
+    </h3>
+
+    <div className="company-description">
+      {description}
+    </div>
+  </div>
+</div>
       </div>
     </DashboardLayout>
   );
