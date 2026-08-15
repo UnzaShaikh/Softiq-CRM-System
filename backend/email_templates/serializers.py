@@ -75,4 +75,34 @@ class EmailTemplateWriteSerializer(serializers.ModelSerializer):
 
 
 class TemplatePreviewSerializer(serializers.Serializer):
-    sample_values = serializers.DictField(child=serializers.CharField(), required=False)
+    sample_values = serializers.DictField(
+        child=serializers.CharField(),
+        required=False,
+        default=dict,
+    )
+
+    def validate_sample_values(self, value):
+        allowed_variables = {
+            "company_name",
+            "contact_name",
+            "first_name",
+            "last_name",
+            "email",
+            "date",
+        }
+
+        invalid_variables = set(value.keys()) - allowed_variables
+
+        if invalid_variables:
+            raise serializers.ValidationError(
+                {
+                    "invalid_variables": (
+                        f"Unsupported variables: "
+                        f"{', '.join(sorted(invalid_variables))}. "
+                        f"Supported variables are: "
+                        f"{', '.join(sorted(allowed_variables))}."
+                    )
+                }
+            )
+
+        return value
