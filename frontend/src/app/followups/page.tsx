@@ -11,8 +11,14 @@ import followupsData, {
 } from "@/data/followups";
 import {
   Phone, Mail, Users, CheckSquare, Calendar,
-  Eye, Pencil, Trash2, Plus, Download, TrendingUp, Clock, AlertCircle, CheckCircle,
+  Eye, Pencil, Trash2, Plus, Download, Clock, AlertCircle, CheckCircle,
 } from "lucide-react";
+
+function hexToRgba(hex: string, alpha: number): string {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return `rgba(79,70,229,${alpha})`;
+  return `rgba(${parseInt(result[1], 16)},${parseInt(result[2], 16)},${parseInt(result[3], 16)},${alpha})`;
+}
 
 const ITEMS_PER_PAGE = 7;
 const ALL_TYPES: FollowupType[] = ["Call", "Email", "Meeting", "Task", "Follow-up"];
@@ -97,6 +103,7 @@ export default function FollowupsPage() {
   const completed = followups.filter(f => f.status === "Completed").length;
   const overdue = followups.filter(f => f.status === "Overdue").length;
   const conversionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+  void conversionRate; // retained for insights chart below
 
   // Upcoming reminders (next 5)
   const reminders = followups.filter(f => f.status === "Upcoming").sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 5);
@@ -120,23 +127,40 @@ export default function FollowupsPage() {
         </div>
 
         {/* Stats Cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "14px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: "16px" }}>
           {[
-            { label: "Total Follow-ups", value: total, icon: <Calendar size={20} />, color: "#4f46e5", bg: "#eef2ff", sub: "All follow-ups" },
-            { label: "Upcoming", value: upcoming, icon: <Clock size={20} />, color: "#d97706", bg: "#fef3c7", sub: "Next 7 days" },
-            { label: "Completed", value: completed, icon: <CheckCircle size={20} />, color: "#16a34a", bg: "#dcfce7", sub: "This month" },
-            { label: "Overdue", value: overdue, icon: <AlertCircle size={20} />, color: "#dc2626", bg: "#fef2f2", sub: "Requires attention" },
-            { label: "Conversion Rate", value: `${conversionRate}%`, icon: <TrendingUp size={20} />, color: "#0891b2", bg: "#ecfeff", sub: "From follow-ups" },
+            { label: "Total Follow-ups", value: String(total),            icon: <Calendar size={18} />,     color: "#4f46e5", sub: "All follow-ups"       },
+            { label: "Upcoming",         value: String(upcoming),         icon: <Clock size={18} />,        color: "#d97706", sub: "Next 7 days"          },
+            { label: "Completed",        value: String(completed),        icon: <CheckCircle size={18} />,  color: "#16a34a", sub: "This month"           },
+            { label: "Overdue",          value: String(overdue),          icon: <AlertCircle size={18} />,  color: "#dc2626", sub: "Requires attention"   },
           ].map(card => (
-            <div key={card.label} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "8px" }}>
-                <div style={{ width: 38, height: 38, borderRadius: "10px", background: card.bg, display: "flex", alignItems: "center", justifyContent: "center", color: card.color }}>
-                  {card.icon}
+            <div
+              key={card.label}
+              className="stat-card-dashboard"
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 6px 24px rgba(0,0,0,0.08)";
+                (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)";
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 4px rgba(0,0,0,0.05)";
+                (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+              }}
+            >
+              {/* Icon */}
+              <div
+                className="stat-card-dashboard-icon"
+                style={{ background: hexToRgba(card.color, 0.1), color: card.color }}
+              >
+                {card.icon}
+              </div>
+              {/* Content */}
+              <div className="stat-card-dashboard-content">
+                <p className="stat-card-dashboard-label">{card.label}</p>
+                <p className="stat-card-dashboard-value">{card.value}</p>
+                <div className="stat-card-dashboard-change">
+                  <span className="stat-card-dashboard-since">{card.sub}</span>
                 </div>
               </div>
-              <p style={{ margin: 0, fontSize: "0.72rem", color: "#94a3b8", fontWeight: 500 }}>{card.label}</p>
-              <p style={{ margin: "4px 0 2px", fontSize: "1.75rem", fontWeight: 700, color: card.color, lineHeight: 1.1 }}>{card.value}</p>
-              <p style={{ margin: 0, fontSize: "0.72rem", color: "#94a3b8" }}>{card.sub}</p>
             </div>
           ))}
         </div>
