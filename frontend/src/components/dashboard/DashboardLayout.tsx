@@ -220,16 +220,6 @@ function UserDropdown({
                 e.currentTarget.style.background = "transparent";
               }}
             >
-              <Settings size={16} color="#64748b" />
-              Settings
-            </button>
-
-            <button
-              onClick={() => { setOpen(false); onSettings(); }}
-              style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "9px 12px", borderRadius: "8px", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: "0.875rem", fontWeight: 500, color: "#374151", transition: "background 0.12s ease", textAlign: "left" }}
-              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#f8fafc"}
-              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "transparent"}
-            >
               <User size={16} color="#64748b" />
               My Profile
             </button>
@@ -479,7 +469,7 @@ const BOTTOM_ITEMS: {
 }[] = [
   {
     label: "Settings",
-    href: "/settings",
+    href: "/settings/project",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3" />

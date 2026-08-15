@@ -8,6 +8,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ContactTable from "@/components/contacts/ContactTable";
 import ThemeLoader from "@/components/ui/ThemeLoader";
 import Pagination from "@/components/customers/Pagination";
+import StatCard from "@/components/dashboard/StatCard";
 
 import {
   Users,
@@ -149,31 +150,35 @@ export default function ContactsPage() {
   const STAT_CARDS = [
     {
       label: "Total Contacts",
-      value: stats.total,
-      icon: <Users size={22} strokeWidth={2} />,
+      value: String(stats.total),
+      change: "+12%",
+      up: true,
+      icon: <Users size={18} strokeWidth={2} />,
       color: "#4f46e5",
-      bg: "#eef2ff",
     },
     {
       label: "Active",
-      value: stats.active,
-      icon: <UserCheck size={22} strokeWidth={2} />,
+      value: String(stats.active),
+      change: "+8%",
+      up: true,
+      icon: <UserCheck size={18} strokeWidth={2} />,
       color: "#16a34a",
-      bg: "#dcfce7",
     },
     {
       label: "Inactive",
-      value: stats.inactive,
-      icon: <PauseCircle size={22} strokeWidth={2} />,
+      value: String(stats.inactive),
+      change: "-2%",
+      up: false,
+      icon: <PauseCircle size={18} strokeWidth={2} />,
       color: "#64748b",
-      bg: "#f1f5f9",
     },
     {
       label: "Leads",
-      value: stats.lead,
-      icon: <Zap size={22} strokeWidth={2} />,
+      value: String(stats.lead),
+      change: "+5%",
+      up: true,
+      icon: <Zap size={18} strokeWidth={2} />,
       color: "#b45309",
-      bg: "#fef3c7",
     },
   ];
 
@@ -220,53 +225,9 @@ export default function ContactsPage() {
             CONTACT STAT CARDS
         ========================================== */}
 
-        <div className="contacts-stats-grid">
+        <div className="dashboard-stats-grid" style={{ marginBottom: "24px" }}>
           {STAT_CARDS.map((card) => (
-            <div key={card.label} className="contacts-stat-card">
-              <div
-                className="contacts-stat-icon"
-                style={{
-                  width: "58px",
-                  height: "58px",
-                  minWidth: "58px",
-                  borderRadius: "14px",
-                  backgroundColor: card.bg,
-                  color: card.color,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {card.icon}
-              </div>
-
-              <div className="contacts-stat-content">
-                <div
-                  className="contacts-stat-value"
-                  style={{
-                    color: card.color,
-                    fontSize: "30px",
-                    lineHeight: 1,
-                    fontWeight: 700,
-                    marginBottom: "6px",
-                  }}
-                >
-                  {card.value}
-                </div>
-
-                <div
-                  className="contacts-stat-label"
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#64748b",
-                    lineHeight: 1.3,
-                  }}
-                >
-                  {card.label}
-                </div>
-              </div>
-            </div>
+            <StatCard key={card.label} {...card} />
           ))}
         </div>
 
