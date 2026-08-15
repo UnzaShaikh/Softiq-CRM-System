@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "notes",
     "followups",
     "email_templates",
+    "user_profile",
 ]
 
 MIDDLEWARE = [
