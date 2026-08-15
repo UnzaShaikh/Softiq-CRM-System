@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { ALL_CATEGORIES, NoteCategory, NotePriority, CATEGORY_COLORS } from "@/data/notes";
+import { ALL_CATEGORIES, NoteCategory, NotePriority } from "@/data/notes";
+import { createNote, PRIORITY_TO_API } from "@/lib/notesApi";
 import { ArrowLeft, FileText, X } from "lucide-react";
 
 interface FormValues {
@@ -12,7 +13,6 @@ interface FormValues {
   priority: NotePriority | "";
   tags: string[];
   content: string;
-  relatedTo: string;
 }
 
 interface FormErrors {
@@ -20,11 +20,12 @@ interface FormErrors {
   category?: string;
   priority?: string;
   content?: string;
+  form?: string;
 }
 
 export default function NewNotePage() {
   const router = useRouter();
-  const [form, setForm] = useState<FormValues>({ title: "", category: "", priority: "", tags: [], content: "", relatedTo: "" });
+  const [form, setForm] = useState<FormValues>({ title: "", category: "", priority: "", tags: [], content: "" });
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -62,16 +63,27 @@ export default function NewNotePage() {
     e.preventDefault();
     if (!validate()) return;
     setSaving(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setSaving(false);
-    setSuccess(true);
-    setTimeout(() => router.push("/notes"), 1500);
+    setErrors(prev => ({ ...prev, form: undefined }));
+    try {
+      await createNote({
+        title: form.title.trim(),
+        content: form.content,
+        priority: PRIORITY_TO_API[form.priority as NotePriority],
+        tags: form.tags,
+        category: null,
+      });
+      setSaving(false);
+      setSuccess(true);
+      setTimeout(() => router.push("/notes"), 1200);
+    } catch (err) {
+      setSaving(false);
+      setErrors(prev => ({ ...prev, form: err instanceof Error ? err.message : "Failed to create note." }));
+    }
   }
 
   return (
     <DashboardLayout>
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-
         <button className="back-btn" onClick={() => router.push("/notes")}>
           <ArrowLeft size={16} /> Back to Notes
         </button>
@@ -82,12 +94,10 @@ export default function NewNotePage() {
             Note created successfully! Redirecting...
           </div>
         )}
+        {errors.form && <div className="msg-error" style={{ marginBottom: "20px" }}>{errors.form}</div>}
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "24px" }}>
-
-          {/* Main Form */}
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid #f1f5f9" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <div style={{ width: 34, height: 34, borderRadius: "8px", background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -102,8 +112,6 @@ export default function NewNotePage() {
 
             <form onSubmit={handleSubmit} noValidate>
               <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-
-                {/* Title */}
                 <div className="form-group">
                   <label className="form-label">Title <span style={{ color: "var(--error)" }}>*</span></label>
                   <div style={{ position: "relative" }}>
@@ -115,7 +123,6 @@ export default function NewNotePage() {
                   {errors.title && <p className="form-error">{errors.title}</p>}
                 </div>
 
-                {/* Category + Priority */}
                 <div className="form-row-2">
                   <div className="form-group">
                     <label className="form-label">Category <span style={{ color: "var(--error)" }}>*</span></label>
@@ -140,7 +147,6 @@ export default function NewNotePage() {
                   </div>
                 </div>
 
-                {/* Tags */}
                 <div className="form-group">
                   <label className="form-label">Tags</label>
                   <div style={{ border: "1.5px solid #e2e8f0", borderRadius: "8px", padding: "8px 12px", display: "flex", flexWrap: "wrap", gap: "6px", background: "#fff", minHeight: "44px", cursor: "text" }}
@@ -160,21 +166,11 @@ export default function NewNotePage() {
                   <p style={{ margin: "4px 0 0", fontSize: "0.75rem", color: "#94a3b8" }}>Press Enter to add a tag</p>
                 </div>
 
-                {/* Note Content */}
                 <div className="form-group">
                   <label className="form-label">Note Content <span style={{ color: "var(--error)" }}>*</span></label>
-                  <div style={{ border: "1.5px solid #e2e8f0", borderRadius: "8px 8px 0 0", padding: "8px 12px", background: "#f8fafc", display: "flex", alignItems: "center", gap: "4px", borderBottom: "none" }}>
-                    {["B", "I", "U"].map(f => (
-                      <button key={f} type="button" style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", borderRadius: "4px", fontWeight: f === "B" ? 700 : 400, fontStyle: f === "I" ? "italic" : "normal", textDecoration: f === "U" ? "underline" : "none", color: "#374151", fontSize: "0.8rem" }}>{f}</button>
-                    ))}
-                    <div style={{ width: 1, height: 20, background: "#e2e8f0", margin: "0 4px" }} />
-                    {["≡", "•"].map(f => (
-                      <button key={f} type="button" style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", borderRadius: "4px", color: "#374151", fontSize: "1rem" }}>{f}</button>
-                    ))}
-                  </div>
                   <textarea name="content" value={form.content} onChange={handleChange} rows={12}
                     className={`form-input${errors.content ? " error" : ""}`}
-                    style={{ borderRadius: "0 0 8px 8px", resize: "vertical", minHeight: "240px" }}
+                    style={{ resize: "vertical", minHeight: "240px" }}
                     placeholder="Write your note content here..." />
                   <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
                     {errors.content && <p className="form-error">{errors.content}</p>}
@@ -185,19 +181,15 @@ export default function NewNotePage() {
                 </div>
               </div>
 
-              {/* Footer */}
               <div style={{ padding: "16px 24px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
                 <button type="button" className="btn-secondary" onClick={() => router.push("/notes")}>Cancel</button>
                 <button type="submit" className="btn-add" disabled={saving || success}>
-                  {saving ? (
-                    <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>Saving...</>
-                  ) : success ? "✓ Saved!" : "+ New Note"}
+                  {saving ? "Saving..." : success ? "✓ Saved!" : "+ New Note"}
                 </button>
               </div>
             </form>
           </div>
 
-          {/* Right Tips */}
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)", height: "fit-content" }}>
             <h3 style={{ margin: "0 0 14px", fontSize: "0.875rem", fontWeight: 700, color: "#0f172a" }}>💡 Tips</h3>
             {[
@@ -214,7 +206,6 @@ export default function NewNotePage() {
           </div>
         </div>
       </div>
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </DashboardLayout>
   );
 }
