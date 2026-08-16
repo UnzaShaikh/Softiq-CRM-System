@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import SearchBar from "@/components/customers/SearchBar";
 import Pagination from "@/components/customers/Pagination";
-import notesData, { Note, NoteCategory, ALL_CATEGORIES, CATEGORY_COLORS, PRIORITY_COLORS } from "@/data/notes";
+import { Note, NoteCategory, ALL_CATEGORIES, CATEGORY_COLORS, PRIORITY_COLORS } from "@/data/notes";
+import { listNotes, deleteNote, mapApiNoteToUi, toggleLocalStar, ApiNoteCategory, listCategories } from "@/lib/notesApi";
 import { FileText, Pin, Archive, Star, MoreHorizontal, Edit, Eye, Trash2, Plus, Tag } from "lucide-react";
 
 const ITEMS_PER_PAGE = 9;
@@ -21,7 +22,7 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function NoteCard({ note, onView, onEdit, onDelete }: { note: Note; onView: () => void; onEdit: () => void; onDelete: () => void }) {
+function NoteCard({ note, onView, onEdit, onDelete, onToggleStar }: { note: Note; onView: () => void; onEdit: () => void; onDelete: () => void; onToggleStar: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const catStyle = CATEGORY_COLORS[note.category];
   const priStyle = PRIORITY_COLORS[note.priority];
@@ -32,7 +33,6 @@ function NoteCard({ note, onView, onEdit, onDelete }: { note: Note; onView: () =
       onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)"; (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"; }}
       onClick={onView}
     >
-      {/* Top row */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <div style={{ width: 32, height: 32, borderRadius: "8px", background: catStyle.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -41,8 +41,7 @@ function NoteCard({ note, onView, onEdit, onDelete }: { note: Note; onView: () =
           {note.isPinned && <Pin size={14} color="#4f46e5" />}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }} onClick={e => e.stopPropagation()}>
-          <button style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", color: note.isStarred ? "#f59e0b" : "#94a3b8" }}
-            title="Star">
+          <button onClick={onToggleStar} style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", color: note.isStarred ? "#f59e0b" : "#94a3b8" }} title="Star">
             <Star size={14} fill={note.isStarred ? "#f59e0b" : "none"} />
           </button>
           <div style={{ position: "relative" }}>
@@ -69,7 +68,6 @@ function NoteCard({ note, onView, onEdit, onDelete }: { note: Note; onView: () =
         </div>
       </div>
 
-      {/* Title */}
       <div>
         <h3 style={{ margin: "0 0 6px", fontSize: "0.9375rem", fontWeight: 700, color: "#0f172a", lineHeight: 1.4 }}>{note.title}</h3>
         <p style={{ margin: 0, fontSize: "0.8125rem", color: "#64748b", lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
@@ -77,7 +75,6 @@ function NoteCard({ note, onView, onEdit, onDelete }: { note: Note; onView: () =
         </p>
       </div>
 
-      {/* Category + Priority */}
       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
         <span style={{ padding: "3px 10px", borderRadius: "6px", fontSize: "0.72rem", fontWeight: 600, background: catStyle.bg, color: catStyle.color }}>
           {note.category}
@@ -87,7 +84,6 @@ function NoteCard({ note, onView, onEdit, onDelete }: { note: Note; onView: () =
         </span>
       </div>
 
-      {/* Tags */}
       {note.tags.length > 0 && (
         <div style={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }}>
           {note.tags.slice(0, 3).map(tag => (
@@ -99,7 +95,6 @@ function NoteCard({ note, onView, onEdit, onDelete }: { note: Note; onView: () =
         </div>
       )}
 
-      {/* Footer */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "8px", borderTop: "1px solid #f1f5f9", marginTop: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <div style={{ width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem", fontWeight: 700, color: "#fff" }}>
@@ -117,46 +112,73 @@ function NoteCard({ note, onView, onEdit, onDelete }: { note: Note; onView: () =
 
 export default function NotesPage() {
   const router = useRouter();
-  const [notes, setNotes] = useState<Note[]>(notesData);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [apiCategories, setApiCategories] = useState<ApiNoteCategory[]>([]);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"All" | NoteCategory>("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [deleteModal, setDeleteModal] = useState<Note | null>(null);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    return notes.filter(n => {
-      const matchSearch = !q || n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q) || n.tags.some(t => t.label.toLowerCase().includes(q));
-      const matchCat = categoryFilter === "All" || n.category === categoryFilter;
-      return matchSearch && matchCat;
-    });
-  }, [notes, search, categoryFilter]);
+  const fetchNotes = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const cats = await listCategories();
+      setApiCategories(cats);
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginated = useMemo(() => filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [filtered, currentPage]);
+      const res = await listNotes({
+        search: search || undefined,
+        page: currentPage,
+      });
+      setNotes(res.results.map(n => mapApiNoteToUi(n, cats)));
+      setTotalCount(res.count);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load notes.");
+    } finally {
+      setLoading(false);
+    }
+  }, [search, currentPage]);
+
+  useEffect(() => { fetchNotes(); }, [fetchNotes]);
+
+  // Category filter applied client-side since your category enum doesn't map 1:1 to backend IDs
+  const filtered = categoryFilter === "All" ? notes : notes.filter(n => n.category === categoryFilter);
+  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
 
   const pinned = notes.filter(n => n.isPinned).length;
   const archived = notes.filter(n => n.isArchived).length;
   const categories = new Set(notes.map(n => n.category)).size;
 
+  function handleToggleStar(note: Note) {
+    const nowStarred = toggleLocalStar(note.id);
+    setNotes(prev => prev.map(n => n.id === note.id ? { ...n, isStarred: nowStarred } : n));
+  }
+
   function handleDelete(note: Note) {
     setDeleteModal(note);
   }
 
-  function confirmDelete() {
+  async function confirmDelete() {
     if (!deleteModal) return;
-    setNotes(prev => prev.filter(n => n.id !== deleteModal.id));
-    setDeleteModal(null);
-    setDeleteSuccess(true);
-    setTimeout(() => setDeleteSuccess(false), 3000);
+    try {
+      await deleteNote(deleteModal.id);
+      setDeleteModal(null);
+      setDeleteSuccess(true);
+      setTimeout(() => setDeleteSuccess(false), 3000);
+      fetchNotes();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete note.");
+      setDeleteModal(null);
+    }
   }
 
   return (
     <DashboardLayout>
       <div className="page-wrapper">
-
-        {/* Header */}
         <div className="page-header">
           <div>
             <h1 className="page-title">Notes</h1>
@@ -168,10 +190,11 @@ export default function NotesPage() {
           </button>
         </div>
 
-        {/* Stats row */}
+        {error && <div className="msg-error" style={{ marginBottom: "16px" }}>{error}</div>}
+
         <div className="stats-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
           {[
-            { label: "All Notes", value: notes.length, icon: <FileText size={20} />, color: "#4f46e5", bg: "#eef2ff" },
+            { label: "All Notes", value: totalCount, icon: <FileText size={20} />, color: "#4f46e5", bg: "#eef2ff" },
             { label: "Categories", value: categories, icon: <Tag size={20} />, color: "#7c3aed", bg: "#faf5ff" },
             { label: "Pinned", value: pinned, icon: <Pin size={20} />, color: "#0891b2", bg: "#ecfeff" },
             { label: "Archived", value: archived, icon: <Archive size={20} />, color: "#64748b", bg: "#f1f5f9" },
@@ -186,23 +209,17 @@ export default function NotesPage() {
           ))}
         </div>
 
-        {/* My Notes section */}
         <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-
-          {/* Toolbar */}
           <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
             <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>My Notes</h2>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, maxWidth: "500px", justifyContent: "flex-end" }}>
               <div style={{ flex: 1, minWidth: "200px" }}>
                 <SearchBar value={search} onChange={(v) => { setSearch(v); setCurrentPage(1); }} placeholder="Search notes..." resultCount={filtered.length} />
               </div>
-              {/* Category dropdown */}
               <select
                 value={categoryFilter}
                 onChange={e => { setCategoryFilter(e.target.value as "All" | NoteCategory); setCurrentPage(1); }}
                 style={{ padding: "8px 12px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#374151", fontSize: "0.875rem", fontFamily: "inherit", outline: "none", cursor: "pointer" }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = "#4f46e5"; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = "#e2e8f0"; }}
               >
                 <option value="All">All Categories</option>
                 {ALL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -210,9 +227,10 @@ export default function NotesPage() {
             </div>
           </div>
 
-          {/* Notes grid */}
           <div style={{ padding: "20px" }}>
-            {filtered.length === 0 ? (
+            {loading ? (
+              <div className="loading-state">Loading notes...</div>
+            ) : filtered.length === 0 ? (
               <div className="empty-state">
                 <FileText size={48} color="#cbd5e1" style={{ margin: "0 auto 12px", display: "block" }} />
                 <p className="empty-state-title">No notes found</p>
@@ -220,36 +238,35 @@ export default function NotesPage() {
               </div>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
-                {paginated.map(note => (
+                {filtered.map(note => (
                   <NoteCard
                     key={note.id}
                     note={note}
                     onView={() => router.push(`/notes/${note.id}`)}
                     onEdit={() => router.push(`/notes/${note.id}/edit`)}
                     onDelete={() => handleDelete(note)}
+                    onToggleStar={() => handleToggleStar(note)}
                   />
                 ))}
               </div>
             )}
           </div>
 
-          {/* Pagination */}
-          {filtered.length > 0 && (
+          {!loading && filtered.length > 0 && (
             <div style={{ padding: "4px 20px 16px", borderTop: "1px solid #f1f5f9" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <p style={{ margin: 0, fontSize: "0.8125rem", color: "#64748b" }}>
-                  Showing <strong>{Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filtered.length)}</strong> to{" "}
-                  <strong>{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)}</strong> of{" "}
-                  <strong>{filtered.length}</strong> notes
+                  Showing <strong>{Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalCount)}</strong> to{" "}
+                  <strong>{Math.min(currentPage * ITEMS_PER_PAGE, totalCount)}</strong> of{" "}
+                  <strong>{totalCount}</strong> notes
                 </p>
-                <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={filtered.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setCurrentPage} />
+                <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalCount} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setCurrentPage} />
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
       {deleteModal && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setDeleteModal(null); }}>
           <div className="modal-box">
@@ -258,8 +275,7 @@ export default function NotesPage() {
             </div>
             <h2 className="modal-title">Delete Note</h2>
             <p className="modal-text">
-              Are you sure you want to delete <strong style={{ color: "var(--foreground)" }}>{deleteModal.title}</strong>?
-              This action cannot be undone.
+              Are you sure you want to delete <strong style={{ color: "var(--foreground)" }}>{deleteModal.title}</strong>? This action cannot be undone.
             </p>
             <div className="modal-actions">
               <button className="btn-secondary" onClick={() => setDeleteModal(null)}>Cancel</button>
@@ -269,7 +285,6 @@ export default function NotesPage() {
         </div>
       )}
 
-      {/* Delete Success Toast */}
       {deleteSuccess && (
         <div className="toast">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
