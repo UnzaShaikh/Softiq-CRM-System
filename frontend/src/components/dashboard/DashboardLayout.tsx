@@ -191,6 +191,7 @@ function UserDropdown({
           </div>
 
           <div style={{ padding: "6px" }}>
+
             <button
               onClick={() => {
                 setOpen(false);
@@ -224,13 +225,7 @@ function UserDropdown({
               My Profile
             </button>
 
-            <div
-              style={{
-                height: "1px",
-                background: "#f1f5f9",
-                margin: "4px 0",
-              }}
-            />
+            <div style={{ height: "1px", background: "#f1f5f9", margin: "4px 0" }} />
 
             <button
               onClick={() => {
