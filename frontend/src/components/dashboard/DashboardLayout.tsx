@@ -513,7 +513,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   const initials = user
-    ? `${user.firstName.charAt(0)}${user.lastName?.charAt(0) || ""}`.toUpperCase()
+    ? `${user.firstName?.charAt(0) || ""}${user.lastName?.charAt(0) || ""}`.toUpperCase() || "?"
     : "?";
 
   const avatarColors: [string, string][] = [
@@ -523,10 +523,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     ["#d97706", "#b45309"],
   ];
 
-  const ci = user
-    ? (user.firstName.charCodeAt(0) + (user.lastName?.charCodeAt(0) || 0)) %
+  // Guard against firstName/lastName being empty strings or undefined,
+  // which previously produced NaN and crashed the avatarColors[] lookup.
+  const rawCi = user
+    ? ((user.firstName?.charCodeAt(0) || 0) + (user.lastName?.charCodeAt(0) || 0)) %
       avatarColors.length
     : 0;
+  const ci = Number.isFinite(rawCi) ? rawCi : 0;
 
   const [c1, c2] = avatarColors[ci];
 
