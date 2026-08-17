@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { useAuth } from "@/context/AuthContext";
+import { getProfile, updateProfile, ApiProfile } from "@/lib/profileApi";
 import {
   HiUser, HiLockClosed, HiCog, HiBell, HiClipboardList,
   HiPencil, HiCamera, HiChevronRight,
@@ -48,6 +49,9 @@ export default function MyProfilePage() {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
     fullName: user ? `${user.firstName} ${user.lastName}`.trim() : "Test User",
@@ -62,6 +66,39 @@ export default function MyProfilePage() {
     about: "CRM Administrator with access to all modules and system settings.",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Load the real profile from the backend on mount. We always overwrite
+  // the placeholder defaults above with whatever the backend returns —
+  // even empty strings — so the UI reflects the true saved state rather
+  // than silently keeping fake data when a field hasn't been filled in yet.
+  const fetchProfile = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const p: ApiProfile = await getProfile();
+      setForm({
+        fullName: `${p.first_name} ${p.last_name}`.trim(),
+        email: p.email,
+        phone: p.phone_number,
+        role: p.role,
+        department: p.department,
+        location: p.location,
+        // These three feed <select> dropdowns with a fixed set of options,
+        // so an empty/unmatched backend value falls back to the first
+        // sensible option instead of rendering blank.
+        timezone: p.timezone || "(UTC-05:00) Eastern Time (US & Canada)",
+        language: p.language || "English (US)",
+        dateFormat: p.date_format || "MM/DD/YYYY",
+        about: p.about,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load profile.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchProfile(); }, [fetchProfile]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -79,10 +116,44 @@ export default function MyProfilePage() {
 
   async function handleSave() {
     if (!validate()) return;
-    await new Promise(r => setTimeout(r, 800));
-    setSuccess("Profile updated successfully.");
-    setIsEditing(false);
-    setTimeout(() => setSuccess(""), 3000);
+    setSaving(true);
+    setError("");
+    try {
+      const [first_name, ...rest] = form.fullName.trim().split(/\s+/);
+      const updated = await updateProfile({
+        first_name: first_name || "",
+        last_name: rest.join(" "),
+        email: form.email,
+        phone_number: form.phone,
+        role: form.role,
+        department: form.department,
+        location: form.location,
+        timezone: form.timezone,
+        language: form.language,
+        date_format: form.dateFormat,
+        about: form.about,
+      });
+      setForm(prev => ({
+        ...prev,
+        fullName: `${updated.first_name} ${updated.last_name}`.trim(),
+        email: updated.email,
+        phone: updated.phone_number,
+        role: updated.role,
+        department: updated.department,
+        location: updated.location,
+        timezone: updated.timezone || prev.timezone,
+        language: updated.language || prev.language,
+        dateFormat: updated.date_format || prev.dateFormat,
+        about: updated.about,
+      }));
+      setSuccess("Profile updated successfully.");
+      setIsEditing(false);
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update profile.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const initials = form.fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
@@ -153,14 +224,18 @@ export default function MyProfilePage() {
                 </button>
               ) : (
                 <div style={{ display: "flex", gap: "8px" }}>
-                  <button onClick={() => setIsEditing(false)} className="btn-secondary" style={{ padding: "7px 16px", fontSize: "0.875rem" }}>Cancel</button>
-                  <button onClick={handleSave} className="btn-add" style={{ padding: "7px 16px", fontSize: "0.875rem" }}>Save Changes</button>
+                  <button onClick={() => { setIsEditing(false); fetchProfile(); }} disabled={saving} className="btn-secondary" style={{ padding: "7px 16px", fontSize: "0.875rem" }}>Cancel</button>
+                  <button onClick={handleSave} disabled={saving} className="btn-add" style={{ padding: "7px 16px", fontSize: "0.875rem" }}>
+                    {saving ? "Saving..." : "Save Changes"}
+                  </button>
                 </div>
               )}
             </div>
 
             <div style={{ padding: "24px" }}>
               {success && <div className="msg-success" style={{ marginBottom: "16px" }}>✅ {success}</div>}
+              {error && <div className="msg-error" style={{ marginBottom: "16px" }}>{error}</div>}
+              {loading && <div className="loading-state" style={{ marginBottom: "16px" }}>Loading profile...</div>}
 
               {/* Avatar */}
               <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px" }}>
