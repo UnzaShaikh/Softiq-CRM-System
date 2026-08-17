@@ -91,11 +91,31 @@ export default function EmailTemplatesPage() {
             {/* Category filter */}
             <div style={{ position: "relative" }}>
               <select value={categoryFilter} onChange={e => { setCategoryFilter(e.target.value as "All Categories" | TemplateCategory); setCurrentPage(1); }}
-                style={{ padding: "8px 32px 8px 12px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#374151", fontSize: "0.875rem", fontFamily: "inherit", outline: "none", cursor: "pointer", appearance: "none" }}>
+                style={{
+                  padding: "8px 36px 8px 14px",
+                  borderWidth: "1.5px",
+                  borderStyle: "solid",
+                  borderColor: "#e2e8f0",
+                  borderRadius: "8px",
+                  background: "#fff",
+                  color: "#374151",
+                  fontSize: "0.875rem",
+                  fontFamily: "inherit",
+                  outline: "none",
+                  cursor: "pointer",
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  fontWeight: 500,
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                  transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+                }}
+                onFocus={e => { e.currentTarget.style.borderColor = "#4f46e5"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(79,70,229,0.1)"; }}
+                onBlur={e => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04)"; }}
+              >
                 <option value="All Categories">All Categories</option>
                 {ALL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <HiChevronDown size={14} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }} />
+              <HiChevronDown size={14} style={{ position: "absolute", right: "11px", top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }} />
             </div>
           </div>
 
@@ -161,24 +181,24 @@ export default function EmailTemplatesPage() {
 
                       {/* Actions */}
                       <td style={{ padding: "16px 20px", verticalAlign: "middle" }}>
-                        <div style={{ display: "inline-flex", gap: "8px", alignItems: "center" }}>
+                        <div style={{ display: "inline-flex", gap: "6px", alignItems: "center" }}>
                           <button onClick={() => router.push(`/email-templates/${template.id}`)} title="View"
-            style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f46e5", borderRadius: "6px", transition: "background 0.1s" }}
-                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#eef2ff"}
-                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "none"}
-                          ><HiEye size={16} /></button>
+                            style={{ width: 30, height: 30, borderWidth: "1.5px", borderStyle: "solid", borderColor: "#e2e8f0", borderRadius: "7px", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f46e5", padding: 0, transition: "all 0.12s ease" }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#eef2ff"; (e.currentTarget as HTMLButtonElement).style.borderColor = "#a5b4fc"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#fff"; (e.currentTarget as HTMLButtonElement).style.borderColor = "#e2e8f0"; (e.currentTarget as HTMLButtonElement).style.transform = "none"; }}
+                          ><HiEye size={14} /></button>
 
                           <button onClick={() => router.push(`/email-templates/${template.id}/edit`)} title="Edit"
-                            style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#0891b2", borderRadius: "6px", transition: "background 0.1s" }}
-                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#ecfeff"}
-                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "none"}
-                          ><HiPencil size={15} /></button>
+                            style={{ width: 30, height: 30, borderWidth: "1.5px", borderStyle: "solid", borderColor: "#e2e8f0", borderRadius: "7px", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#0891b2", padding: 0, transition: "all 0.12s ease" }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#ecfeff"; (e.currentTarget as HTMLButtonElement).style.borderColor = "#a5f3fc"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#fff"; (e.currentTarget as HTMLButtonElement).style.borderColor = "#e2e8f0"; (e.currentTarget as HTMLButtonElement).style.transform = "none"; }}
+                          ><HiPencil size={13} /></button>
 
                           <button onClick={() => setDeleteModal(template)} title="Delete"
-                            style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444", borderRadius: "6px", transition: "background 0.1s" }}
-                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#fef2f2"}
-                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "none"}
-                          ><HiTrash size={15} /></button>
+                            style={{ width: 30, height: 30, borderWidth: "1.5px", borderStyle: "solid", borderColor: "#e2e8f0", borderRadius: "7px", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444", padding: 0, transition: "all 0.12s ease" }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#fef2f2"; (e.currentTarget as HTMLButtonElement).style.borderColor = "#fca5a5"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#fff"; (e.currentTarget as HTMLButtonElement).style.borderColor = "#e2e8f0"; (e.currentTarget as HTMLButtonElement).style.transform = "none"; }}
+                          ><HiTrash size={13} /></button>
                         </div>
                       </td>
                     </tr>
