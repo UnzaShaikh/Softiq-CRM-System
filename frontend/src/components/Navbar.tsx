@@ -43,12 +43,12 @@ export default function Navbar() {
     ["#dc2626", "#b91c1c"],
     ["#7c3aed", "#6d28d9"],
   ];
-const colorIndex = user
-  ? (
+  const colorIndex = user
+    ? (
       (user.firstName?.charCodeAt(0) || 0) +
       (user.lastName?.charCodeAt(0) || 0)
     ) % avatarColors.length
-  : 0;
+    : 0;
   const [c1, c2] = avatarColors[colorIndex];
 
   return (
@@ -75,10 +75,10 @@ const colorIndex = user
           flexShrink: 0,
         }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
         </div>
         <span style={{ fontWeight: 700, fontSize: "1.05rem", color: "#0f172a", letterSpacing: "-0.02em" }}>
@@ -168,7 +168,7 @@ const colorIndex = user
             {/* Chevron */}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
               style={{ transition: "transform 0.2s ease", transform: dropOpen ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
-              <polyline points="6 9 12 15 18 9"/>
+              <polyline points="6 9 12 15 18 9" />
             </svg>
           </button>
         ) : (
@@ -270,9 +270,9 @@ const colorIndex = user
                 onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                  <polyline points="16 17 21 12 16 7"/>
-                  <line x1="21" y1="12" x2="9" y2="12"/>
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
                 </svg>
                 Sign out
               </button>

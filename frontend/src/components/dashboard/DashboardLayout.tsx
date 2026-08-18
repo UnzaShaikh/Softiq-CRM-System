@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Settings, LogOut, ChevronDown, User } from "lucide-react";
+import { Settings, LogOut, ChevronDown, User } from "lucide-react"; 4
+import { globalSearch, GlobalSearchResult } from "@/lib/search";
 
 /* ── Palette (matches reference: deep navy sidebar + violet accent) ── */
 const SIDEBAR_BG = "#1e1b4b"; // deep indigo/navy
@@ -442,17 +443,17 @@ const BOTTOM_ITEMS: {
   href: string;
   icon: React.ReactNode;
 }[] = [
-  {
-    label: "Settings",
-    href: "/settings/project",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-      </svg>
-    ),
-  },
-];
+    {
+      label: "Settings",
+      href: "/settings/project",
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      ),
+    },
+  ];
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -465,6 +466,60 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const [collapsed, setCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  //Global Search
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<GlobalSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const query = searchQuery.trim();
+
+    if (!query) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    setSearchLoading(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const response = await globalSearch(query);
+
+        setSearchResults(response.results ?? []);
+        setSearchOpen(true);
+      } catch (error) {
+        console.error("Global search failed:", error);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setSearchOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Route change hone par mobile sidebar apne aap band ho jaye
   useEffect(() => {
@@ -507,7 +562,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   // which previously produced NaN and crashed the avatarColors[] lookup.
   const rawCi = user
     ? ((user.firstName?.charCodeAt(0) || 0) + (user.lastName?.charCodeAt(0) || 0)) %
-      avatarColors.length
+    avatarColors.length
     : 0;
   const ci = Number.isFinite(rawCi) ? rawCi : 0;
 
@@ -532,9 +587,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Sidebar */}
       <aside
-        className={`dashboard-sidebar ${collapsed ? "collapsed" : ""} ${
-          isMobileOpen ? "mobile-open" : ""
-        }`}
+        className={`dashboard-sidebar ${collapsed ? "collapsed" : ""} ${isMobileOpen ? "mobile-open" : ""
+          }`}
         style={{
           width: sidebarW,
           minWidth: sidebarW,
@@ -914,56 +968,245 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </button>
 
           {/* Search */}
-          <div style={{ position: "relative", maxWidth: 340, flex: 1 }}>
-            <svg
-              style={{
-                position: "absolute",
-                left: 12,
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "#94a3b8",
-                pointerEvents: "none",
-              }}
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
+         <div
+  ref={searchRef}
+  style={{
+    position: "relative",
+    width: "100%",
+    maxWidth: 425,
+  }}
+>
+  {/* Search Icon */}
+  <div
+    style={{
+      position: "absolute",
+      left: 12,
+      top: "50%",
+      transform: "translateY(-50%)",
+      zIndex: 2,
+      pointerEvents: "none",
+    }}
+  >
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ color: "#94a3b8" }}
+    >
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  </div>
 
-            <input
-              type="text"
-              placeholder="Search customers, deals…"
+  <input
+    type="text"
+    value={searchQuery}
+    placeholder="Search customers, deals…"
+    onChange={(e) => {
+      setSearchQuery(e.target.value);
+      setSearchOpen(true);
+    }}
+    onFocus={() => {
+      if (searchQuery.trim()) {
+        setSearchOpen(true);
+      }
+    }}
+    onKeyDown={(e) => {
+      if (e.key === "Escape") {
+        setSearchOpen(false);
+      }
+    }}
+    style={{
+      width: "100%",
+      padding: "8px 12px 8px 36px",
+      border: "1.5px solid #e2e8f0",
+      borderRadius: 8,
+      background: "#f8fafc",
+      color: "#0f172a",
+      fontSize: "0.875rem",
+      fontFamily: "inherit",
+      outline: "none",
+      transition: "border-color 0.15s, box-shadow 0.15s",
+    }}
+    onFocus={(e) => {
+      e.currentTarget.style.borderColor = ACCENT_TO;
+      e.currentTarget.style.boxShadow =
+        "0 0 0 3px rgba(91,61,240,0.12)";
+      e.currentTarget.style.background = "#fff";
+
+      if (searchQuery.trim()) {
+        setSearchOpen(true);
+      }
+    }}
+    onBlur={(e) => {
+      e.currentTarget.style.borderColor = "#e2e8f0";
+      e.currentTarget.style.boxShadow = "none";
+      e.currentTarget.style.background = "#f8fafc";
+    }}
+  />
+
+  {/* Search Results Dropdown */}
+  {searchOpen && searchQuery.trim() && (
+    <div
+      style={{
+        position: "absolute",
+        top: "calc(100% + 8px)",
+        left: 0,
+        right: 0,
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
+        borderRadius: 10,
+        boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)",
+        zIndex: 9999,
+        overflow: "hidden",
+      }}
+    >
+      {/* Loading */}
+      {searchLoading && (
+        <div
+          style={{
+            padding: "16px",
+            textAlign: "center",
+            color: "#64748b",
+            fontSize: "0.875rem",
+          }}
+        >
+          Searching...
+        </div>
+      )}
+
+      {/* Empty */}
+      {!searchLoading && searchResults.length === 0 && (
+        <div
+          style={{
+            padding: "18px",
+            textAlign: "center",
+            color: "#64748b",
+            fontSize: "0.875rem",
+          }}
+        >
+          No results found
+        </div>
+      )}
+
+      {/* Results */}
+      {!searchLoading &&
+        searchResults.map((result) => (
+          <button
+            key={`${result.module}-${result.id}`}
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+
+              setSearchOpen(false);
+              setSearchQuery("");
+
+              router.push(result.url);
+            }}
+            style={{
+              width: "100%",
+              border: "none",
+              background: "#fff",
+              padding: "12px 14px",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              cursor: "pointer",
+              textAlign: "left",
+              borderBottom: "1px solid #f1f5f9",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#f8fafc";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#fff";
+            }}
+          >
+            {/* Module Icon */}
+            <div
               style={{
-                width: "100%",
-                padding: "8px 12px 8px 36px",
-                border: "1.5px solid #e2e8f0",
+                width: 36,
+                height: 36,
                 borderRadius: 8,
-                background: "#f8fafc",
-                color: "#0f172a",
-                fontSize: "0.875rem",
-                fontFamily: "inherit",
-                outline: "none",
-                transition: "border-color 0.15s, box-shadow 0.15s",
+                background: "#f1efff",
+                color: ACCENT_TO,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 13,
+                fontWeight: 700,
+                flexShrink: 0,
+                textTransform: "uppercase",
               }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = ACCENT_TO;
-                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(91,61,240,0.12)";
-                e.currentTarget.style.background = "#fff";
+            >
+              {result.module.charAt(0)}
+            </div>
+
+            {/* Result Details */}
+            <div
+              style={{
+                flex: 1,
+                minWidth: 0,
               }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "#e2e8f0";
-                e.currentTarget.style.boxShadow = "none";
-                e.currentTarget.style.background = "#f8fafc";
-              }}
-            />
-          </div>
+            >
+              <div
+                style={{
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  color: "#0f172a",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {result.title}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 3,
+                  fontSize: "0.75rem",
+                  color: "#64748b",
+                  display: "flex",
+                  gap: 6,
+                  alignItems: "center",
+                }}
+              >
+                <span style={{ textTransform: "capitalize" }}>
+                  {result.module}
+                </span>
+
+                {result.subtitle && (
+                  <>
+                    <span>•</span>
+                    <span>{result.subtitle}</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Status */}
+            {result.status && (
+              <span
+                style={{
+                  fontSize: "0.7rem",
+                  color: "#64748b",
+                  textTransform: "capitalize",
+                }}
+              >
+                {result.status}
+              </span>
+            )}
+          </button>
+        ))}
+    </div>
+  )}
+</div>
 
           {/* Right actions */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
