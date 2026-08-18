@@ -214,10 +214,10 @@ export default function ActivitiesPage() {
   }
 
   const STAT_CARDS = [
-    { label: "Total Activities", value: summary.total_activities, icon: <Calendar size={20} />, color: "#4f46e5", bg: "#eef2ff" },
-    { label: "Scheduled",        value: summary.scheduled,        icon: <Clock size={20} />,        color: "#0891b2", bg: "#ecfeff" },
-    { label: "Completed",        value: summary.completed,        icon: <CheckCircle size={20} />,  color: "#16a34a", bg: "#dcfce7" },
-    { label: "Overdue",          value: summary.overdue,          icon: <AlertCircle size={20} />,  color: "#dc2626", bg: "#fef2f2" },
+    { label: "Total Activities", value: summary.total_activities, icon: <Calendar size={18} />,    color: "#4f46e5", bg: "#eef2ff" },
+    { label: "Scheduled",        value: summary.scheduled,        icon: <Clock size={18} />,        color: "#0891b2", bg: "#ecfeff" },
+    { label: "Completed",        value: summary.completed,        icon: <CheckCircle size={18} />,  color: "#16a34a", bg: "#dcfce7" },
+    { label: "Overdue",          value: summary.overdue,          icon: <AlertCircle size={18} />,  color: "#dc2626", bg: "#fef2f2" },
   ];
 
   return (
@@ -250,13 +250,28 @@ export default function ActivitiesPage() {
         )}
 
         {/* Stats */}
-        <div className="stats-grid">
+        <div className="dashboard-stats-grid">
           {STAT_CARDS.map((card) => (
-            <div key={card.label} className="stat-card">
-              <div className="stat-card-icon" style={{ background: card.bg }}>{card.icon}</div>
-              <div>
-                <p className="stat-card-value" style={{ color: card.color }}>{loading && !error ? "…" : card.value}</p>
-                <p className="stat-card-label">{card.label}</p>
+            <div
+              key={card.label}
+              className="stat-card-dashboard"
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 6px 24px rgba(0,0,0,0.08)";
+                (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)";
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 4px rgba(0,0,0,0.05)";
+                (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+              }}
+            >
+              <div className="stat-card-dashboard-icon" style={{ background: card.bg, color: card.color }}>
+                {card.icon}
+              </div>
+              <div className="stat-card-dashboard-content">
+                <p className="stat-card-dashboard-label">{card.label}</p>
+                <p className="stat-card-dashboard-value" style={{ color: card.color }}>
+                  {loading && !error ? "…" : card.value}
+                </p>
               </div>
             </div>
           ))}

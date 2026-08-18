@@ -216,14 +216,42 @@ export default function NotesPage() {
               <div style={{ flex: 1, minWidth: "200px" }}>
                 <SearchBar value={search} onChange={(v) => { setSearch(v); setCurrentPage(1); }} placeholder="Search notes..." resultCount={filtered.length} />
               </div>
-              <select
-                value={categoryFilter}
-                onChange={e => { setCategoryFilter(e.target.value as "All" | NoteCategory); setCurrentPage(1); }}
-                style={{ padding: "8px 12px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#374151", fontSize: "0.875rem", fontFamily: "inherit", outline: "none", cursor: "pointer" }}
-              >
-                <option value="All">All Categories</option>
-                {ALL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              {/* Category dropdown */}
+              <div style={{ position: "relative" }}>
+                <select
+                  value={categoryFilter}
+                  onChange={e => { setCategoryFilter(e.target.value as "All" | NoteCategory); setCurrentPage(1); }}
+                  style={{
+                    padding: "8px 36px 8px 14px",
+                    borderWidth: "1.5px",
+                    borderStyle: "solid",
+                    borderColor: "#e2e8f0",
+                    borderRadius: "8px",
+                    background: "#fff",
+                    color: "#374151",
+                    fontSize: "0.875rem",
+                    fontFamily: "inherit",
+                    outline: "none",
+                    cursor: "pointer",
+                    appearance: "none",
+                    WebkitAppearance: "none",
+                    fontWeight: 500,
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                    transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+                  }}
+                  onFocus={e => { e.currentTarget.style.borderColor = "#4f46e5"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(79,70,229,0.1)"; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04)"; }}
+                >
+                  <option value="All">All Categories</option>
+                  {ALL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <svg
+                  style={{ position: "absolute", right: "11px", top: "50%", transform: "translateY(-50%)", color: "#64748b", pointerEvents: "none" }}
+                  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
             </div>
           </div>
 

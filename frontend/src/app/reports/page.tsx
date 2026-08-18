@@ -10,10 +10,10 @@ import { FiDownload } from "react-icons/fi";
 
 // ── Dummy Data ──────────────────────────────────
 const OVERVIEW_CARDS = [
-  { label: "Total Reports", value: 18, change: "+20%", up: true, icon: <HiDocumentReport size={22} />, color: "#4f46e5", bg: "#eef2ff" },
-  { label: "Scheduled Reports", value: 6, change: "+50%", up: true, icon: <HiCalendar size={22} />, color: "#d97706", bg: "#fef3c7" },
-  { label: "Reports Generated", value: 32, change: "+14%", up: true, icon: <HiCheckCircle size={22} />, color: "#16a34a", bg: "#dcfce7" },
-  { label: "Reports Viewed", value: 128, change: "+18%", up: true, icon: <HiEye size={22} />, color: "#0891b2", bg: "#ecfeff" },
+  { label: "Total Reports",      value: 18,  change: "+20%", up: true, icon: <HiDocumentReport size={18} />, color: "#4f46e5", bg: "#eef2ff" },
+  { label: "Scheduled Reports",  value: 6,   change: "+50%", up: true, icon: <HiCalendar size={18} />,       color: "#d97706", bg: "#fef3c7" },
+  { label: "Reports Generated",  value: 32,  change: "+14%", up: true, icon: <HiCheckCircle size={18} />,    color: "#16a34a", bg: "#dcfce7" },
+  { label: "Reports Viewed",     value: 128, change: "+18%", up: true, icon: <HiEye size={18} />,            color: "#0891b2", bg: "#ecfeff" },
 ];
 
 const CHART_DATA: Record<string, number[]> = {
@@ -174,30 +174,42 @@ export default function ReportsDashboardPage() {
         </div>
 
         {/* Overview Cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+        <div className="dashboard-stats-grid">
           {OVERVIEW_CARDS.map(card => (
-            <div key={card.label} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "18px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "12px" }}>
-                <div>
-                  <p style={{ margin: "0 0 2px", fontSize: "0.72rem", color: "#94a3b8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{card.label}</p>
-                  <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "#0f172a", lineHeight: 1.1 }}>{card.value}</p>
-                </div>
-                <div style={{ width: 44, height: 44, borderRadius: "10px", background: card.bg, display: "flex", alignItems: "center", justifyContent: "center", color: card.color }}>
-                  {card.icon}
-                </div>
+            <div
+              key={card.label}
+              className="stat-card-dashboard"
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 6px 24px rgba(0,0,0,0.08)";
+                (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)";
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 4px rgba(0,0,0,0.05)";
+                (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+              }}
+            >
+              <div className="stat-card-dashboard-icon" style={{ background: card.bg, color: card.color }}>
+                {card.icon}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                <span style={{ fontSize: "0.78rem", fontWeight: 700, color: card.up ? "#16a34a" : "#dc2626", background: card.up ? "rgba(22,163,74,0.08)" : "rgba(220,38,38,0.08)", padding: "2px 6px", borderRadius: "9999px" }}>
-                  {card.up ? "↑" : "↓"} {card.change}
-                </span>
-                <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>vs last month</span>
+              <div className="stat-card-dashboard-content">
+                <p className="stat-card-dashboard-label">{card.label}</p>
+                <p className="stat-card-dashboard-value">{card.value}</p>
+                <div className="stat-card-dashboard-change">
+                  <span className="stat-card-dashboard-badge" style={{ color: card.up ? "#16a34a" : "#dc2626", background: card.up ? "rgba(22,163,74,0.08)" : "rgba(220,38,38,0.08)" }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: card.up ? "none" : "rotate(180deg)" }}>
+                      <polyline points="18 15 12 9 6 15" />
+                    </svg>
+                    {card.change}
+                  </span>
+                  <span className="stat-card-dashboard-since">vs last month</span>
+                </div>
               </div>
             </div>
           ))}
         </div>
 
         {/* Charts Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "16px" }}>
+        <div id="reports-charts" style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "16px" }}>
 
           {/* Reports Overview Chart */}
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
@@ -262,7 +274,7 @@ export default function ReportsDashboardPage() {
         </div>
 
         {/* Bottom Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "16px" }}>
+        <div id="reports-table" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "16px" }}>
 
           {/* Recent Reports */}
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
@@ -271,46 +283,83 @@ export default function ReportsDashboardPage() {
               <p style={{ margin: 0, fontSize: "0.78rem", color: "#94a3b8" }}>Recently generated reports</p>
             </div>
 
-            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "inherit" }}>
-              <thead>
-                <tr style={{ background: "#f8fafc" }}>
-                  {["REPORT NAME", "TYPE", "DATE GENERATED", "GENERATED BY", "ACTION"].map(h => (
-                    <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", letterSpacing: "0.06em", borderBottom: "1px solid #e2e8f0" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {RECENT_REPORTS.map((r, idx) => (
-                  <tr key={r.id} style={{ borderBottom: idx === RECENT_REPORTS.length - 1 ? "none" : "1px solid #f1f5f9", transition: "background 0.1s" }}
-                    onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = "#fafafa"}
-                    onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = "transparent"}>
-                    <td style={{ padding: "12px 16px", fontSize: "0.875rem", fontWeight: 600, color: "#0f172a" }}>{r.name}</td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <span style={{ padding: "3px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, background: r.typeBg, color: r.typeColor }}>{r.type}</span>
-                    </td>
-                    <td style={{ padding: "12px 16px", fontSize: "0.8125rem", color: "#64748b" }}>{r.date}</td>
-                    <td style={{ padding: "12px 16px", fontSize: "0.8125rem", color: "#64748b" }}>{r.generatedBy}</td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <div style={{ display: "inline-flex", gap: "6px" }}>
-                        <button title="View" style={{ width: 30, height: 30, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#4f46e5", borderRadius: "6px" }}
-                          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#eef2ff"}
-                          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "none"}>
-                          <HiEye size={16} />
-                        </button>
-                        <button title="Download" style={{ width: 30, height: 30, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#16a34a", borderRadius: "6px" }}
-                          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#dcfce7"}
-                          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "none"}>
-                          <HiDownload size={15} />
-                        </button>
-                      </div>
-                    </td>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "inherit" }}>
+                <thead>
+                  <tr>
+                    {["Report Name", "Type", "Date Generated", "Generated By", "Actions"].map(h => (
+                      <th key={h} style={{ padding: "11px 16px", textAlign: "left", fontSize: "0.72rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {RECENT_REPORTS.map((r, idx) => (
+                    <tr key={r.id}
+                      style={{ borderBottom: idx === RECENT_REPORTS.length - 1 ? "none" : "1px solid #f1f5f9", transition: "background 0.12s ease" }}
+                      onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = "#fafbff"}
+                      onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = "transparent"}>
+
+                      {/* Report Name */}
+                      <td style={{ padding: "14px 16px", fontSize: "0.875rem", fontWeight: 600, color: "#0f172a" }}>{r.name}</td>
+
+                      {/* Type badge with dot */}
+                      <td style={{ padding: "14px 16px" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, background: r.typeBg, color: r.typeColor }}>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: r.typeColor, flexShrink: 0 }} />
+                          {r.type}
+                        </span>
+                      </td>
+
+                      {/* Date */}
+                      <td style={{ padding: "14px 16px", fontSize: "0.8125rem", color: "#374151" }}>{r.date}</td>
+
+                      {/* Generated By with avatar */}
+                      <td style={{ padding: "14px 16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                          <div style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "0.6rem", flexShrink: 0 }}>
+                            {r.generatedBy.split(" ").map((n: string) => n[0]).join("").toUpperCase()}
+                          </div>
+                          <span style={{ fontSize: "0.8125rem", color: "#374151" }}>{r.generatedBy}</span>
+                        </div>
+                      </td>
+
+                      {/* Action buttons */}
+                      <td style={{ padding: "14px 16px" }}>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                          {[
+                            { title: "View",     color: "#4f46e5", hoverBg: "#eef2ff", hoverBorder: "#a5b4fc", icon: <HiEye size={14} /> },
+                            { title: "Download", color: "#16a34a", hoverBg: "#dcfce7", hoverBorder: "#bbf7d0", icon: <HiDownload size={13} /> },
+                          ].map(btn => (
+                            <button key={btn.title} title={btn.title}
+                              style={{ width: 30, height: 30, borderWidth: "1.5px", borderStyle: "solid", borderColor: "#e2e8f0", borderRadius: "7px", background: "#fff", color: btn.color, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, transition: "all 0.12s ease" }}
+                              onMouseEnter={e => {
+                                (e.currentTarget as HTMLButtonElement).style.background = btn.hoverBg;
+                                (e.currentTarget as HTMLButtonElement).style.borderColor = btn.hoverBorder;
+                                (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)";
+                              }}
+                              onMouseLeave={e => {
+                                (e.currentTarget as HTMLButtonElement).style.background = "#fff";
+                                (e.currentTarget as HTMLButtonElement).style.borderColor = "#e2e8f0";
+                                (e.currentTarget as HTMLButtonElement).style.transform = "none";
+                              }}>
+                              {btn.icon}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             <div style={{ padding: "12px 20px", borderTop: "1px solid #f1f5f9" }}>
-              <button style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "none", border: "none", cursor: "pointer", color: "#4f46e5", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit" }}>
+              <button
+                onClick={() => document.getElementById("reports-table")?.scrollIntoView({ behavior: "smooth" })}
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", borderWidth: "1.5px", borderStyle: "solid", borderColor: "#4f46e5", borderRadius: "8px", background: "#fff", color: "#4f46e5", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer", transition: "all 0.15s" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#eef2ff"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#fff"; }}
+              >
                 View all reports <HiArrowRight size={15} />
               </button>
             </div>
@@ -336,7 +385,12 @@ export default function ReportsDashboardPage() {
             </div>
 
             <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #f1f5f9" }}>
-              <button style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "none", border: "none", cursor: "pointer", color: "#4f46e5", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit" }}>
+              <button
+                onClick={() => document.getElementById("reports-charts")?.scrollIntoView({ behavior: "smooth" })}
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", borderWidth: "1.5px", borderStyle: "solid", borderColor: "#4f46e5", borderRadius: "8px", background: "#fff", color: "#4f46e5", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer", transition: "all 0.15s" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#eef2ff"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#fff"; }}
+              >
                 View full analytics <HiArrowRight size={15} />
               </button>
             </div>

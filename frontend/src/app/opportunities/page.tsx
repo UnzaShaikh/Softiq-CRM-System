@@ -133,11 +133,11 @@ export default function OpportunitiesPage() {
   }
 
   const STAT_CARDS = [
-    { label: "Total Opportunities", value: String(stats.total),              icon: <Target size={20} />,      color: "#4f46e5", bg: "#eef2ff" },
-    { label: "Active",              value: String(stats.active),             icon: <CheckCircle size={20} />, color: "#16a34a", bg: "#dcfce7" },
-    { label: "Closed Won",          value: String(stats.closedWon),          icon: <Trophy size={20} />,      color: "#d97706", bg: "#fef3c7" },
-    { label: "Pipeline Value",      value: `$${stats.pipelineValue.toLocaleString()}`, icon: <DollarSign size={20} />, color: "#0891b2", bg: "#ecfeff" },
-    { label: "Avg Probability",     value: `${stats.avgProbability}%`,       icon: <BarChart2 size={20} />,   color: "#7c3aed", bg: "#faf5ff" },
+    { label: "Total Opportunities", value: String(stats.total),                        icon: <Target size={18} />,      color: "#4f46e5", bg: "#eef2ff" },
+    { label: "Active",              value: String(stats.active),                       icon: <CheckCircle size={18} />, color: "#16a34a", bg: "#dcfce7" },
+    { label: "Closed Won",          value: String(stats.closedWon),                    icon: <Trophy size={18} />,      color: "#d97706", bg: "#fef3c7" },
+    { label: "Pipeline Value",      value: `$${stats.pipelineValue.toLocaleString()}`, icon: <DollarSign size={18} />,  color: "#0891b2", bg: "#ecfeff" },
+    { label: "Avg Probability",     value: `${stats.avgProbability}%`,                 icon: <BarChart2 size={18} />,   color: "#7c3aed", bg: "#faf5ff" },
   ];
 
   return (
@@ -172,13 +172,28 @@ export default function OpportunitiesPage() {
         )}
 
         {/* Stats */}
-        <div className="stats-grid">
+        <div className="dashboard-stats-grid" style={{ gridTemplateColumns: "repeat(5, minmax(0,1fr))" }}>
           {STAT_CARDS.map((card) => (
-            <div key={card.label} className="stat-card">
-              <div className="stat-card-icon" style={{ background: card.bg }}>{card.icon}</div>
-              <div>
-                <p className="stat-card-value" style={{ color: card.color }}>{loading && !error ? "…" : card.value}</p>
-                <p className="stat-card-label">{card.label}</p>
+            <div
+              key={card.label}
+              className="stat-card-dashboard"
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 6px 24px rgba(0,0,0,0.08)";
+                (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)";
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 4px rgba(0,0,0,0.05)";
+                (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+              }}
+            >
+              <div className="stat-card-dashboard-icon" style={{ background: card.bg, color: card.color }}>
+                {card.icon}
+              </div>
+              <div className="stat-card-dashboard-content">
+                <p className="stat-card-dashboard-label">{card.label}</p>
+                <p className="stat-card-dashboard-value" style={{ color: card.color }}>
+                  {loading && !error ? "…" : card.value}
+                </p>
               </div>
             </div>
           ))}
