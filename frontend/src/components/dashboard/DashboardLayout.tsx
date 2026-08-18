@@ -1011,37 +1011,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       setSearchQuery(e.target.value);
       setSearchOpen(true);
     }}
-    onFocus={() => {
-      if (searchQuery.trim()) {
-        setSearchOpen(true);
-      }
-    }}
-    onKeyDown={(e) => {
-      if (e.key === "Escape") {
-        setSearchOpen(false);
-      }
-    }}
-    style={{
-      width: "100%",
-      padding: "8px 12px 8px 36px",
-      border: "1.5px solid #e2e8f0",
-      borderRadius: 8,
-      background: "#f8fafc",
-      color: "#0f172a",
-      fontSize: "0.875rem",
-      fontFamily: "inherit",
-      outline: "none",
-      transition: "border-color 0.15s, box-shadow 0.15s",
-    }}
     onFocus={(e) => {
+      if (searchQuery.trim()) setSearchOpen(true);
       e.currentTarget.style.borderColor = ACCENT_TO;
-      e.currentTarget.style.boxShadow =
-        "0 0 0 3px rgba(91,61,240,0.12)";
+      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(91,61,240,0.12)";
       e.currentTarget.style.background = "#fff";
-
-      if (searchQuery.trim()) {
-        setSearchOpen(true);
-      }
     }}
     onBlur={(e) => {
       e.currentTarget.style.borderColor = "#e2e8f0";
