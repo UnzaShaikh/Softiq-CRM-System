@@ -1022,6 +1022,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       e.currentTarget.style.boxShadow = "none";
       e.currentTarget.style.background = "#f8fafc";
     }}
+    onKeyDown={(e) => {
+      if (e.key === "Escape") setSearchOpen(false);
+    }}
+    style={{
+      width: "100%",
+      padding: "8px 12px 8px 36px",
+      border: "1.5px solid #e2e8f0",
+      borderRadius: 8,
+      background: "#f8fafc",
+      color: "#0f172a",
+      fontSize: "0.875rem",
+      fontFamily: "inherit",
+      outline: "none",
+      transition: "border-color 0.15s, box-shadow 0.15s",
+    }}
   />
 
   {/* Search Results Dropdown */}
