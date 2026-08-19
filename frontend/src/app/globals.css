@@ -1322,6 +1322,7 @@ body {
   flex:1;
   padding:28px;
   overflow-y:auto;
+  overflow-x:hidden;
 }
 
 

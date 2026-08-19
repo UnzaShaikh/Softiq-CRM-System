@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   HiCog, HiOfficeBuilding, HiGlobe, HiMail, HiBell,
-  HiShieldCheck, HiLink, HiArchive, HiClipboardList, HiSupport,
+  HiShieldCheck, HiUserGroup, HiLink, HiArchive, HiClipboardList, HiSupport,
 } from "react-icons/hi";
 
 export const NAV_ITEMS = [
@@ -14,6 +14,7 @@ export const NAV_ITEMS = [
   { key: "email",        label: "Email Settings",      icon: <HiMail size={15} />,           href: "/settings/project/email" },
   { key: "notifs",       label: "Notifications",       icon: <HiBell size={15} />,           href: "/settings/project/notifications" },
   { key: "security",     label: "Security",            icon: <HiShieldCheck size={15} />,    href: "/settings/project/security" },
+  { key: "roles",        label: "Roles & Permissions", icon: <HiUserGroup size={15} />,      href: "/settings/project/roles" },
   { key: "integrations", label: "Integrations",        icon: <HiLink size={15} />,           href: "/settings/project/integrations" },
   { key: "backup",       label: "Backup & Export",     icon: <HiArchive size={15} />,        href: "/settings/project/backup" },
   { key: "activity",     label: "Activity Log",        icon: <HiClipboardList size={15} />,  href: "/settings/project/activity" },
