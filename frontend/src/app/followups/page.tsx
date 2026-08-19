@@ -165,8 +165,90 @@ export default function FollowupsPage() {
           ))}
         </div>
 
-        {/* Main content + Right sidebar */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: "20px" }}>
+        {/* Upcoming Reminders + Follow-up Insights — 2-column grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+
+          {/* Upcoming Reminders */}
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>Upcoming Reminders</h3>
+              <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{reminders.length} upcoming</span>
+            </div>
+            <div style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              {reminders.map(r => {
+                const typeStyle = TYPE_COLORS[r.type];
+                return (
+                  <div key={r.id} style={{ display: "flex", gap: "10px", alignItems: "flex-start", padding: "10px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #f1f5f9" }}>
+                    <div style={{ width: 34, height: 34, borderRadius: "8px", background: typeStyle.bg, display: "flex", alignItems: "center", justifyContent: "center", color: typeStyle.color, flexShrink: 0 }}>
+                      {r.type === "Call" ? <Phone size={14} /> : r.type === "Email" ? <Mail size={14} /> : r.type === "Meeting" ? <Users size={14} /> : <Calendar size={14} />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 600, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.subject}</p>
+                      <p style={{ margin: 0, fontSize: "0.72rem", color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.relatedTo} · {r.company}</p>
+                      <p style={{ margin: 0, fontSize: "0.7rem", color: "#94a3b8", marginTop: "2px" }}>{new Date(r.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {r.dueTime}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ padding: "10px 20px", borderTop: "1px solid #f1f5f9" }}>
+              <button onClick={() => setStatusFilter("Upcoming")} style={{ width: "100%", padding: "8px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#4f46e5", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
+                View All Reminders →
+              </button>
+            </div>
+          </div>
+
+          {/* Follow-up Insights */}
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>Follow-up Insights</h3>
+              <button onClick={() => {}} style={{ background: "none", border: "none", cursor: "pointer", color: "#4f46e5", fontSize: "0.8rem", fontWeight: 600, fontFamily: "inherit" }}>
+                View Full Report →
+              </button>
+            </div>
+            <div style={{ padding: "20px", display: "flex", alignItems: "center", justifyContent: "center", gap: "48px" }}>
+              {/* Donut Chart — bigger since we have space */}
+              <div style={{ position: "relative", width: 130, height: 130, flexShrink: 0 }}>
+                <svg viewBox="0 0 36 36" style={{ transform: "rotate(-90deg)", width: "100%", height: "100%" }}>
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f1f5f9" strokeWidth="3.8" />
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#3b82f6" strokeWidth="3.8"
+                    strokeDasharray={`${total > 0 ? (upcoming / total) * 100 : 0} 100`} strokeLinecap="round" />
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#22c55e" strokeWidth="3.8"
+                    strokeDasharray={`${total > 0 ? (completed / total) * 100 : 0} 100`}
+                    strokeDashoffset={`-${total > 0 ? (upcoming / total) * 100 : 0}`} strokeLinecap="round" />
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#ef4444" strokeWidth="3.8"
+                    strokeDasharray={`${total > 0 ? (overdue / total) * 100 : 0} 100`}
+                    strokeDashoffset={`-${total > 0 ? ((upcoming + completed) / total) * 100 : 0}`} strokeLinecap="round" />
+                </svg>
+                <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                  <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#0f172a" }}>{total}</p>
+                  <p style={{ margin: 0, fontSize: "0.65rem", color: "#94a3b8" }}>Total</p>
+                </div>
+              </div>
+              {/* Legend */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                {[
+                  { label: "Upcoming",  value: upcoming,  pct: total > 0 ? Math.round((upcoming / total) * 100) : 0,  color: "#3b82f6" },
+                  { label: "Completed", value: completed, pct: total > 0 ? Math.round((completed / total) * 100) : 0, color: "#22c55e" },
+                  { label: "Overdue",   value: overdue,   pct: total > 0 ? Math.round((overdue / total) * 100) : 0,   color: "#ef4444" },
+                ].map(item => (
+                  <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "24px", justifyContent: "space-between", minWidth: "180px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ width: 11, height: 11, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
+                      <span style={{ fontSize: "0.875rem", color: "#374151" }}>{item.label}</span>
+                    </div>
+                    <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#374151" }}>
+                      {item.value} <span style={{ color: "#94a3b8", fontWeight: 400 }}>({item.pct}%)</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Table — full width */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "20px" }}>
 
           {/* Table Card */}
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
@@ -293,88 +375,6 @@ export default function FollowupsPage() {
             )}
           </div>
 
-          {/* Right Sidebar */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-
-            {/* Upcoming Reminders */}
-            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-              <div style={{ padding: "14px 16px", borderBottom: "1px solid #f1f5f9" }}>
-                <h3 style={{ margin: 0, fontSize: "0.9rem", fontWeight: 700, color: "#0f172a" }}>Upcoming Reminders</h3>
-              </div>
-              <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                {reminders.map(r => {
-                  const typeStyle = TYPE_COLORS[r.type];
-                  return (
-                    <div key={r.id} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-                      <div style={{ width: 32, height: 32, borderRadius: "8px", background: typeStyle.bg, display: "flex", alignItems: "center", justifyContent: "center", color: typeStyle.color, flexShrink: 0 }}>
-                        {r.type === "Call" ? <Phone size={14} /> : r.type === "Email" ? <Mail size={14} /> : r.type === "Meeting" ? <Users size={14} /> : <Calendar size={14} />}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 600, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.subject}</p>
-                        <p style={{ margin: 0, fontSize: "0.72rem", color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.relatedTo} · {r.company}</p>
-                        <p style={{ margin: 0, fontSize: "0.72rem", color: "#94a3b8" }}>{new Date(r.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {r.dueTime}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{ padding: "10px 16px", borderTop: "1px solid #f1f5f9" }}>
-                <button onClick={() => setStatusFilter("Upcoming")} style={{ width: "100%", padding: "8px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#4f46e5", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
-                  View All Reminders →
-                </button>
-              </div>
-            </div>
-
-            {/* Follow-up Insights */}
-            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-              <div style={{ padding: "14px 16px", borderBottom: "1px solid #f1f5f9" }}>
-                <h3 style={{ margin: 0, fontSize: "0.9rem", fontWeight: 700, color: "#0f172a" }}>Follow-up Insights</h3>
-              </div>
-              <div style={{ padding: "16px" }}>
-                {/* Donut chart visual */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
-                  <div style={{ position: "relative", width: 100, height: 100 }}>
-                    <svg viewBox="0 0 36 36" style={{ transform: "rotate(-90deg)", width: "100%", height: "100%" }}>
-                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f1f5f9" strokeWidth="3.8" />
-                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#22c55e" strokeWidth="3.8"
-                        strokeDasharray={`${(completed / total) * 100} ${100 - (completed / total) * 100}`} strokeLinecap="round" />
-                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#3b82f6" strokeWidth="3.8"
-                        strokeDasharray={`${(upcoming / total) * 100} ${100 - (upcoming / total) * 100}`}
-                        strokeDashoffset={`-${(completed / total) * 100}`} strokeLinecap="round" />
-                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#ef4444" strokeWidth="3.8"
-                        strokeDasharray={`${(overdue / total) * 100} ${100 - (overdue / total) * 100}`}
-                        strokeDashoffset={`-${((completed + upcoming) / total) * 100}`} strokeLinecap="round" />
-                    </svg>
-                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                      <p style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#0f172a" }}>{total}</p>
-                      <p style={{ margin: 0, fontSize: "0.6rem", color: "#94a3b8" }}>Total</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Legend */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {[
-                    { label: "Upcoming", value: upcoming, pct: Math.round((upcoming / total) * 100), color: "#3b82f6" },
-                    { label: "Completed", value: completed, pct: Math.round((completed / total) * 100), color: "#22c55e" },
-                    { label: "Overdue", value: overdue, pct: Math.round((overdue / total) * 100), color: "#ef4444" },
-                  ].map(item => (
-                    <div key={item.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ width: 10, height: 10, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
-                        <span style={{ fontSize: "0.78rem", color: "#374151" }}>{item.label}</span>
-                      </div>
-                      <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#374151" }}>{item.value} ({item.pct}%)</span>
-                    </div>
-                  ))}
-                </div>
-
-                <button style={{ width: "100%", marginTop: "14px", padding: "8px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#4f46e5", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
-                  View Full Report →
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
