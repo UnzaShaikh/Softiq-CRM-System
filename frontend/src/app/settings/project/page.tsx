@@ -2,12 +2,10 @@
 
 import { useState, useRef, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import SettingsNav from "@/components/project-settings/SettingsNav";
 import {
-  HiCog, HiOfficeBuilding, HiGlobe, HiMail, HiBell,
-  HiShieldCheck, HiLink, HiArchive, HiClipboardList,
-  HiSave, HiUpload, HiTrash, HiSupport,
+  HiSave, HiUpload, HiTrash,
 } from "react-icons/hi";
-import { MdOutlineDashboardCustomize } from "react-icons/md";
 
 // ── Types ─────────────────────────────────────
 interface ProjectFormData {
@@ -25,37 +23,6 @@ interface ProjectFormData {
 interface FormErrors {
   name?: string;
   key?: string;
-}
-
-// ── Settings Sidebar Nav ──────────────────────
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-
-const NAV_ITEMS = [
-  { key: "general",      label: "General",             icon: <HiCog size={16} />,           href: "/settings/project" },
-  { key: "company",      label: "Company Information", icon: <HiOfficeBuilding size={16} />, href: "/settings/project/company" },
-  { key: "localization", label: "Localization",        icon: <HiGlobe size={16} />,          href: "/settings/project/localization" },
-  { key: "email",        label: "Email Settings",      icon: <HiMail size={16} />,           href: "/settings/project/email" },
-  { key: "notifs",       label: "Notifications",       icon: <HiBell size={16} />,           href: "/settings/project/notifications" },
-  { key: "security",     label: "Security",            icon: <HiShieldCheck size={16} />,    href: "/settings/project/security" },
-  { key: "integrations", label: "Integrations",        icon: <HiLink size={16} />,           href: "/settings/project/integrations" },
-  { key: "backup",       label: "Backup & Export",     icon: <HiArchive size={16} />,        href: "/settings/project/backup" },
-  { key: "activity",     label: "Activity Log",        icon: <HiClipboardList size={16} />,  href: "/settings/project/activity" },
-];
-
-// ── Placeholder content for non-General tabs ─
-function PlaceholderSection({ label }: { label: string }) {
-  return (
-    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "40px 24px", textAlign: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-      <div style={{ width: 56, height: 56, borderRadius: "12px", background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-        <MdOutlineDashboardCustomize size={28} color="#4f46e5" />
-      </div>
-      <h3 style={{ margin: "0 0 8px", fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>{label}</h3>
-      <p style={{ margin: 0, fontSize: "0.875rem", color: "#94a3b8" }}>
-        This section will be available soon. Configuration options for {label.toLowerCase()} will appear here.
-      </p>
-    </div>
-  );
 }
 
 // ── Select Field ──────────────────────────────
@@ -126,7 +93,6 @@ function ProjectPreview({ data }: { data: ProjectFormData }) {
 
 // ── Main Page ─────────────────────────────────
 export default function ProjectSettingsPage() {
-  const [activeTab, setActiveTab] = useState("general");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
@@ -215,8 +181,8 @@ export default function ProjectSettingsPage() {
         {/* Page Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
           <div>
-            <h1 className="page-title">Project Settings</h1>
-            <p className="page-subtitle">Manage your CRM project details, preferences and configurations.</p>
+            <h1 className="page-title">General Settings</h1>
+            <p className="page-subtitle">Update your project name, description and other general preferences.</p>
           </div>
           <button onClick={handleSave} disabled={saving || !hasChanges}
             className="btn-add"
@@ -240,44 +206,10 @@ export default function ProjectSettingsPage() {
         <div style={{ display: "grid", gridTemplateColumns: "220px 1fr 260px", gap: "20px", alignItems: "start" }}>
 
           {/* ── Left: Settings Nav ── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-              <nav style={{ padding: "6px" }}>
-                {NAV_ITEMS.map(item => {
-                  const isActive = item.key === "general";
-                  return (
-                    <Link key={item.key} href={item.href}
-                      style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 12px", borderRadius: "8px", textDecoration: "none", background: isActive ? "#eef2ff" : "transparent", color: isActive ? "#4f46e5" : "#475569", fontWeight: isActive ? 600 : 500, fontSize: "0.875rem", marginBottom: "2px", transition: "all 0.15s" }}
-                      onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLAnchorElement).style.background = "#f8fafc"; }}
-                      onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}>
-                      <span style={{ color: isActive ? "#4f46e5" : "#94a3b8", flexShrink: 0 }}>{item.icon}</span>
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </nav>
-            </div>
-
-            {/* Need Help */}
-            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px", textAlign: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}>
-                <HiSupport size={18} color="#4f46e5" />
-              </div>
-              <h4 style={{ margin: "0 0 6px", fontSize: "0.875rem", fontWeight: 700, color: "#0f172a" }}>Need Help?</h4>
-              <p style={{ margin: "0 0 12px", fontSize: "0.75rem", color: "#94a3b8", lineHeight: 1.5 }}>
-                If you need help with project settings, please contact our support team.
-              </p>
-              <button style={{ padding: "6px 14px", border: "1.5px solid #4f46e5", borderRadius: "7px", background: "#fff", color: "#4f46e5", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", fontFamily: "inherit" }}>
-                Contact Support
-              </button>
-            </div>
-          </div>
+          <SettingsNav />
 
           {/* ── Middle: Settings Content ── */}
           <div>
-            {activeTab !== "general" ? (
-              <PlaceholderSection label={NAV_ITEMS.find(n => n.key === activeTab)?.label ?? ""} />
-            ) : (
               <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
                 <div style={{ padding: "18px 24px", borderBottom: "1px solid #f1f5f9" }}>
                   <h2 style={{ margin: "0 0 2px", fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>General Settings</h2>
@@ -391,7 +323,6 @@ export default function ProjectSettingsPage() {
                   </div>
                 </div>
               </div>
-            )}
           </div>
 
           {/* ── Right: Project Preview ── */}
