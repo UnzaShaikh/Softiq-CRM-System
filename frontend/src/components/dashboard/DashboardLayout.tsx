@@ -968,260 +968,234 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </button>
 
           {/* Search */}
-         <div
-  ref={searchRef}
-  style={{
-    position: "relative",
-    width: "100%",
-    maxWidth: 425,
-  }}
->
-  {/* Search Icon */}
-  <div
-    style={{
-      position: "absolute",
-      left: 12,
-      top: "50%",
-      transform: "translateY(-50%)",
-      zIndex: 2,
-      pointerEvents: "none",
-    }}
-  >
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ color: "#94a3b8" }}
-    >
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  </div>
 
-  <input
-    type="text"
-    value={searchQuery}
-    placeholder="Search customers, deals…"
-    onChange={(e) => {
-      setSearchQuery(e.target.value);
-      setSearchOpen(true);
-    }}
-    onFocus={() => {
-      if (searchQuery.trim()) {
-        setSearchOpen(true);
-      }
-    }}
-    onKeyDown={(e) => {
-      if (e.key === "Escape") {
-        setSearchOpen(false);
-      }
-    }}
-    style={{
-      width: "100%",
-      padding: "8px 12px 8px 36px",
-      border: "1.5px solid #e2e8f0",
-      borderRadius: 8,
-      background: "#f8fafc",
-      color: "#0f172a",
-      fontSize: "0.875rem",
-      fontFamily: "inherit",
-      outline: "none",
-      transition: "border-color 0.15s, box-shadow 0.15s",
-    }}
-    onFocus={(e) => {
-      e.currentTarget.style.borderColor = ACCENT_TO;
-      e.currentTarget.style.boxShadow =
-        "0 0 0 3px rgba(91,61,240,0.12)";
-      e.currentTarget.style.background = "#fff";
 
-      if (searchQuery.trim()) {
-        setSearchOpen(true);
-      }
-    }}
-    onBlur={(e) => {
-      e.currentTarget.style.borderColor = "#e2e8f0";
-      e.currentTarget.style.boxShadow = "none";
-      e.currentTarget.style.background = "#f8fafc";
-    }}
-    onKeyDown={(e) => {
-      if (e.key === "Escape") setSearchOpen(false);
-    }}
-    style={{
-      width: "100%",
-      padding: "8px 12px 8px 36px",
-      border: "1.5px solid #e2e8f0",
-      borderRadius: 8,
-      background: "#f8fafc",
-      color: "#0f172a",
-      fontSize: "0.875rem",
-      fontFamily: "inherit",
-      outline: "none",
-      transition: "border-color 0.15s, box-shadow 0.15s",
-    }}
-  />
-
-  {/* Search Results Dropdown */}
-  {searchOpen && searchQuery.trim() && (
-    <div
-      style={{
-        position: "absolute",
-        top: "calc(100% + 8px)",
-        left: 0,
-        right: 0,
-        background: "#ffffff",
-        border: "1px solid #e2e8f0",
-        borderRadius: 10,
-        boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)",
-        zIndex: 9999,
-        overflow: "hidden",
-      }}
-    >
-      {/* Loading */}
-      {searchLoading && (
-        <div
-          style={{
-            padding: "16px",
-            textAlign: "center",
-            color: "#64748b",
-            fontSize: "0.875rem",
-          }}
-        >
-          Searching...
-        </div>
-      )}
-
-      {/* Empty */}
-      {!searchLoading && searchResults.length === 0 && (
-        <div
-          style={{
-            padding: "18px",
-            textAlign: "center",
-            color: "#64748b",
-            fontSize: "0.875rem",
-          }}
-        >
-          No results found
-        </div>
-      )}
-
-      {/* Results */}
-      {!searchLoading &&
-        searchResults.map((result) => (
-          <button
-            key={`${result.module}-${result.id}`}
-            type="button"
-            onMouseDown={(e) => {
-              e.preventDefault();
-
-              setSearchOpen(false);
-              setSearchQuery("");
-
-              router.push(result.url);
-            }}
+          {/* Search */}
+          <div
+            ref={searchRef}
             style={{
+              position: "relative",
               width: "100%",
-              border: "none",
-              background: "#fff",
-              padding: "12px 14px",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              cursor: "pointer",
-              textAlign: "left",
-              borderBottom: "1px solid #f1f5f9",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#f8fafc";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#fff";
+              maxWidth: 425,
             }}
           >
-            {/* Module Icon */}
+            {/* Search Icon */}
             <div
               style={{
-                width: 36,
-                height: 36,
+                position: "absolute",
+                left: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                zIndex: 2,
+                pointerEvents: "none",
+              }}
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ color: "#94a3b8" }}
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </div>
+
+            {/* Search Input */}
+            <input
+              type="text"
+              value={searchQuery}
+              placeholder="Search customers, deals…"
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSearchOpen(true);
+              }}
+              onFocus={() => {
+                if (searchQuery.trim()) {
+                  setSearchOpen(true);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setSearchOpen(false);
+                }
+              }}
+              style={{
+                width: "100%",
+                padding: "8px 12px 8px 36px",
+                border: "1.5px solid #e2e8f0",
                 borderRadius: 8,
-                background: "#f1efff",
-                color: ACCENT_TO,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 13,
-                fontWeight: 700,
-                flexShrink: 0,
-                textTransform: "uppercase",
+                background: "#f8fafc",
+                color: "#0f172a",
+                fontSize: "0.875rem",
+                fontFamily: "inherit",
+                outline: "none",
+                transition: "border-color 0.15s, box-shadow 0.15s",
               }}
-            >
-              {result.module.charAt(0)}
-            </div>
+            />
 
-            {/* Result Details */}
-            <div
-              style={{
-                flex: 1,
-                minWidth: 0,
-              }}
-            >
+            {/* Search Results Dropdown */}
+            {searchOpen && searchQuery.trim() && (
               <div
                 style={{
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  color: "#0f172a",
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  left: 0,
+                  right: 0,
+                  background: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 10,
+                  boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)",
+                  zIndex: 9999,
                   overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
                 }}
               >
-                {result.title}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 3,
-                  fontSize: "0.75rem",
-                  color: "#64748b",
-                  display: "flex",
-                  gap: 6,
-                  alignItems: "center",
-                }}
-              >
-                <span style={{ textTransform: "capitalize" }}>
-                  {result.module}
-                </span>
-
-                {result.subtitle && (
-                  <>
-                    <span>•</span>
-                    <span>{result.subtitle}</span>
-                  </>
+                {/* Loading */}
+                {searchLoading && (
+                  <div
+                    style={{
+                      padding: "16px",
+                      textAlign: "center",
+                      color: "#64748b",
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    Searching...
+                  </div>
                 )}
-              </div>
-            </div>
 
-            {/* Status */}
-            {result.status && (
-              <span
-                style={{
-                  fontSize: "0.7rem",
-                  color: "#64748b",
-                  textTransform: "capitalize",
-                }}
-              >
-                {result.status}
-              </span>
+                {/* Empty */}
+                {!searchLoading && searchResults.length === 0 && (
+                  <div
+                    style={{
+                      padding: "18px",
+                      textAlign: "center",
+                      color: "#64748b",
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    No results found
+                  </div>
+                )}
+
+                {/* Results */}
+                {!searchLoading &&
+                  searchResults.map((result) => (
+                    <button
+                      key={`${result.module}-${result.id}`}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+
+                        setSearchOpen(false);
+                        setSearchQuery("");
+
+                        router.push(result.url);
+                      }}
+                      style={{
+                        width: "100%",
+                        border: "none",
+                        background: "#fff",
+                        padding: "12px 14px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        cursor: "pointer",
+                        textAlign: "left",
+                        borderBottom: "1px solid #f1f5f9",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#f8fafc";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "#fff";
+                      }}
+                    >
+                      {/* Module Icon */}
+                      <div
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 8,
+                          background: "#f1efff",
+                          color: ACCENT_TO,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          flexShrink: 0,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {result.module.charAt(0)}
+                      </div>
+
+                      {/* Result Details */}
+                      <div
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "0.875rem",
+                            fontWeight: 600,
+                            color: "#0f172a",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {result.title}
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: 3,
+                            fontSize: "0.75rem",
+                            color: "#64748b",
+                            display: "flex",
+                            gap: 6,
+                            alignItems: "center",
+                          }}
+                        >
+                          <span style={{ textTransform: "capitalize" }}>
+                            {result.module}
+                          </span>
+
+                          {result.subtitle && (
+                            <>
+                              <span>•</span>
+                              <span>{result.subtitle}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Status */}
+                      {result.status && (
+                        <span
+                          style={{
+                            fontSize: "0.7rem",
+                            color: "#64748b",
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          {result.status}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+              </div>
             )}
-          </button>
-        ))}
-    </div>
-  )}
-</div>
+          </div>
 
           {/* Right actions */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
