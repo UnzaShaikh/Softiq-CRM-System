@@ -3,6 +3,7 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import SettingsNav from "@/components/project-settings/SettingsNav";
+import Link from "next/link";
 import {
   HiShieldCheck, HiUserGroup, HiEye, HiSave, HiX, HiDotsVertical, HiPlus,
 } from "react-icons/hi";
@@ -200,11 +201,17 @@ export default function RolesPermissionsPage() {
     <DashboardLayout>
       <div style={{ minWidth: 0, overflowX: "hidden" }}>
 
+        {/* Breadcrumb */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16, fontSize: "0.8125rem", color: "#94a3b8" }}>
+          <Link href="/settings/project" style={{ color: "#4f46e5", textDecoration: "none", fontWeight: 500 }}>Project Settings</Link>
+          <span style={{ color: "#cbd5e1" }}>›</span>
+          <span style={{ color: "#374151" }}>Roles &amp; Permissions</span>
+        </div>
         {/* Page Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
           <div>
-            <h1 className="page-title">Project Settings</h1>
-            <p className="page-subtitle">Manage your CRM project details, preferences and configurations.</p>
+            <h1 className="page-title">Roles &amp; Permissions</h1>
+            <p className="page-subtitle">Manage user roles and control module access for your CRM.</p>
           </div>
           <button onClick={handleSave} disabled={saving || !hasChanges} className="btn-add"
             style={{ display: "inline-flex", alignItems: "center", gap: "6px", opacity: !hasChanges ? 0.6 : 1, cursor: !hasChanges ? "not-allowed" : "pointer" }}>

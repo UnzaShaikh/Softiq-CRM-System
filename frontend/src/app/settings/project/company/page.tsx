@@ -84,10 +84,15 @@ export default function CompanyInformationPage() {
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
 
         {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16, fontSize: "0.8125rem", color: "#94a3b8" }}>
+          <Link href="/settings/project" style={{ color: "#4f46e5", textDecoration: "none", fontWeight: 500 }}>Project Settings</Link>
+          <span style={{ color: "#cbd5e1" }}>›</span>
+          <span style={{ color: "#374151" }}>Company Information</span>
+        </div>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
           <div>
-            <h1 className="page-title">Project Settings</h1>
-            <p className="page-subtitle">Manage your CRM project details, preferences and configurations.</p>
+            <h1 className="page-title">Company Information</h1>
+            <p className="page-subtitle">Update your company details and branding information.</p>
           </div>
           <button onClick={handleSave} disabled={saving || !hasChanges} className="btn-add"
             style={{ display: "inline-flex", alignItems: "center", gap: "6px", opacity: !hasChanges ? 0.6 : 1, cursor: !hasChanges ? "not-allowed" : "pointer" }}>
