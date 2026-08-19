@@ -968,9 +968,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </button>
 
           {/* Search */}
-
-
-          {/* Search */}
           <div
             ref={searchRef}
             style={{
@@ -1015,15 +1012,25 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 setSearchQuery(e.target.value);
                 setSearchOpen(true);
               }}
-              onFocus={() => {
-                if (searchQuery.trim()) {
-                  setSearchOpen(true);
-                }
-              }}
               onKeyDown={(e) => {
                 if (e.key === "Escape") {
                   setSearchOpen(false);
                 }
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = ACCENT_TO;
+                e.currentTarget.style.boxShadow =
+                  "0 0 0 3px rgba(91,61,240,0.12)";
+                e.currentTarget.style.background = "#fff";
+
+                if (searchQuery.trim()) {
+                  setSearchOpen(true);
+                }
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "#e2e8f0";
+                e.currentTarget.style.boxShadow = "none";
+                e.currentTarget.style.background = "#f8fafc";
               }}
               style={{
                 width: "100%",
@@ -1055,6 +1062,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   overflow: "hidden",
                 }}
               >
+
                 {/* Loading */}
                 {searchLoading && (
                   <div

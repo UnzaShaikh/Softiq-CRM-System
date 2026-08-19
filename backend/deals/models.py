@@ -36,6 +36,10 @@ class Deal(models.Model):
     )
 
     expected_close_date = models.DateField()
+    closed_date = models.DateField(
+        null=True,
+        blank=True
+    )
 
     probability = models.PositiveIntegerField(default=50)
 
