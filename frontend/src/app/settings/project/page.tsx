@@ -28,16 +28,19 @@ interface FormErrors {
 }
 
 // ── Settings Sidebar Nav ──────────────────────
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+
 const NAV_ITEMS = [
-  { key: "general",     label: "General",            icon: <HiCog size={16} /> },
-  { key: "company",     label: "Company Information", icon: <HiOfficeBuilding size={16} /> },
-  { key: "localization",label: "Localization",        icon: <HiGlobe size={16} /> },
-  { key: "email",       label: "Email Settings",      icon: <HiMail size={16} /> },
-  { key: "notifs",      label: "Notifications",       icon: <HiBell size={16} /> },
-  { key: "security",    label: "Security",            icon: <HiShieldCheck size={16} /> },
-  { key: "integrations",label: "Integrations",        icon: <HiLink size={16} /> },
-  { key: "backup",      label: "Backup & Export",     icon: <HiArchive size={16} /> },
-  { key: "activity",    label: "Activity Log",        icon: <HiClipboardList size={16} /> },
+  { key: "general",      label: "General",             icon: <HiCog size={16} />,           href: "/settings/project" },
+  { key: "company",      label: "Company Information", icon: <HiOfficeBuilding size={16} />, href: "/settings/project/company" },
+  { key: "localization", label: "Localization",        icon: <HiGlobe size={16} />,          href: "/settings/project/localization" },
+  { key: "email",        label: "Email Settings",      icon: <HiMail size={16} />,           href: "/settings/project/email" },
+  { key: "notifs",       label: "Notifications",       icon: <HiBell size={16} />,           href: "/settings/project/notifications" },
+  { key: "security",     label: "Security",            icon: <HiShieldCheck size={16} />,    href: "/settings/project/security" },
+  { key: "integrations", label: "Integrations",        icon: <HiLink size={16} />,           href: "/settings/project/integrations" },
+  { key: "backup",       label: "Backup & Export",     icon: <HiArchive size={16} />,        href: "/settings/project/backup" },
+  { key: "activity",     label: "Activity Log",        icon: <HiClipboardList size={16} />,  href: "/settings/project/activity" },
 ];
 
 // ── Placeholder content for non-General tabs ─
@@ -241,15 +244,15 @@ export default function ProjectSettingsPage() {
             <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
               <nav style={{ padding: "6px" }}>
                 {NAV_ITEMS.map(item => {
-                  const isActive = activeTab === item.key;
+                  const isActive = item.key === "general";
                   return (
-                    <button key={item.key} onClick={() => setActiveTab(item.key)}
-                      style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "9px 12px", borderRadius: "8px", border: "none", background: isActive ? "#eef2ff" : "transparent", color: isActive ? "#4f46e5" : "#475569", fontWeight: isActive ? 600 : 500, fontSize: "0.875rem", cursor: "pointer", fontFamily: "inherit", textAlign: "left", marginBottom: "2px", transition: "all 0.15s" }}
-                      onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = "#f8fafc"; }}
-                      onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
+                    <Link key={item.key} href={item.href}
+                      style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 12px", borderRadius: "8px", textDecoration: "none", background: isActive ? "#eef2ff" : "transparent", color: isActive ? "#4f46e5" : "#475569", fontWeight: isActive ? 600 : 500, fontSize: "0.875rem", marginBottom: "2px", transition: "all 0.15s" }}
+                      onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLAnchorElement).style.background = "#f8fafc"; }}
+                      onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}>
                       <span style={{ color: isActive ? "#4f46e5" : "#94a3b8", flexShrink: 0 }}>{item.icon}</span>
                       {item.label}
-                    </button>
+                    </Link>
                   );
                 })}
               </nav>
