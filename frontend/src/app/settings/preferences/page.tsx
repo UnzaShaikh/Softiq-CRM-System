@@ -1,34 +1,106 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { ProfileNav } from "../page";
+import { getPreferences, updatePreferences, ApiPreferences } from "@/lib/profileApi";
+import { getProfile, updateProfile } from "@/lib/profileApi";
 import { HiGlobe, HiCalendar, HiCurrencyDollar, HiColorSwatch, HiViewList, HiAdjustments, HiSave, HiSupport } from "react-icons/hi";
 import { HiSun, HiMoon, HiDesktopComputer } from "react-icons/hi";
 
-type Theme = "Light" | "Dark" | "System";
+type Theme = "light" | "dark" | "system";
+
+// Backend stores currency as a short code (e.g. "USD"); the UI shows a
+// friendlier label. Keep these in sync with the <option> list below.
+const CURRENCY_LABELS: Record<string, string> = {
+  USD: "USD - US Dollar ($)",
+  EUR: "EUR - Euro (€)",
+  GBP: "GBP - British Pound (£)",
+  PKR: "PKR - Pakistani Rupee (₨)",
+};
+const CURRENCY_CODES = Object.keys(CURRENCY_LABELS);
+function codeForCurrencyLabel(label: string): string {
+  const found = Object.entries(CURRENCY_LABELS).find(([, v]) => v === label);
+  return found ? found[0] : label;
+}
 
 export default function PreferencesPage() {
   const [prefs, setPrefs] = useState({
-    language: "English (US)",
+    language: "en",
     timezone: "(UTC-05:00) Eastern Time (US & Canada)",
     dateFormat: "MM/DD/YYYY",
-    timeFormat: "12 Hour (AM/PM)",
-    currency: "USD - US Dollar ($)",
-    theme: "Light" as Theme,
-    itemsPerPage: "20",
+    timeFormat: "12h" as "12h" | "24h",
+    currency: "USD",
+    theme: "light" as Theme,
+    itemsPerPage: 20,
     compactSidebar: false,
     soundNotifications: true,
   });
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const [p, profile] = await Promise.all([getPreferences(), getProfile()]);
+      setPrefs({
+        language: profile.language,
+        timezone: p.timezone,
+        dateFormat: p.date_format,
+        timeFormat: p.time_format,
+        currency: p.currency,
+        theme: p.theme,
+        itemsPerPage: p.items_per_page,
+        compactSidebar: p.compact_sidebar,
+        soundNotifications: p.sound_notifications,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load preferences.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   async function handleSave() {
     setSaving(true);
-    await new Promise(r => setTimeout(r, 800));
-    setSaving(false);
-    setSuccess("Preferences saved successfully.");
-    setTimeout(() => setSuccess(""), 3000);
+    setError("");
+    try {
+      const [updated] = await Promise.all([
+        updatePreferences({
+          timezone: prefs.timezone,
+          date_format: prefs.dateFormat,
+          time_format: prefs.timeFormat,
+          currency: prefs.currency,
+          theme: prefs.theme,
+          items_per_page: prefs.itemsPerPage,
+          compact_sidebar: prefs.compactSidebar,
+          sound_notifications: prefs.soundNotifications,
+        }),
+        updateProfile({ language: prefs.language }),
+      ]);
+      setPrefs(prev => ({
+        ...prev,
+        timezone: updated.timezone,
+        dateFormat: updated.date_format,
+        timeFormat: updated.time_format,
+        currency: updated.currency,
+        theme: updated.theme,
+        itemsPerPage: updated.items_per_page,
+        compactSidebar: updated.compact_sidebar,
+        soundNotifications: updated.sound_notifications,
+      }));
+      setSuccess("Preferences saved successfully.");
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save preferences.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const selectStyle: React.CSSProperties = {
@@ -38,9 +110,9 @@ export default function PreferencesPage() {
   };
 
   const THEMES: { key: Theme; label: string; sub: string; icon: React.ReactNode }[] = [
-    { key: "Light", label: "Light", sub: "Clean and bright interface", icon: <HiSun size={20} color="#f59e0b" /> },
-    { key: "Dark", label: "Dark", sub: "Easy on the eyes in low light", icon: <HiMoon size={20} color="#4f46e5" /> },
-    { key: "System", label: "System", sub: "Use system preference", icon: <HiDesktopComputer size={20} color="#64748b" /> },
+    { key: "light", label: "Light", sub: "Clean and bright interface", icon: <HiSun size={20} color="#f59e0b" /> },
+    { key: "dark", label: "Dark", sub: "Easy on the eyes in low light", icon: <HiMoon size={20} color="#4f46e5" /> },
+    { key: "system", label: "System", sub: "Use system preference", icon: <HiDesktopComputer size={20} color="#64748b" /> },
   ];
 
   function Toggle({ value, onChange }: { value: boolean; onChange: () => void }) {
@@ -61,7 +133,10 @@ export default function PreferencesPage() {
           <div className="form-group">
             <label className="form-label">Language</label>
             <select value={prefs.language} onChange={e => setPrefs(p => ({ ...p, language: e.target.value }))} style={selectStyle}>
-              <option>English (US)</option><option>English (UK)</option><option>Urdu</option><option>Arabic</option>
+              <option value="en">English</option>
+              <option value="ne">Nepali</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
             </select>
           </div>
           <div className="form-group">
@@ -88,8 +163,9 @@ export default function PreferencesPage() {
           </div>
           <div className="form-group">
             <label className="form-label">Time Format</label>
-            <select value={prefs.timeFormat} onChange={e => setPrefs(p => ({ ...p, timeFormat: e.target.value }))} style={selectStyle}>
-              <option>12 Hour (AM/PM)</option><option>24 Hour</option>
+            <select value={prefs.timeFormat} onChange={e => setPrefs(p => ({ ...p, timeFormat: e.target.value as "12h" | "24h" }))} style={selectStyle}>
+              <option value="12h">12 Hour (AM/PM)</option>
+              <option value="24h">24 Hour</option>
             </select>
           </div>
         </div>
@@ -102,8 +178,12 @@ export default function PreferencesPage() {
         <div style={{ maxWidth: "300px" }}>
           <div className="form-group">
             <label className="form-label">Currency</label>
-            <select value={prefs.currency} onChange={e => setPrefs(p => ({ ...p, currency: e.target.value }))} style={selectStyle}>
-              <option>USD - US Dollar ($)</option><option>EUR - Euro (€)</option><option>GBP - British Pound (£)</option><option>PKR - Pakistani Rupee (₨)</option>
+            <select
+              value={CURRENCY_LABELS[prefs.currency] ?? prefs.currency}
+              onChange={e => setPrefs(p => ({ ...p, currency: codeForCurrencyLabel(e.target.value) }))}
+              style={selectStyle}
+            >
+              {CURRENCY_CODES.map(code => <option key={code}>{CURRENCY_LABELS[code]}</option>)}
             </select>
           </div>
         </div>
@@ -130,9 +210,12 @@ export default function PreferencesPage() {
       sub: "Set the default number of items to show per page in lists.", bg: "#eef2ff",
       content: (
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <select value={prefs.itemsPerPage} onChange={e => setPrefs(p => ({ ...p, itemsPerPage: e.target.value }))}
-            style={{ ...selectStyle, width: "120px" }}>
-            {["10","20","25","50","100"].map(v => <option key={v}>{v}</option>)}
+          <select
+            value={String(prefs.itemsPerPage)}
+            onChange={e => setPrefs(p => ({ ...p, itemsPerPage: Number(e.target.value) }))}
+            style={{ ...selectStyle, width: "120px" }}
+          >
+            {["10", "20", "25", "50", "100"].map(v => <option key={v}>{v}</option>)}
           </select>
           <p style={{ margin: 0, fontSize: "0.8125rem", color: "#94a3b8" }}>Applies to all list views and tables.</p>
         </div>
@@ -183,7 +266,6 @@ export default function PreferencesPage() {
         <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: "20px", alignItems: "start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <ProfileNav active="prefs" />
-            {/* Need Help */}
             <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "18px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", textAlign: "center" }}>
               <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}>
                 <HiSupport size={20} color="#4f46e5" />
@@ -198,9 +280,10 @@ export default function PreferencesPage() {
             </div>
           </div>
 
-          {/* Settings sections */}
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
             {success && <div className="msg-success" style={{ margin: "16px 24px 0" }}>✅ {success}</div>}
+            {error && <div className="msg-error" style={{ margin: "16px 24px 0" }}>{error}</div>}
+            {loading && <div className="loading-state" style={{ margin: "16px 24px 0" }}>Loading preferences...</div>}
 
             {SECTIONS.map((section, idx) => (
               <div key={section.title} style={{ padding: "20px 24px", borderBottom: idx < SECTIONS.length - 1 ? "1px solid #f1f5f9" : "none", display: "grid", gridTemplateColumns: "220px 1fr", gap: "20px", alignItems: "start" }}>
@@ -217,9 +300,8 @@ export default function PreferencesPage() {
               </div>
             ))}
 
-            {/* Save button */}
             <div style={{ padding: "16px 24px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end" }}>
-              <button onClick={handleSave} className="btn-add" disabled={saving} style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              <button onClick={handleSave} className="btn-add" disabled={saving || loading} style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                 {saving ? "Saving..." : <><HiSave size={15} /> Save Changes</>}
               </button>
             </div>
