@@ -28,7 +28,9 @@ export default function SettingsNav() {
       <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
         <nav style={{ padding: "6px" }}>
           {NAV_ITEMS.map(item => {
-            const isActive = pathname === item.href || (item.href !== "/settings/project" && pathname.startsWith(item.href));
+            const isActive = item.key === "general"
+              ? pathname === "/settings/project"
+              : pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <Link key={item.key} href={item.href}
                 style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 12px", borderRadius: "8px", textDecoration: "none", color: isActive ? "#4f46e5" : "#475569", background: isActive ? "#eef2ff" : "transparent", fontWeight: isActive ? 600 : 500, fontSize: "0.875rem", marginBottom: "2px", transition: "all 0.15s" }}>
