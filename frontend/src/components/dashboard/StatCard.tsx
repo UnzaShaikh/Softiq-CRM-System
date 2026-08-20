@@ -43,24 +43,28 @@ export default function StatCard({ label, value, change, up, icon, color = "#4f4
         <p className="stat-card-dashboard-label">{label}</p>
         <p className="stat-card-dashboard-value">{value}</p>
         <div className="stat-card-dashboard-change">
-          <span
-            className="stat-card-dashboard-badge"
-            style={{
-              color: up ? "#16a34a" : "#dc2626",
-              background: up ? "rgba(22,163,74,0.08)" : "rgba(220,38,38,0.08)",
-            }}
-          >
-            <svg
-              width="11" height="11" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="3"
-              strokeLinecap="round" strokeLinejoin="round"
-              style={{ transform: up ? "none" : "rotate(180deg)" }}
-            >
-              <polyline points="18 15 12 9 6 15" />
-            </svg>
-            {change}
-          </span>
-          <span className="stat-card-dashboard-since">vs last month</span>
+          {change && (
+            <>
+              <span
+                className="stat-card-dashboard-badge"
+                style={{
+                  color: up ? "#16a34a" : "#dc2626",
+                  background: up ? "rgba(22,163,74,0.08)" : "rgba(220,38,38,0.08)",
+                }}
+              >
+                <svg
+                  width="11" height="11" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="3"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transform: up ? "none" : "rotate(180deg)" }}
+                >
+                  <polyline points="18 15 12 9 6 15" />
+                </svg>
+                {change}
+              </span>
+              <span className="stat-card-dashboard-since">vs last month</span>
+            </>
+          )}
         </div>
       </div>
     </div>

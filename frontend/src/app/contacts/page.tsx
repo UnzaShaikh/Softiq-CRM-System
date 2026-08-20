@@ -151,7 +151,7 @@ export default function ContactsPage() {
     {
       label: "Total Contacts",
       value: String(stats.total),
-      change: "+12%",
+      change: "",
       up: true,
       icon: <Users size={18} strokeWidth={2} />,
       color: "#4f46e5",
@@ -159,7 +159,7 @@ export default function ContactsPage() {
     {
       label: "Active",
       value: String(stats.active),
-      change: "+8%",
+      change: "",
       up: true,
       icon: <UserCheck size={18} strokeWidth={2} />,
       color: "#16a34a",
@@ -167,7 +167,7 @@ export default function ContactsPage() {
     {
       label: "Inactive",
       value: String(stats.inactive),
-      change: "-2%",
+      change: "",
       up: false,
       icon: <PauseCircle size={18} strokeWidth={2} />,
       color: "#64748b",
@@ -175,7 +175,7 @@ export default function ContactsPage() {
     {
       label: "Leads",
       value: String(stats.lead),
-      change: "+5%",
+      change: "",
       up: true,
       icon: <Zap size={18} strokeWidth={2} />,
       color: "#b45309",
