@@ -99,162 +99,52 @@ const [loading,setLoading] = useState(false);
 };
   return (
     <DashboardLayout>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "24px",
-        }}
-      >
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+
         {/* Header */}
-
-        <div>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: "32px",
-              fontWeight: 700,
-              color: "#111827",
-            }}
-          >
-            Add Contact
-          </h1>
-
-          <p
-            style={{
-              marginTop: "8px",
-              color: "#64748b",
-            }}
-          >
-            Create a new contact for your CRM.
-          </p>
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Add Contact</h1>
+            <p className="page-subtitle">Create a new contact for your CRM.</p>
+          </div>
+          <Link href="/contacts" className="btn-secondary" style={{ textDecoration: "none" }}>
+            Cancel
+          </Link>
         </div>
 
         {/* Form Card */}
+        <form onSubmit={handleSubmit} className="company-form-card">
+          <div className="form-section">
+            <div className="form-section-header">
+              <h2>Contact Information</h2>
+              <p>Enter the basic information for this contact.</p>
+            </div>
 
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            background: "#ffffff",
-            padding: "30px",
-            borderRadius: "16px",
-            border: "1px solid #e2e8f0",
-            boxShadow: "0 4px 15px rgba(0,0,0,.06)",
-          }}
-        >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
-              gap: "20px",
-            }}
-          >
-            <Input
-              label="Full Name"
-              name="fullName"
-              value={form.fullName}
-              onChange={handleChange}
-            />
+            <div className="contact-form-grid">
+              <Input label="Full Name" name="fullName" value={form.fullName} onChange={handleChange} />
+              <Input label="Company" name="company" value={form.company} onChange={handleChange} />
+              <Input label="Email" name="email" type="email" value={form.email} onChange={handleChange} />
+              <Input label="Phone" name="phone" value={form.phone} onChange={handleChange} />
+              <Input label="Job Title" name="jobTitle" value={form.jobTitle} onChange={handleChange} />
 
-            <Input
-              label="Company"
-              name="company"
-              value={form.company}
-              onChange={handleChange}
-            />
-
-            <Input
-              label="Email"
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-            />
-
-            <Input
-              label="Phone"
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-            />
-
-            <Input
-              label="Job Title"
-              name="jobTitle"
-              value={form.jobTitle}
-              onChange={handleChange}
-            />
-
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "8px",
-                  fontWeight: 600,
-                  color: "#374151",
-                }}
-              >
-                Status
-              </label>
-
-              <select
-                name="status"
-                value={form.status}
-                onChange={handleChange}
-                style={inputStyle}
-              >
-                <option>Active</option>
-                <option>Inactive</option>
-                <option>Lead</option>
-              </select>
+              <div className="form-group">
+                <label className="form-label">Status</label>
+                <select name="status" value={form.status} onChange={handleChange} className="form-input" style={{ cursor: "pointer" }}>
+                  <option>Active</option>
+                  <option>Inactive</option>
+                  <option>Lead</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          {/* Buttons */}
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: "12px",
-              marginTop: "30px",
-            }}
-          >
-            <Link
-              href="/contacts"
-              style={{
-                padding: "12px 20px",
-                borderRadius: "8px",
-                background: "#e5e7eb",
-                color: "#111827",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Cancel
-            </Link>
-
-           <button
-  type="submit"
-  disabled={loading}
-  style={{
-    padding:"12px 20px",
-    borderRadius:"8px",
-    border:"none",
-    background: loading ? "#a5b4fc" : "#4f46e5",
-    color:"#ffffff",
-    fontWeight:600,
-    cursor: loading ? "not-allowed" : "pointer",
-  }}
->
-{
- loading 
- ? 
- "Saving..."
- :
- "Save Contact"
-}
-</button>
+          {/* Actions */}
+          <div className="form-actions">
+            <Link href="/contacts" className="btn-secondary" style={{ textDecoration: "none" }}>Cancel</Link>
+            <button type="submit" disabled={loading} className="btn-add"
+              style={{ cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+              {loading ? "Saving..." : "Save Contact"}
+            </button>
           </div>
         </form>
       </div>
@@ -266,51 +156,15 @@ interface InputProps {
   label: string;
   name: string;
   value: string;
-  onChange: (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => void;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   type?: string;
 }
 
-function Input({
-  label,
-  name,
-  value,
-  onChange,
-  type = "text",
-}: InputProps) {
+function Input({ label, name, value, onChange, type = "text" }: InputProps) {
   return (
-    <div>
-      <label
-        style={{
-          display: "block",
-          marginBottom: "8px",
-          fontWeight: 600,
-          color: "#374151",
-        }}
-      >
-        {label}
-      </label>
-
-      <input
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        style={inputStyle}
-      />
+    <div className="form-group">
+      <label className="form-label">{label}</label>
+      <input type={type} name={name} value={value} onChange={onChange} className="form-input" />
     </div>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "12px",
-  borderRadius: "8px",
-  border: "1px solid #d1d5db",
-  fontSize: "14px",
-  color: "#111827",
-  background: "#ffffff",
-  outline: "none",
-  boxSizing: "border-box",
-};
