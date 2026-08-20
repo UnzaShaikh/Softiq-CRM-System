@@ -179,50 +179,36 @@ export default function ContactTable({
                 ================================= */}
 
                 <td>
-                  <div className="contacts-action-buttons">
+                  <div style={{ display: "inline-flex", gap: "4px" }}>
                     {/* VIEW */}
-
                     <Link
                       href={`/contacts/${contact.id}`}
                       className="contacts-action-button contacts-action-view"
                       title="View Contact"
                       aria-label="View Contact"
                     >
-                      <Eye
-                        size={16}
-                        strokeWidth={2}
-                      />
+                      <Eye size={13} strokeWidth={2} />
                     </Link>
 
                     {/* EDIT */}
-
                     <Link
                       href={`/contacts/edit?id=${contact.id}`}
                       className="contacts-action-button contacts-action-edit"
                       title="Edit Contact"
                       aria-label="Edit Contact"
                     >
-                      <Pencil
-                        size={16}
-                        strokeWidth={2}
-                      />
+                      <Pencil size={13} strokeWidth={2} />
                     </Link>
 
                     {/* DELETE */}
-
                     <button
                       type="button"
                       className="contacts-action-button contacts-action-delete"
                       title="Delete Contact"
                       aria-label="Delete Contact"
-                      onClick={() =>
-                        onDelete(contact.id)
-                      }
+                      onClick={() => onDelete(contact.id)}
                     >
-                      <Trash2
-                        size={16}
-                        strokeWidth={2}
-                      />
+                      <Trash2 size={13} strokeWidth={2} />
                     </button>
                   </div>
                 </td>
