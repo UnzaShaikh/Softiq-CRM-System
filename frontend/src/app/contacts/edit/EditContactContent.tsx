@@ -58,32 +58,9 @@ export default function EditContactContent() {
   if (!id || notFound || !contact) {
     return (
       <DashboardLayout>
-        <div
-          style={{
-            background:"#ffffff",
-            padding:"24px",
-            borderRadius:"16px",
-            border:"1px solid #e2e8f0",
-          }}
-        >
-          <h1
-            style={{
-              color:"#111827",
-              margin:0,
-            }}
-          >
-            Contact Not Found
-          </h1>
-
-          <p
-            style={{
-              marginTop:"12px",
-              color:"#64748b",
-            }}
-          >
-            Please select a valid contact.
-          </p>
-
+      <div style={{ background: "#fff", padding: "24px", borderRadius: "14px", border: "1px solid #e2e8f0" }}>
+          <h1 className="page-title">Contact Not Found</h1>
+          <p className="page-subtitle">Please select a valid contact.</p>
         </div>
       </DashboardLayout>
     );
@@ -92,48 +69,13 @@ export default function EditContactContent() {
 
   return (
     <DashboardLayout>
-
-      <div
-        style={{
-          display:"flex",
-          flexDirection:"column",
-          gap:"24px",
-        }}
-      >
-
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
         <div>
-
-          <h1
-            style={{
-              margin:0,
-              fontSize:"32px",
-              fontWeight:700,
-              color:"#111827",
-            }}
-          >
-            Edit Contact
-          </h1>
-
-
-          <p
-            style={{
-              marginTop:"8px",
-              color:"#64748b",
-            }}
-          >
-            Update contact information.
-          </p>
-
+          <h1 className="page-title">Edit Contact</h1>
+          <p className="page-subtitle">Update contact information.</p>
         </div>
-
-
-        <ContactForm
-          mode="edit"
-          contact={contact}
-        />
-
+        <ContactForm mode="edit" contact={contact} />
       </div>
-
     </DashboardLayout>
   );
 }

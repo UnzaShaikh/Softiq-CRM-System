@@ -192,31 +192,16 @@ export default function ContactsPage() {
 
         <div className="contacts-page-header">
           <div>
-            <h1 className="contacts-page-title">Contacts</h1>
-            <p className="contacts-page-subtitle">Manage your customer contacts.</p>
+            <h1 className="page-title">Contacts</h1>
+            <p className="page-subtitle">Manage your customer contacts.</p>
           </div>
 
           <Link
             href="/contacts/add"
-            className="contacts-add-btn"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              padding: "12px 20px",
-              minHeight: "46px",
-              borderRadius: "10px",
-              background: "#6d3df5",
-              color: "#ffffff",
-              fontSize: "15px",
-              fontWeight: 600,
-              lineHeight: 1,
-              textDecoration: "none",
-              boxShadow: "0 6px 16px rgba(109, 61, 245, 0.22)",
-            }}
+            className="btn-add"
+            style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px" }}
           >
-            <Plus size={18} strokeWidth={2.5} />
+            <Plus size={16} strokeWidth={2.5} />
             <span>Add Contact</span>
           </Link>
         </div>
