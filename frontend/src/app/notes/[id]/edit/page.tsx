@@ -3,8 +3,17 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import notesData, { NoteCategory, NotePriority, ALL_CATEGORIES, CATEGORY_COLORS, PRIORITY_COLORS } from "@/data/notes";
-import { ArrowLeft, FileText, User, Calendar, Clock, Trash2, Tag, X } from "lucide-react";
+import { NoteCategory, NotePriority, ALL_CATEGORIES, CATEGORY_COLORS } from "@/data/notes";
+import {
+  getNote,
+  updateNote,
+  deleteNote,
+  listCategories,
+  mapApiNoteToUi,
+  PRIORITY_TO_API,
+  ApiNoteCategory,
+} from "@/lib/notesApi";
+import { ArrowLeft, FileText, Calendar, Clock, Trash2, Tag, X } from "lucide-react";
 
 interface FormValues {
   title: string;
@@ -33,16 +42,43 @@ export default function EditNotePage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [deleteModal, setDeleteModal] = useState(false);
   const [tagInput, setTagInput] = useState("");
-  const [originalNote, setOriginalNote] = useState<typeof notesData[0] | null>(null);
+  const [originalNote, setOriginalNote] = useState<ReturnType<typeof mapApiNoteToUi> | null>(null);
+  const [apiCategories, setApiCategories] = useState<ApiNoteCategory[]>([]);
 
   useEffect(() => {
-    const note = notesData.find(n => n.id === id);
-    if (!note) { setNotFound(true); setLoading(false); return; }
-    setOriginalNote(note);
-    setForm({ title: note.title, category: note.category, priority: note.priority, tags: note.tags.map(t => t.label), content: note.content, relatedTo: note.relatedTo });
-    setLoading(false);
+    async function fetchNote() {
+      if (!id) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      try {
+        const cats = await listCategories();
+        setApiCategories(cats);
+        const apiNote = await getNote(id);
+        const uiNote = mapApiNoteToUi(apiNote, cats);
+        setOriginalNote(uiNote);
+        setForm({
+          title: uiNote.title,
+          category: uiNote.category,
+          priority: uiNote.priority,
+          tags: uiNote.tags.map(t => t.label),
+          content: uiNote.content,
+          relatedTo: uiNote.relatedTo || "",
+        });
+      } catch (err) {
+        console.error("Error fetching note for edit:", err);
+        setNotFound(true);
+        setApiError(err instanceof Error ? err.message : "Failed to load note.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (id) fetchNote();
   }, [id]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
@@ -77,15 +113,36 @@ export default function EditNotePage() {
     e.preventDefault();
     if (!validate()) return;
     setSaving(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setSaving(false);
-    setSuccess(true);
-    setTimeout(() => router.push(`/notes/${id}`), 1500);
+    setApiError(null);
+    try {
+      const matchedCategory = apiCategories.find(c => c.name === form.category);
+
+      await updateNote(id, {
+        title: form.title,
+        content: form.content,
+        category: matchedCategory ? matchedCategory.id : null,
+        priority: PRIORITY_TO_API[form.priority as NotePriority],
+        tags: form.tags,
+      });
+
+      setSaving(false);
+      setSuccess(true);
+      setTimeout(() => router.push(`/notes/${id}`), 1500);
+    } catch (err) {
+      setSaving(false);
+      setApiError(err instanceof Error ? err.message : "Failed to save note.");
+    }
   }
 
-  function handleDelete() {
-    setDeleteModal(false);
-    router.push("/notes");
+  async function handleDelete() {
+    try {
+      await deleteNote(id);
+      setDeleteModal(false);
+      router.push("/notes");
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : "Failed to delete note.");
+      setDeleteModal(false);
+    }
   }
 
   function formatDate(str: string) {
@@ -107,6 +164,7 @@ export default function EditNotePage() {
       <div className="not-found-state">
         <p style={{ fontSize: "3rem", margin: "0 0 12px" }}>📝</p>
         <h2>Note Not Found</h2>
+        {apiError && <p style={{ color: "#ef4444", fontSize: "0.8rem" }}>{apiError}</p>}
         <button className="btn-add" onClick={() => router.push("/notes")}>Back to Notes</button>
       </div>
     </DashboardLayout>
@@ -116,10 +174,13 @@ export default function EditNotePage() {
     <DashboardLayout>
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
 
-        {/* Back */}
         <button className="back-btn" onClick={() => router.push(`/notes/${id}`)}>
           <ArrowLeft size={16} /> Back to Note
         </button>
+
+        {apiError && (
+          <div className="msg-error" style={{ marginBottom: "20px" }}>{apiError}</div>
+        )}
 
         {success && (
           <div className="msg-success" style={{ marginBottom: "20px" }}>
@@ -130,10 +191,8 @@ export default function EditNotePage() {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "24px" }}>
 
-          {/* Main Form */}
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
 
-            {/* Modal header */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid #f1f5f9" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <div style={{ width: 34, height: 34, borderRadius: "8px", background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -149,7 +208,6 @@ export default function EditNotePage() {
             <form onSubmit={handleSubmit} noValidate>
               <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
 
-                {/* Title */}
                 <div className="form-group">
                   <label className="form-label">Title <span style={{ color: "var(--error)" }}>*</span></label>
                   <div style={{ position: "relative" }}>
@@ -161,7 +219,6 @@ export default function EditNotePage() {
                   {errors.title && <p className="form-error">{errors.title}</p>}
                 </div>
 
-                {/* Category + Priority */}
                 <div className="form-row-2">
                   <div className="form-group">
                     <label className="form-label">Category</label>
@@ -195,7 +252,6 @@ export default function EditNotePage() {
                   </div>
                 </div>
 
-                {/* Tags */}
                 <div className="form-group">
                   <label className="form-label">Tags</label>
                   <div style={{ border: "1.5px solid #e2e8f0", borderRadius: "8px", padding: "8px 12px", display: "flex", flexWrap: "wrap", gap: "6px", background: "#fff", minHeight: "44px" }}
@@ -215,10 +271,8 @@ export default function EditNotePage() {
                   <p style={{ margin: "4px 0 0", fontSize: "0.75rem", color: "#94a3b8" }}>Press Enter to add a tag</p>
                 </div>
 
-                {/* Note Content */}
                 <div className="form-group">
                   <label className="form-label">Note Content <span style={{ color: "var(--error)" }}>*</span></label>
-                  {/* Toolbar */}
                   <div style={{ border: "1.5px solid #e2e8f0", borderRadius: "8px 8px 0 0", padding: "8px 12px", background: "#f8fafc", display: "flex", alignItems: "center", gap: "4px", borderBottom: "none" }}>
                     {["B", "I", "U"].map(f => (
                       <button key={f} type="button" style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", borderRadius: "4px", fontWeight: f === "B" ? 700 : 400, fontStyle: f === "I" ? "italic" : "normal", textDecoration: f === "U" ? "underline" : "none", color: "#374151", fontSize: "0.8rem" }}>{f}</button>
@@ -241,7 +295,6 @@ export default function EditNotePage() {
                 </div>
               </div>
 
-              {/* Footer */}
               <div style={{ padding: "16px 24px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <button type="button" onClick={() => setDeleteModal(true)}
                   style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", border: "1.5px solid #fca5a5", borderRadius: "8px", background: "#fef2f2", color: "#ef4444", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", fontFamily: "inherit" }}>
@@ -259,14 +312,12 @@ export default function EditNotePage() {
             </form>
           </div>
 
-          {/* Right panel — Note Details */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
               <h3 style={{ margin: "0 0 16px", fontSize: "0.875rem", fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center", gap: "6px" }}>
                 <FileText size={15} color="#4f46e5" /> Note Details
               </h3>
 
-              {/* Author */}
               <div style={{ marginBottom: "16px" }}>
                 <p style={{ margin: "0 0 8px", fontSize: "0.72rem", color: "#94a3b8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>Created By</p>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -293,7 +344,6 @@ export default function EditNotePage() {
                 </div>
               ))}
 
-              {/* Related To */}
               <div>
                 <p style={{ margin: "0 0 6px", fontSize: "0.72rem", color: "#94a3b8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>Related To</p>
                 <input name="relatedTo" value={form.relatedTo} onChange={handleChange}
@@ -304,7 +354,6 @@ export default function EditNotePage() {
         </div>
       </div>
 
-      {/* Delete Modal */}
       {deleteModal && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setDeleteModal(false); }}>
           <div className="modal-box">
