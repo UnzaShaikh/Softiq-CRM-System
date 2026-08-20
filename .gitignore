@@ -215,3 +215,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Node.js
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
