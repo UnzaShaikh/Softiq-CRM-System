@@ -4,6 +4,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
+from notifications.services import create_notification
+
 from .models import Contact
 from .serializers import ContactSerializer
 
@@ -24,29 +26,94 @@ class ContactViewSet(viewsets.ModelViewSet):
     serializer_class = ContactSerializer
     permission_classes = [IsAuthenticated]
 
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ["status", "company"]
-    search_fields = ["full_name", "company", "email", "job_title"]
-    ordering_fields = ["full_name", "company", "status", "created_at", "updated_at"]
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    ]
+
+    filterset_fields = [
+        "status",
+        "company",
+    ]
+
+    search_fields = [
+        "full_name",
+        "company",
+        "email",
+        "job_title",
+    ]
+
+    ordering_fields = [
+        "full_name",
+        "company",
+        "status",
+        "created_at",
+        "updated_at",
+    ]
+
     ordering = ["-created_at"]
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        """
+        Create a contact and generate a notification.
+        """
+
+        contact = serializer.save(
+            created_by=self.request.user
+        )
+
+        create_notification(
+            user=self.request.user,
+            title="New Contact Created",
+            message=(
+                f"A new contact has been added: "
+                f"{contact.full_name}."
+            ),
+            notification_type="customer_added",
+            source_type="contact",
+            source_id=contact.id,
+        )
+
+    def perform_update(self, serializer):
+        """
+        Update a contact and generate a notification.
+        """
+
+        contact = serializer.save()
+
+        create_notification(
+            user=self.request.user,
+            title="Contact Updated",
+            message=(
+                f"The contact '{contact.full_name}' "
+                f"has been updated."
+            ),
+            notification_type="customer_added",
+            source_type="contact",
+            source_id=contact.id,
+        )
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.delete()
+
         return Response(
             {"detail": "Contact deleted successfully."},
             status=status.HTTP_200_OK,
         )
-    @action(detail=False, methods=["get"], url_path="status-options")
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="status-options",
+    )
     def status_options(self, request):
         return Response({
             "status_options": [
                 {
                     "value": value,
-                    "label": label
+                    "label": label,
                 }
                 for value, label in Contact.STATUS_CHOICES
             ]

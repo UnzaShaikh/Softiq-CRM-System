@@ -23,6 +23,7 @@ class Lead(models.Model):
     phone = models.CharField(max_length=20)
     company = models.CharField(max_length=150)
 
+
     source = models.CharField(
         max_length=20,
         choices=SOURCE_CHOICES,

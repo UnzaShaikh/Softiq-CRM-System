@@ -53,4 +53,6 @@ urlpatterns = [
 path("api/", include("pipeline.urls")),
 # Global Search
 path("api/", include("search.urls")),
+# Notifications
+path("api/", include("notifications.urls")),
 ]

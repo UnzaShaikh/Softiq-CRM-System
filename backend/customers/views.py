@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Customer
 from .serializers import CustomerSerializer
+from notifications.services import create_notification
 
 
 class CustomerListCreateView(generics.ListCreateAPIView):
@@ -41,6 +42,15 @@ class CustomerListCreateView(generics.ListCreateAPIView):
     ordering = [
         "-created_at",
     ]
+    def perform_create(self, serializer):
+        customer = serializer.save()
+
+        create_notification(
+            user=self.request.user,
+            title="New Customer Added",
+            message=f"A new customer has been added: {customer.first_name} {customer.last_name}.",
+            notification_type="customer",
+        )
 
 
 class CustomerDetailView(generics.RetrieveUpdateDestroyAPIView):

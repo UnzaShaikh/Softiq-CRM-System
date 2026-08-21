@@ -1,6 +1,7 @@
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Sum, Avg, Count
+from notifications.services import create_notification
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
@@ -210,6 +211,41 @@ class OpportunityViewSet(viewsets.ModelViewSet):
     ordering = ["-created_at"]
 
     def perform_create(self, serializer):
-        serializer.save(
+        """
+        Create an opportunity and generate a notification.
+        """
+
+        opportunity = serializer.save(
             created_by=self.request.user
+        )
+
+        create_notification(
+            user=self.request.user,
+            title="New Opportunity Created",
+            message=(
+                f"A new opportunity has been created: "
+                f"{opportunity.name}."
+            ),
+            notification_type="opportunity",
+            source_type="opportunity",
+            source_id=opportunity.id,
+        )
+
+    def perform_update(self, serializer):
+        """
+        Update an opportunity and generate a notification.
+        """
+
+        opportunity = serializer.save()
+
+        create_notification(
+            user=self.request.user,
+            title="Opportunity Updated",
+            message=(
+                f"The opportunity '{opportunity.name}' "
+                f"has been updated."
+            ),
+            notification_type="opportunity",
+            source_type="opportunity",
+            source_id=opportunity.id,
         )
