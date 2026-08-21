@@ -302,11 +302,10 @@ export default function ContactForm({ mode, contact }: ContactFormProps) {
 
         {/* Actions */}
         <div className="form-actions">
-          <Link href="/contacts" className="form-cancel-btn">
+          <Link href="/contacts" className="btn-secondary" style={{ textDecoration: "none" }}>
             Cancel
           </Link>
-
-          <button type="submit" className="form-submit-btn" disabled={loading}>
+          <button type="submit" className="form-submit-btn btn-add" disabled={loading}>
             {loading ? "Saving..." : mode === "add" ? "Save Contact" : "Update Contact"}
           </button>
         </div>
