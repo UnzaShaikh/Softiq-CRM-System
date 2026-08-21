@@ -75,7 +75,9 @@ class UserPreferences(models.Model):
 
 class NotificationSettings(models.Model):
     user = models.OneToOneField(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notification_settings"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notification_settings",
     )
 
     # Channel-level toggles
@@ -83,13 +85,57 @@ class NotificationSettings(models.Model):
     push_notifications = models.BooleanField(default=True)
     sms_notifications = models.BooleanField(default=False)
     activity_notifications = models.BooleanField(default=True)
+    slack_notifications = models.BooleanField(default=False)
 
-    # Event-type toggles
+    # CRM Event Notifications
     new_lead = models.BooleanField(default=True)
     deal_updates = models.BooleanField(default=True)
+    lead_assigned = models.BooleanField(default=True)
+
+    deal_created = models.BooleanField(default=True)
+    deal_won = models.BooleanField(default=True)
+    deal_lost = models.BooleanField(default=False)
+
     task_reminders = models.BooleanField(default=True)
-    weekly_report = models.BooleanField(default=True)
+    task_assigned = models.BooleanField(default=True)
+
+    followup_due = models.BooleanField(default=True)
+    customer_added = models.BooleanField(default=False)
+
+    # System Notifications
+    login_alert = models.BooleanField(default=True)
+    backup_done = models.BooleanField(default=True)
     system_alerts = models.BooleanField(default=True)
+    weekly_report = models.BooleanField(default=True)
+    monthly_report = models.BooleanField(default=False)
+
+    # Notification Digest
+    digest_enabled = models.BooleanField(default=False)
+
+    DIGEST_FREQUENCY_CHOICES = [
+        ("daily", "Daily"),
+        ("weekly", "Weekly"),
+        ("every_4_hours", "Every 4 hours"),
+    ]
+
+    digest_frequency = models.CharField(
+        max_length=20,
+        choices=DIGEST_FREQUENCY_CHOICES,
+        default="daily",
+    )
+
+    # Quiet Hours
+    quiet_hours_enabled = models.BooleanField(default=False)
+
+    quiet_start = models.TimeField(
+        null=True,
+        blank=True,
+    )
+
+    quiet_end = models.TimeField(
+        null=True,
+        blank=True,
+    )
 
     updated_at = models.DateTimeField(auto_now=True)
 

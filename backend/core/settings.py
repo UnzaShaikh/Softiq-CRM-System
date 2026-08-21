@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Global Search
     "search",
+    # Notifications
+    "notifications",
     # Third-party apps
     "rest_framework",
     "corsheaders",
