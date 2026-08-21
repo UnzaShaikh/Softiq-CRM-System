@@ -132,9 +132,11 @@ export default function EditOpportunityPage() {
 
   return (
     <DashboardLayout>
-      <div className="form-card">
-        <div style={{ padding: "0 0 0.75rem" }}>
-          <button className="back-btn" onClick={() => router.push(`/opportunities/${id}`)}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+
+        {/* Page Header */}
+        <div>
+          <button className="back-btn" onClick={() => router.push(`/opportunities/${id}`)} style={{ marginBottom: "8px" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
             Back to Opportunity
           </button>
@@ -145,34 +147,40 @@ export default function EditOpportunityPage() {
         {success && <div className="msg-success"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Changes saved! Redirecting...</div>}
         {submitError && <div className="msg-error">{submitError}</div>}
 
-        <div className="form-card-header">
-          <h2 className="form-card-title">Opportunity Details</h2>
-        </div>
+        {/* Form Card */}
+        <form onSubmit={handleSubmit} noValidate className="company-form-card">
+          <div className="form-section">
+            <div className="form-section-header">
+              <h2>Opportunity Details</h2>
+              <p>Update all the required fields below.</p>
+            </div>
 
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="form-card-body">
-            <FormField label="Opportunity Name" name="name" value={form.name} onChange={handleChange} error={errors.name} required />
-            <FormField label="Customer" name="customer" type="select" value={form.customer} onChange={handleChange} error={errors.customer} required disabled={customersLoading}
-              options={customers.map((c) => ({ label: c.company ? `${c.name} — ${c.company}` : c.name, value: String(c.id) }))} />
-            <div className="form-row-2">
-              <FormField label="Deal Value ($)" name="value" value={form.value} onChange={handleChange} error={errors.value} required />
-              <FormField label="Probability (%)" name="probability" value={form.probability} onChange={handleChange} error={errors.probability} required />
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <FormField label="Opportunity Name" name="name" value={form.name} onChange={handleChange} error={errors.name} required />
+              <FormField label="Customer" name="customer" type="select" value={form.customer} onChange={handleChange} error={errors.customer} required disabled={customersLoading}
+                options={customers.map((c) => ({ label: c.company ? `${c.name} — ${c.company}` : c.name, value: String(c.id) }))} />
+              <div className="form-row-2">
+                <FormField label="Deal Value ($)" name="value" value={form.value} onChange={handleChange} error={errors.value} required />
+                <FormField label="Probability (%)" name="probability" value={form.probability} onChange={handleChange} error={errors.probability} required />
+              </div>
+              <div className="form-row-2">
+                <FormField label="Stage" name="stage" type="select" value={form.stage} onChange={handleChange} error={errors.stage} required
+                  options={STAGE_OPTIONS.map((s) => ({ label: s, value: s }))} />
+                <FormField label="Status" name="status" type="select" value={form.status} onChange={handleChange} error={errors.status} required
+                  options={STATUS_OPTIONS.map((s) => ({ label: s, value: s }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Expected Close Date <span style={{ color: "var(--error)" }}>*</span></label>
+                <input type="date" name="expected_close_date" value={form.expected_close_date} onChange={handleChange}
+                  className={`form-input${errors.expectedCloseDate ? " error" : ""}`} />
+                {errors.expectedCloseDate && <p className="form-error">{errors.expectedCloseDate}</p>}
+              </div>
+              <FormField label="Notes" name="notes" type="textarea" value={form.notes} onChange={handleChange} />
             </div>
-            <div className="form-row-2">
-              <FormField label="Stage" name="stage" type="select" value={form.stage} onChange={handleChange} error={errors.stage} required
-                options={STAGE_OPTIONS.map((s) => ({ label: s, value: s }))} />
-              <FormField label="Status" name="status" type="select" value={form.status} onChange={handleChange} error={errors.status} required
-                options={STATUS_OPTIONS.map((s) => ({ label: s, value: s }))} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Expected Close Date <span style={{ color: "var(--error)" }}>*</span></label>
-              <input type="date" name="expected_close_date" value={form.expected_close_date} onChange={handleChange}
-                className={`form-input${errors.expectedCloseDate ? " error" : ""}`} />
-              {errors.expectedCloseDate && <p className="form-error">{errors.expectedCloseDate}</p>}
-            </div>
-            <FormField label="Notes" name="notes" type="textarea" value={form.notes} onChange={handleChange} />
           </div>
-          <div className="form-card-footer">
+
+          {/* Actions */}
+          <div className="form-actions">
             <button type="button" className="btn-secondary" onClick={() => router.push(`/opportunities/${id}`)} disabled={saving}>Cancel</button>
             <button type="submit" className="btn-add" disabled={saving || success}>
               {saving ? (<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>Saving...</>) : success ? "Saved!" : "Save Changes"}

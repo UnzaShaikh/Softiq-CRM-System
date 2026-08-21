@@ -8,7 +8,6 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ContactTable from "@/components/contacts/ContactTable";
 import ThemeLoader from "@/components/ui/ThemeLoader";
 import Pagination from "@/components/customers/Pagination";
-import StatCard from "@/components/dashboard/StatCard";
 
 import {
   Users,
@@ -148,38 +147,10 @@ export default function ContactsPage() {
   };
 
   const STAT_CARDS = [
-    {
-      label: "Total Contacts",
-      value: String(stats.total),
-      change: "+12%",
-      up: true,
-      icon: <Users size={18} strokeWidth={2} />,
-      color: "#4f46e5",
-    },
-    {
-      label: "Active",
-      value: String(stats.active),
-      change: "+8%",
-      up: true,
-      icon: <UserCheck size={18} strokeWidth={2} />,
-      color: "#16a34a",
-    },
-    {
-      label: "Inactive",
-      value: String(stats.inactive),
-      change: "-2%",
-      up: false,
-      icon: <PauseCircle size={18} strokeWidth={2} />,
-      color: "#64748b",
-    },
-    {
-      label: "Leads",
-      value: String(stats.lead),
-      change: "+5%",
-      up: true,
-      icon: <Zap size={18} strokeWidth={2} />,
-      color: "#b45309",
-    },
+    { label: "Total Contacts", value: stats.total,    icon: <Users size={20} />,       color: "#4f46e5", bg: "#eef2ff" },
+    { label: "Active",         value: stats.active,   icon: <UserCheck size={20} />,   color: "#16a34a", bg: "#dcfce7" },
+    { label: "Inactive",       value: stats.inactive, icon: <PauseCircle size={20} />, color: "#64748b", bg: "#f1f5f9" },
+    { label: "Leads",          value: stats.lead,     icon: <Zap size={20} />,         color: "#b45309", bg: "#fef3c7" },
   ];
 
   return (
@@ -210,9 +181,18 @@ export default function ContactsPage() {
             CONTACT STAT CARDS
         ========================================== */}
 
-        <div className="dashboard-stats-grid" style={{ marginBottom: "24px" }}>
+        {/* CONTACT STAT CARDS */}
+        <div className="stats-grid" style={{ marginBottom: "24px" }}>
           {STAT_CARDS.map((card) => (
-            <StatCard key={card.label} {...card} />
+            <div key={card.label} className="stat-card">
+              <div className="stat-card-icon" style={{ background: card.bg, color: card.color }}>
+                {card.icon}
+              </div>
+              <div>
+                <p className="stat-card-value" style={{ color: card.color }}>{card.value}</p>
+                <p className="stat-card-label">{card.label}</p>
+              </div>
+            </div>
           ))}
         </div>
 

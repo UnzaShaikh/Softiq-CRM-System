@@ -70,10 +70,6 @@ export default function EditContactContent() {
   return (
     <DashboardLayout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-        <div>
-          <h1 className="page-title">Edit Contact</h1>
-          <p className="page-subtitle">Update contact information.</p>
-        </div>
         <ContactForm mode="edit" contact={contact} />
       </div>
     </DashboardLayout>
