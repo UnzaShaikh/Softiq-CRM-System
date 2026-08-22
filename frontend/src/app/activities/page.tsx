@@ -338,31 +338,28 @@ export default function ActivitiesPage() {
                 </div>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
-                <label style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: 500 }}>Assigned To:</label>
+              <div className="filter-toolbar-row">
+                <label style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: 500, flexShrink: 0 }}>Assigned To:</label>
                 <select
                   value={assignedToFilter}
                   onChange={e => handleAssignedToFilter(e.target.value)}
                   className="form-input"
-                  style={{ padding: "5px 10px", fontSize: "0.8rem", width: "160px" }}
+                  style={{ padding: "5px 10px", fontSize: "0.8rem" }}
                 >
                   <option value="">All users</option>
                   {users.map(u => (
                     <option key={u.id} value={String(u.id)}>{u.name}</option>
                   ))}
                 </select>
-
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}>
-                  <label style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: 500 }}>From:</label>
-                  <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setCurrentPage(1); }}
-                    className="form-input" style={{ padding: "5px 10px", fontSize: "0.8rem", width: "140px" }} />
-                  <label style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: 500 }}>To:</label>
-                  <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setCurrentPage(1); }}
-                    className="form-input" style={{ padding: "5px 10px", fontSize: "0.8rem", width: "140px" }} />
-                  {(dateFrom || dateTo) && (
-                    <button onClick={() => { setDateFrom(""); setDateTo(""); setCurrentPage(1); }} style={{ fontSize: "0.78rem", color: "#ef4444", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>Clear</button>
-                  )}
-                </div>
+                <label style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: 500, flexShrink: 0 }}>From:</label>
+                <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setCurrentPage(1); }}
+                  className="form-input" style={{ padding: "5px 10px", fontSize: "0.8rem" }} />
+                <label style={{ fontSize: "0.78rem", color: "#64748b", fontWeight: 500, flexShrink: 0 }}>To:</label>
+                <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setCurrentPage(1); }}
+                  className="form-input" style={{ padding: "5px 10px", fontSize: "0.8rem" }} />
+                {(dateFrom || dateTo) && (
+                  <button onClick={() => { setDateFrom(""); setDateTo(""); setCurrentPage(1); }} style={{ fontSize: "0.78rem", color: "#ef4444", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>Clear</button>
+                )}
               </div>
             </div>
 

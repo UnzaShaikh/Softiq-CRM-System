@@ -4927,3 +4927,145 @@ body {
   background: #f1f5f9;
   color: #64748b;
 }
+
+/* ════════════════════════════════════════
+   RESPONSIVENESS IMPROVEMENTS
+   Added for missing responsive patterns
+════════════════════════════════════════ */
+
+/* ── 5-column stat grid (Opportunities) ── */
+.stats-grid-5 {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 1280px) {
+  .stats-grid-5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid-5 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid-5 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── 4-column stat grid (Followups, Notes inline override) ── */
+.stats-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .stats-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── 2-column panel grid (Followups cards above table) ── */
+.panels-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .panels-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Reminders inner 2-col grid ── */
+.reminders-inner-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+@media (max-width: 768px) {
+  .reminders-inner-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Stage filters scrollable on mobile ── */
+.stage-filters-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.stage-filters-wrap::-webkit-scrollbar {
+  height: 0;
+}
+
+/* ── Activities filter toolbar ── */
+.filter-toolbar-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filter-toolbar-row select,
+.filter-toolbar-row input[type="date"] {
+  min-width: 0;
+  flex: 1 1 140px;
+  max-width: 200px;
+  padding: 8px 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font-size: 0.8rem;
+  font-family: inherit;
+  outline: none;
+}
+
+@media (max-width: 640px) {
+  .filter-toolbar-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-toolbar-row select,
+  .filter-toolbar-row input[type="date"] {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+/* ── Table horizontal scroll wrapper ── */
+.table-scroll-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Responsive detail grid (2-col to 1-col) ── */
+@media (max-width: 768px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Page wrapper gap on mobile ── */
+@media (max-width: 480px) {
+  .page-wrapper {
+    gap: 1rem;
+  }
+}

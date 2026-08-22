@@ -127,7 +127,7 @@ export default function FollowupsPage() {
         </div>
 
         {/* Stats Cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: "16px" }}>
+        <div className="stats-grid-4">
           {[
             { label: "Total Follow-ups", value: String(total),            icon: <Calendar size={18} />,     color: "#4f46e5", sub: "All follow-ups"       },
             { label: "Upcoming",         value: String(upcoming),         icon: <Clock size={18} />,        color: "#d97706", sub: "Next 7 days"          },
@@ -166,7 +166,7 @@ export default function FollowupsPage() {
         </div>
 
         {/* Upcoming Reminders + Follow-up Insights — 2-column grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        <div className="panels-grid-2">
 
           {/* Upcoming Reminders */}
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
@@ -174,7 +174,7 @@ export default function FollowupsPage() {
               <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>Upcoming Reminders</h3>
               <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{reminders.length} upcoming</span>
             </div>
-            <div style={{ padding: "16px 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div className="reminders-inner-grid">
               {reminders.map(r => {
                 const typeStyle = TYPE_COLORS[r.type];
                 return (
@@ -293,7 +293,7 @@ export default function FollowupsPage() {
             </div>
 
             {/* Table */}
-            <div style={{ overflowX: "auto" }}>
+            <div className="table-scroll-wrapper">
               {filtered.length === 0 ? (
                 <div className="empty-state">
                   <p className="empty-state-title">No follow-ups found.</p>
