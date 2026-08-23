@@ -113,9 +113,10 @@ export default function AddActivityPage() {
 
   return (
     <DashboardLayout>
-      <div className="form-card">
-        <div style={{ padding: "0 0 0.75rem" }}>
-          <button className="back-btn" onClick={() => router.push("/activities")}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        {/* Header */}
+        <div>
+          <button className="back-btn" onClick={() => router.push("/activities")} style={{ marginBottom: "8px" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
             Back to Activities
           </button>
@@ -131,59 +132,61 @@ export default function AddActivityPage() {
         )}
         {submitError && <div className="msg-error">{submitError}</div>}
 
-        <div className="form-card-header">
-          <h2 className="form-card-title">Activity Details</h2>
-        </div>
-
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="form-card-body">
-            <FormField label="Activity Title" name="title" value={form.title} onChange={handleChange} error={errors.title} placeholder="e.g. Discovery Call with Ahmed Ali" required />
-
-            <div className="form-row-2">
-              <FormField label="Type" name="type" type="select" value={form.type} onChange={handleChange} error={errors.type} required
-                options={TYPE_OPTIONS.map(t => ({ label: t, value: t }))} />
-              <FormField label="Priority" name="priority" type="select" value={form.priority} onChange={handleChange} error={errors.priority} required
-                options={PRIORITY_OPTIONS.map(p => ({ label: p, value: p }))} />
+        <form onSubmit={handleSubmit} noValidate className="company-form-card">
+          <div className="form-section">
+            <div className="form-section-header">
+              <h2>Activity Details</h2>
+              <p>Fill in all the required fields below.</p>
             </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <FormField label="Activity Title" name="title" value={form.title} onChange={handleChange} error={errors.title} placeholder="e.g. Discovery Call with Ahmed Ali" required />
 
-            <div className="form-row-2">
-              <FormField label="Status" name="status" type="select" value={form.status} onChange={handleChange} error={errors.status} required
-                options={STATUS_OPTIONS.map(s => ({ label: s, value: s }))} />
-              <FormField label="Assigned To" name="assignedTo" type="select" value={form.assignedTo} onChange={handleChange} disabled={dropdownsLoading}
-                options={dropdowns.users.map(u => ({ label: u.name, value: String(u.id) }))} />
-            </div>
-
-            <div className="form-row-2">
-              <div className="form-group">
-                <label className="form-label">Date <span style={{ color: "var(--error)" }}>*</span></label>
-                <input type="date" name="date" value={form.date} onChange={handleChange}
-                  className={`form-input${errors.date ? " error" : ""}`} />
-                {errors.date && <p className="form-error">{errors.date}</p>}
+              <div className="form-row-2">
+                <FormField label="Type" name="type" type="select" value={form.type} onChange={handleChange} error={errors.type} required
+                  options={TYPE_OPTIONS.map(t => ({ label: t, value: t }))} />
+                <FormField label="Priority" name="priority" type="select" value={form.priority} onChange={handleChange} error={errors.priority} required
+                  options={PRIORITY_OPTIONS.map(p => ({ label: p, value: p }))} />
               </div>
-              <div className="form-group">
-                <label className="form-label">Time <span style={{ color: "var(--error)" }}>*</span></label>
-                <input type="time" name="time" value={form.time} onChange={handleChange}
-                  className={`form-input${errors.time ? " error" : ""}`} />
-                {errors.time && <p className="form-error">{errors.time}</p>}
+
+              <div className="form-row-2">
+                <FormField label="Status" name="status" type="select" value={form.status} onChange={handleChange} error={errors.status} required
+                  options={STATUS_OPTIONS.map(s => ({ label: s, value: s }))} />
+                <FormField label="Assigned To" name="assignedTo" type="select" value={form.assignedTo} onChange={handleChange} disabled={dropdownsLoading}
+                  options={dropdowns.users.map(u => ({ label: u.name, value: String(u.id) }))} />
               </div>
-            </div>
 
-            <div className="form-row-2">
-              <FormField label="Duration (minutes)" name="duration" value={form.duration} onChange={handleChange} error={errors.duration} placeholder="e.g. 30" required />
-              <FormField label="Location" name="location" value={form.location} onChange={handleChange} placeholder="e.g. Zoom, Phone, Office" />
-            </div>
+              <div className="form-row-2">
+                <div className="form-group">
+                  <label className="form-label">Date <span style={{ color: "var(--error)" }}>*</span></label>
+                  <input type="date" name="date" value={form.date} onChange={handleChange}
+                    className={`form-input${errors.date ? " error" : ""}`} />
+                  {errors.date && <p className="form-error">{errors.date}</p>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Time <span style={{ color: "var(--error)" }}>*</span></label>
+                  <input type="time" name="time" value={form.time} onChange={handleChange}
+                    className={`form-input${errors.time ? " error" : ""}`} />
+                  {errors.time && <p className="form-error">{errors.time}</p>}
+                </div>
+              </div>
 
-            <div className="form-row-2">
-              <FormField label="Related Type" name="relatedType" type="select" value={form.relatedType} onChange={handleChange} disabled={dropdownsLoading}
-                options={[{ label: "Customer", value: "Customer" }, { label: "Lead", value: "Lead" }, { label: "Deal", value: "Deal" }]} />
-              <FormField label="Related To" name="relatedTo" type="select" value={form.relatedTo} onChange={handleChange} error={errors.relatedTo} disabled={dropdownsLoading || !form.relatedType}
-                options={relatedOptions.map(o => ({ label: o.name, value: String(o.id) }))} />
-            </div>
+              <div className="form-row-2">
+                <FormField label="Duration (minutes)" name="duration" value={form.duration} onChange={handleChange} error={errors.duration} placeholder="e.g. 30" required />
+                <FormField label="Location" name="location" value={form.location} onChange={handleChange} placeholder="e.g. Zoom, Phone, Office" />
+              </div>
 
-            <FormField label="Description" name="description" type="textarea" value={form.description} onChange={handleChange} placeholder="Add any notes or details…" />
+              <div className="form-row-2">
+                <FormField label="Related Type" name="relatedType" type="select" value={form.relatedType} onChange={handleChange} disabled={dropdownsLoading}
+                  options={[{ label: "Customer", value: "Customer" }, { label: "Lead", value: "Lead" }, { label: "Deal", value: "Deal" }]} />
+                <FormField label="Related To" name="relatedTo" type="select" value={form.relatedTo} onChange={handleChange} error={errors.relatedTo} disabled={dropdownsLoading || !form.relatedType}
+                  options={relatedOptions.map(o => ({ label: o.name, value: String(o.id) }))} />
+              </div>
+
+              <FormField label="Description" name="description" type="textarea" value={form.description} onChange={handleChange} placeholder="Add any notes or details…" />
+            </div>
           </div>
 
-          <div className="form-card-footer">
+          <div className="form-actions">
             <button type="button" className="btn-secondary" onClick={() => router.push("/activities")} disabled={loading}>Cancel</button>
             <button type="submit" className="btn-add" disabled={loading || success}>
               {loading ? (
