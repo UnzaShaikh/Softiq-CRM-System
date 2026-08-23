@@ -192,7 +192,7 @@ export default function NotesPage() {
 
         {error && <div className="msg-error" style={{ marginBottom: "16px" }}>{error}</div>}
 
-        <div className="stats-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+        <div className="stats-grid-4">
           {[
             { label: "All Notes", value: totalCount, icon: <FileText size={20} />, color: "#4f46e5", bg: "#eef2ff" },
             { label: "Categories", value: categories, icon: <Tag size={20} />, color: "#7c3aed", bg: "#faf5ff" },

@@ -172,7 +172,7 @@ export default function OpportunitiesPage() {
         )}
 
         {/* Stats */}
-        <div className="dashboard-stats-grid" style={{ gridTemplateColumns: "repeat(5, minmax(0,1fr))" }}>
+        <div className="stats-grid-5">
           {STAT_CARDS.map((card) => (
             <div
               key={card.label}
@@ -214,13 +214,15 @@ export default function OpportunitiesPage() {
                 ))}
               </div>
             </div>
-            <div className="stage-filters">
-              <span className="stage-filter-label">Stage:</span>
-              {(["All", ...ALL_STAGES] as FilterStage[]).map((tab) => (
-                <button key={tab} className={`stage-tab${stageFilter === tab ? " active" : ""}`} onClick={() => handleStageFilter(tab)}>
-                  {tab}
-                </button>
-              ))}
+            <div className="stage-filters-wrap">
+              <div className="stage-filters">
+                <span className="stage-filter-label">Stage:</span>
+                {(["All", ...ALL_STAGES] as FilterStage[]).map((tab) => (
+                  <button key={tab} className={`stage-tab${stageFilter === tab ? " active" : ""}`} onClick={() => handleStageFilter(tab)}>
+                    {tab}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
