@@ -66,16 +66,11 @@ export default function LeadDetailPage() {
   if (error) {
     return (
       <DashboardLayout>
-        <div style={{ textAlign: "center", padding: "60px 20px" }}>
+      <div className="not-found-state">
           <p style={{ fontSize: "3rem", margin: "0 0 12px" }}>🔍</p>
-          <h2 style={{ margin: "0 0 8px", color: "#0f172a" }}>Lead Not Found</h2>
-          <p style={{ color: "#64748b", margin: "0 0 20px" }}>No lead found with ID: {id}</p>
-          <button
-            onClick={() => router.push("/leads")}
-            style={{ padding: "10px 20px", borderRadius: "8px", background: "#4f46e5", color: "#fff", border: "none", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
-          >
-            Back to Leads
-          </button>
+          <h2>Lead Not Found</h2>
+          <p>No lead found with ID: {id}</p>
+          <button className="btn-add" onClick={() => router.push("/leads")}>Back to Leads</button>
         </div>
       </DashboardLayout>
     );
@@ -85,14 +80,9 @@ export default function LeadDetailPage() {
 
   return (
     <DashboardLayout>
-      <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {/* Back button */}
-        <button
-          onClick={() => router.push("/leads")}
-          style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "none", border: "none", cursor: "pointer", color: "#64748b", fontSize: "0.875rem", fontFamily: "inherit", padding: "0 0 20px", transition: "color 0.15s" }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#4f46e5")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#64748b")}
-        >
+        <button className="back-btn" onClick={() => router.push("/leads")}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
@@ -101,21 +91,22 @@ export default function LeadDetailPage() {
 
         {/* Profile Card */}
         <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)", overflow: "hidden", marginBottom: "20px" }}>
-          <div style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", padding: "28px 28px 60px" }} />
-          <div style={{ padding: "0 28px 28px", marginTop: "-44px", display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "16px" }}>
-              <div style={{ width: 80, height: 80, borderRadius: "50%", background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "1.5rem", border: "4px solid #fff", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", flexShrink: 0 }}>
+          {/* Banner with name inside */}
+          <div style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", padding: "24px 28px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <div style={{ width: 64, height: 64, borderRadius: "50%", background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "1.4rem", border: "3px solid rgba(255,255,255,0.4)", flexShrink: 0 }}>
                 {lead!.avatar}
               </div>
-              <div style={{ paddingBottom: "4px" }}>
-                <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#0f172a" }}>{lead!.name}</h1>
-                <p style={{ margin: "2px 0 6px", color: "#64748b", fontSize: "0.9rem" }}>{lead!.company}</p>
+              <div>
+                <h1 style={{ margin: "0 0 4px", fontSize: "1.25rem", fontWeight: 700, color: "#ffffff" }}>{lead!.name}</h1>
+                <p style={{ margin: "0 0 8px", fontSize: "0.8rem", color: "rgba(255,255,255,0.8)" }}>{lead!.company}</p>
                 <LeadStatusBadge status={lead!.status} />
               </div>
             </div>
             <button
               onClick={() => router.push(`/leads/${id}/edit`)}
-              style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 18px", borderRadius: "8px", background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", color: "#fff", fontWeight: 600, fontSize: "0.875rem", border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 8px rgba(79,70,229,0.35)" }}
+              className="btn-add"
+              style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.4)", backdropFilter: "blur(4px)" }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -127,53 +118,61 @@ export default function LeadDetailPage() {
         </div>
 
         {/* Details Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
           {/* Contact Info */}
-          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "20px" }}>
-            <h3 style={{ margin: "0 0 16px", fontSize: "0.9rem", fontWeight: 700, color: "#0f172a" }}>Contact Information</h3>
-            {[
-              { label: "Email", value: lead!.email, icon: "✉️" },
-              { label: "Phone", value: lead!.phone, icon: "📞" },
-            ].map((item) => (
-              <div key={item.label} style={{ display: "flex", gap: "10px", marginBottom: "14px" }}>
-                <span style={{ fontSize: "1rem", flexShrink: 0 }}>{item.icon}</span>
-                <div>
-                  <p style={{ margin: 0, fontSize: "0.75rem", color: "#94a3b8", fontWeight: 500 }}>{item.label}</p>
-                  <p style={{ margin: 0, fontSize: "0.875rem", color: "#0f172a", fontWeight: 500 }}>{item.value || "—"}</p>
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+            <h3 style={{ margin: "0 0 16px", fontSize: "0.875rem", fontWeight: 700, color: "#0f172a", paddingBottom: "12px", borderBottom: "1px solid #f1f5f9" }}>Contact Information</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              {[
+                { label: "Email", value: lead!.email, icon: "✉️" },
+                { label: "Phone", value: lead!.phone, icon: "📞" },
+              ].map((item) => (
+                <div key={item.label} style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "8px", background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "0.875rem" }}>
+                    {item.icon}
+                  </div>
+                  <div>
+                    <p style={{ margin: "0 0 2px", fontSize: "0.7rem", color: "#94a3b8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.04em" }}>{item.label}</p>
+                    <p style={{ margin: 0, fontSize: "0.875rem", color: "#0f172a", fontWeight: 600 }}>{item.value || "—"}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          {/* Business Info */}
-          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "20px" }}>
-            <h3 style={{ margin: "0 0 16px", fontSize: "0.9rem", fontWeight: 700, color: "#0f172a" }}>Lead Details</h3>
-            {[
-              { label: "Company", value: lead!.company, icon: "🏢" },
-              { label: "Source", value: lead!.source, icon: "🎯" },
-              { label: "Lead ID", value: lead!.id, icon: "🔖" },
-              { label: "Created", value: new Date(lead!.createdDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), icon: "📅" },
-            ].map((item) => (
-              <div key={item.label} style={{ display: "flex", gap: "10px", marginBottom: "14px" }}>
-                <span style={{ fontSize: "1rem", flexShrink: 0 }}>{item.icon}</span>
-                <div>
-                  <p style={{ margin: 0, fontSize: "0.75rem", color: "#94a3b8", fontWeight: 500 }}>{item.label}</p>
-                  <p style={{ margin: 0, fontSize: "0.875rem", color: "#0f172a", fontWeight: 500 }}>{item.value || "—"}</p>
+          {/* Lead Details */}
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+            <h3 style={{ margin: "0 0 16px", fontSize: "0.875rem", fontWeight: 700, color: "#0f172a", paddingBottom: "12px", borderBottom: "1px solid #f1f5f9" }}>Lead Details</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              {[
+                { label: "Company", value: lead!.company,  icon: "🏢" },
+                { label: "Source",  value: lead!.source,   icon: "🎯" },
+                { label: "Lead ID", value: String(lead!.id), icon: "🔖" },
+                { label: "Created", value: new Date(lead!.createdDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), icon: "📅" },
+              ].map((item) => (
+                <div key={item.label} style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "8px", background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "0.875rem" }}>
+                    {item.icon}
+                  </div>
+                  <div>
+                    <p style={{ margin: "0 0 2px", fontSize: "0.7rem", color: "#94a3b8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.04em" }}>{item.label}</p>
+                    <p style={{ margin: 0, fontSize: "0.875rem", color: "#0f172a", fontWeight: 600 }}>{item.value || "—"}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Stats Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "16px" }}>
+        {/* Score & Status Row */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
           {[
-            { label: "Score", value: lead!.score, color: scoreColor(lead!.score), bg: scoreColor(lead!.score) + "1a" },
+            { label: "Score",  value: String(lead!.score),  color: scoreColor(lead!.score),  bg: scoreColor(lead!.score) + "1a" },
             { label: "Status", value: lead!.status, color: "#4f46e5", bg: "#eef2ff" },
           ].map((stat) => (
-            <div key={stat.label} style={{ background: stat.bg, border: `1px solid ${stat.bg}`, borderRadius: "12px", padding: "20px", textAlign: "center" }}>
+            <div key={stat.label} style={{ background: stat.bg, border: `1px solid ${stat.color}22`, borderRadius: "14px", padding: "20px", textAlign: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
               <p style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: stat.color }}>{stat.value}</p>
-              <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "#64748b", fontWeight: 500 }}>{stat.label}</p>
+              <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "#64748b", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.04em" }}>{stat.label}</p>
             </div>
           ))}
         </div>

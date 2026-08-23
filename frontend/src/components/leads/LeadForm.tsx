@@ -363,11 +363,11 @@ export default function LeadForm({
 
       <div style={S.actions}>
         {onCancel && (
-          <button type="button" onClick={onCancel} disabled={loading} style={S.cancelBtn}>
+          <button type="button" onClick={onCancel} disabled={loading} className="btn-secondary">
             Cancel
           </button>
         )}
-        <button type="submit" disabled={loading} style={S.submitBtn(loading)}>
+        <button type="submit" disabled={loading} className="btn-add" style={{ opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}>
           {loading ? "Saving…" : submitLabel}
         </button>
       </div>
