@@ -20,6 +20,38 @@ const STATUS_ORDER: Record<string, number> = {
   "In Progress": 5, "To Do": 4, "On Hold": 3, Completed: 2, Cancelled: 1,
 };
 
+function SortIcon({
+  col,
+  sortKey,
+  sortDir,
+}: {
+  col: SortKey;
+  sortKey: SortKey;
+  sortDir: SortDir;
+}) {
+  const active = sortKey === col;
+  const color = active ? "#4f46e5" : "#94a3b8";
+  return (
+    <svg
+      width="12" height="12" viewBox="0 0 24 24"
+      fill="none" stroke={color} strokeWidth="2.5"
+      strokeLinecap="round" strokeLinejoin="round"
+      style={{ flexShrink: 0 }}
+    >
+      {active && sortDir === "asc" ? (
+        <polyline points="18 15 12 9 6 15" />
+      ) : active && sortDir === "desc" ? (
+        <polyline points="6 9 12 15 18 9" />
+      ) : (
+        <>
+          <polyline points="18 15 12 9 6 15" opacity="0.35" />
+          <polyline points="6 9 12 15 18 9" opacity="0.35" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 export default function TaskTable({ tasks, onView, onEdit, onDelete }: TaskTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("createdDate");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -48,31 +80,7 @@ export default function TaskTable({ tasks, onView, onEdit, onDelete }: TaskTable
     if (vA > vB) return sortDir === "asc" ? 1 : -1;
     return 0;
   });
-
-  function SortIcon({ col }: { col: SortKey }) {
-    const active = sortKey === col;
-    const color = active ? "#4f46e5" : "#94a3b8";
-    return (
-      <svg
-        width="12" height="12" viewBox="0 0 24 24"
-        fill="none" stroke={color} strokeWidth="2.5"
-        strokeLinecap="round" strokeLinejoin="round"
-        style={{ flexShrink: 0 }}
-      >
-        {active && sortDir === "asc" ? (
-          <polyline points="18 15 12 9 6 15" />
-        ) : active && sortDir === "desc" ? (
-          <polyline points="6 9 12 15 18 9" />
-        ) : (
-          <>
-            <polyline points="18 15 12 9 6 15" opacity="0.35" />
-            <polyline points="6 9 12 15 18 9" opacity="0.35" />
-          </>
-        )}
-      </svg>
-    );
-  }
-
+  
   const thStyle: React.CSSProperties = {
     padding: "12px 16px",
     textAlign: "left",
@@ -150,7 +158,7 @@ export default function TaskTable({ tasks, onView, onEdit, onDelete }: TaskTable
               onClick={() => handleSort("title")}
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                Task <SortIcon col="title" />
+                Task <SortIcon col="title" sortKey={sortKey} sortDir={sortDir} />
               </span>
             </th>
 
@@ -160,7 +168,7 @@ export default function TaskTable({ tasks, onView, onEdit, onDelete }: TaskTable
               onClick={() => handleSort("assignee")}
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                Assignee <SortIcon col="assignee" />
+                Assignee <SortIcon col="assignee" sortKey={sortKey} sortDir={sortDir} />
               </span>
             </th>
 
@@ -170,7 +178,7 @@ export default function TaskTable({ tasks, onView, onEdit, onDelete }: TaskTable
               onClick={() => handleSort("priority")}
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                Priority <SortIcon col="priority" />
+                Priority <SortIcon col="priority" sortKey={sortKey} sortDir={sortDir} />
               </span>
             </th>
 
@@ -180,7 +188,7 @@ export default function TaskTable({ tasks, onView, onEdit, onDelete }: TaskTable
               onClick={() => handleSort("status")}
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                Status <SortIcon col="status" />
+                Status <SortIcon col="status" sortKey={sortKey} sortDir={sortDir} />
               </span>
             </th>
 
@@ -190,7 +198,7 @@ export default function TaskTable({ tasks, onView, onEdit, onDelete }: TaskTable
               onClick={() => handleSort("dueDate")}
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                Due Date <SortIcon col="dueDate" />
+                Due Date <SortIcon col="dueDate" sortKey={sortKey} sortDir={sortDir} />
               </span>
             </th>
 
@@ -200,7 +208,7 @@ export default function TaskTable({ tasks, onView, onEdit, onDelete }: TaskTable
               onClick={() => handleSort("createdDate")}
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                Created At <SortIcon col="createdDate" />
+                Created At <SortIcon col="createdDate" sortKey={sortKey} sortDir={sortDir} />
               </span>
             </th>
 

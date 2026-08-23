@@ -1,26 +1,61 @@
 from datetime import date
 
 from followups.models import FollowUp
+from user_profile.models import NotificationSettings
 
 from .models import Notification
+
+
+NOTIFICATION_PREFERENCE_MAP = {
+    "new_lead": "new_lead",
+    "lead_assigned": "lead_assigned",
+    "task_due": "task_reminders",
+    "task_assigned": "task_assigned",
+    "followup_due": "followup_due",
+    "customer_added": "customer_added",
+    "activity": "activity_notifications",
+    "login_alert": "login_alert",
+    "backup_done": "backup_done",
+    "system_error": "system_alerts",
+    "weekly_report": "weekly_report",
+    "monthly_report": "monthly_report",
+}
 
 
 def create_notification(
     user,
     title,
     message,
-    notification_type="system",
+    notification_type="system_error",
     source_type=None,
     source_id=None,
 ):
     """
     Create a notification for a specific user.
 
-    source_type and source_id identify the CRM object
-    that generated the notification.
+    The user's notification settings are checked before creating
+    the notification. If the corresponding notification preference
+    is disabled, no notification is created.
+
+    source_type and source_id identify the CRM object that generated
+    the notification.
     """
 
     if not user:
+        return None
+
+    settings, _ = NotificationSettings.objects.get_or_create(
+        user=user
+    )
+
+    preference_field = NOTIFICATION_PREFERENCE_MAP.get(
+        notification_type
+    )
+
+    if (
+        preference_field
+        and not getattr(settings, preference_field, True)
+    ):
         return None
 
     notification = Notification.objects.create(
@@ -65,15 +100,19 @@ def create_due_followup_notifications():
         if already_exists:
             continue
 
-        create_notification(
+        notification = create_notification(
             user=followup.assigned_to,
             title="Follow-up Due",
-            message=f'Your follow-up "{followup.subject}" is due today.',
+            message=(
+                f'Your follow-up "{followup.subject}" '
+                f"is due today."
+            ),
             notification_type="followup_due",
             source_type="followup",
             source_id=followup.id,
         )
 
-        created_count += 1
+        if notification:
+            created_count += 1
 
     return created_count

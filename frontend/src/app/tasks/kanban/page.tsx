@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import TaskPriorityBadge from "@/components/tasks/TaskPriorityBadge";
@@ -8,11 +8,13 @@ import {
   Task,
   TaskStatus,
   TaskPriority,
-  MOCK_TASKS,
-  MOCK_ASSIGNEES,
   getAvatarColor,
   getDaysRemaining,
 } from "@/data/tasks";
+import {
+  ApiTask,
+  getKanbanTasks,
+} from "@/lib/tasksApi";
 import { ArrowLeft, SlidersHorizontal, Plus } from "lucide-react";
 
 /* ── Kanban columns in display order ── */
@@ -80,11 +82,83 @@ type SortMode = "Priority" | "Due Date" | "Assignee" | "Title";
 
 export default function KanbanPage() {
   const router = useRouter();
-  const [tasks]          = useState<Task[]>(MOCK_TASKS);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [assigneeFilter, setAssigneeFilter] = useState("All");
   const [sortMode,       setSortMode]       = useState<SortMode>("Priority");
   const [showFilters,    setShowFilters]    = useState(false);
   const [toastMsg,       setToastMsg]       = useState<string | null>(null);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState<string | null>(null);
+
+  function mapApiTask(api: ApiTask): Task {
+    const assigneeName =
+      api.assignee_details?.full_name ||
+      api.assignee_details?.username ||
+      "Unassigned";
+
+    return {
+      id: String(api.id),
+      title: api.title,
+      description: api.description || "",
+      assignee: assigneeName,
+      assigneeInitials:
+        assigneeName === "Unassigned"
+          ? "U"
+          : assigneeName
+              .split(/\\s+/)
+              .map((part) => part[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase(),
+      priority:
+        api.priority === "low"
+          ? "Low"
+          : api.priority === "high"
+            ? "High"
+            : "Medium",
+      status:
+        api.status === "todo"
+          ? "To Do"
+          : api.status === "in_progress"
+            ? "In Progress"
+            : api.status === "completed"
+              ? "Completed"
+              : api.status === "on_hold"
+                ? "On Hold"
+                : "Cancelled",
+      dueDate: api.due_date ? api.due_date.slice(0, 10) : "",
+      reminder: api.reminder || undefined,
+      tags: api.tags?.map((tag) => tag.name) || [],
+      createdDate: api.created_at ? api.created_at.slice(0, 10) : "",
+    };
+  }
+
+  async function loadKanban() {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getKanbanTasks();
+      const allTasks = [
+        ...(response.todo || []),
+        ...(response.in_progress || []),
+        ...(response.completed || []),
+        ...(response.on_hold || []),
+        ...(response.cancelled || []),
+      ];
+      setTasks(allTasks.map(mapApiTask));
+    } catch (err) {
+      console.error("Failed to load kanban tasks:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to load kanban tasks."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadKanban();
+  }, []);
 
   function showToast(msg: string) {
     setToastMsg(msg);
@@ -191,8 +265,8 @@ export default function KanbanPage() {
               aria-label="Filter by assignee"
             >
               <option value="All">All Assignees</option>
-              {MOCK_ASSIGNEES.map((a) => (
-                <option key={a.name} value={a.name}>{a.name}</option>
+              {Array.from(new Set(tasks.map((t) => t.assignee))).filter(Boolean).map((name) => (
+                <option key={name} value={name}>{name}</option>
               ))}
             </select>
           </div>
@@ -223,6 +297,17 @@ export default function KanbanPage() {
         </div>
 
         {/* ── Kanban Board ── */}
+        {loading ? (
+          <div className="empty-state">
+            <p className="empty-state-title">Loading tasks...</p>
+          </div>
+        ) : error ? (
+          <div className="empty-state">
+            <p className="empty-state-title" style={{ color: "var(--error)" }}>
+              {error}
+            </p>
+          </div>
+        ) : (
         <div className="tasks-kanban-board">
           {KANBAN_COLUMNS.map((col) => {
             const colTasks = grouped[col.status] ?? [];
@@ -302,6 +387,7 @@ export default function KanbanPage() {
             );
           })}
         </div>
+        )}
       </div>
 
       {/* Toast */}

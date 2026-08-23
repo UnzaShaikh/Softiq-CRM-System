@@ -18,6 +18,7 @@ class Notification(models.Model):
         ("followup_due", "Follow-up Due"),
         ("customer_added", "Customer Added"),
         ("opportunity_created", "Opportunity Created"),
+        ("activity", "Activity"),
         ("login_alert", "Login Alert"),
         ("backup_done", "Backup Completed"),
         ("system_error", "System Error"),
