@@ -107,9 +107,6 @@ const [loading,setLoading] = useState(false);
             <h1 className="page-title">Add Contact</h1>
             <p className="page-subtitle">Create a new contact for your CRM.</p>
           </div>
-          <Link href="/contacts" className="btn-secondary" style={{ textDecoration: "none" }}>
-            Cancel
-          </Link>
         </div>
 
         {/* Form Card */}

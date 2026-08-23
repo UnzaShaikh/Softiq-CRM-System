@@ -48,6 +48,8 @@ urlpatterns = [
     path("api/", include("followups.urls")),
     path("api/", include("email_templates.urls")),
     path("api/", include("user_profile.urls")),
+    path("api/", include('task_management.urls')),
+    
 
 # Pipeline
 path("api/", include("pipeline.urls")),
