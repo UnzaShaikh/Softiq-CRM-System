@@ -79,25 +79,24 @@ export default function OpportunityDetailPage() {
 
         {/* Profile Card */}
         <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-          {/* Banner */}
-          <div style={{ height: "90px", background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)" }} />
-          {/* Body */}
-          <div style={{ padding: "0 24px 20px", marginTop: "-32px", display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "16px" }}>
+          {/* Banner with name inside */}
+          <div style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", padding: "24px 24px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
               {/* Avatar */}
-              <div style={{ width: 72, height: 72, borderRadius: "50%", background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "1.5rem", border: "4px solid #fff", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", flexShrink: 0 }}>
+              <div style={{ width: 64, height: 64, borderRadius: "50%", background: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "1.4rem", border: "3px solid rgba(255,255,255,0.4)", flexShrink: 0 }}>
                 {opp!.avatar}
               </div>
-              <div style={{ paddingBottom: "4px" }}>
-                <h1 style={{ margin: "0 0 3px", fontSize: "1.25rem", fontWeight: 700, color: "#0f172a" }}>{opp!.name}</h1>
-                <p style={{ margin: "0 0 8px", fontSize: "0.8rem", color: "#64748b" }}>{opp!.customerName} — {opp!.company}</p>
+              <div>
+                <h1 style={{ margin: "0 0 4px", fontSize: "1.25rem", fontWeight: 700, color: "#ffffff" }}>{opp!.name}</h1>
+                <p style={{ margin: "0 0 8px", fontSize: "0.8rem", color: "rgba(255,255,255,0.8)" }}>{opp!.customerName} — {opp!.company}</p>
                 <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                   <OpportunityStageBadge stage={opp!.stage} />
                   <OpportunityStatusBadge status={opp!.status} />
                 </div>
               </div>
             </div>
-            <button className="btn-add" onClick={() => router.push(`/opportunities/${id}/edit`)} style={{ marginBottom: "4px" }}>
+            <button className="btn-add" onClick={() => router.push(`/opportunities/${id}/edit`)}
+              style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.4)", backdropFilter: "blur(4px)" }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
               Edit Opportunity
             </button>
@@ -105,7 +104,7 @@ export default function OpportunityDetailPage() {
         </div>
 
         {/* Details Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
 
           {/* Deal Information */}
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>

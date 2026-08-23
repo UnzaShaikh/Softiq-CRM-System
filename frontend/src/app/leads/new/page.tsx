@@ -11,11 +11,11 @@ export default function AddLeadPage() {
 
   return (
     <DashboardLayout>
-      <div className="form-card">
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
         {/* Header */}
-        <div style={{ padding: "0 0 0.75rem" }}>
-          <button className="back-btn" onClick={() => router.push("/leads")}>
+        <div>
+          <button className="back-btn" onClick={() => router.push("/leads")} style={{ marginBottom: "8px" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
@@ -36,19 +36,21 @@ export default function AddLeadPage() {
         )}
 
         {/* Form Card */}
-        <div className="form-card-header">
-          <h2 className="form-card-title">Lead Information</h2>
-        </div>
-
-        <div className="form-card-body">
-          <LeadForm
-            submitLabel="Add Lead"
-            onSuccess={() => {
-              setSuccess(true);
-              setTimeout(() => router.push("/leads"), 1800);
-            }}
-            onCancel={() => router.push("/leads")}
-          />
+        <div className="company-form-card">
+          <div className="form-section">
+            <div className="form-section-header">
+              <h2>Lead Information</h2>
+              <p>Fill in all the required fields below.</p>
+            </div>
+            <LeadForm
+              submitLabel="Add Lead"
+              onSuccess={() => {
+                setSuccess(true);
+                setTimeout(() => router.push("/leads"), 1800);
+              }}
+              onCancel={() => router.push("/leads")}
+            />
+          </div>
         </div>
       </div>
     </DashboardLayout>

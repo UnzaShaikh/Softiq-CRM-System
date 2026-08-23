@@ -76,12 +76,8 @@ export default function DashboardPage() {
 
         {/* Page Header */}
         <div>
-          <h1 style={{ margin: 0, fontSize: "2rem", fontWeight: 700, color: "#0f172a" }}>
-            Dashboard
-          </h1>
-          <p style={{ marginTop: 6, color: "#64748b" }}>
-            Here&apos;s what&apos;s happening today.
-          </p>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="page-subtitle">Here&apos;s what&apos;s happening today.</p>
         </div>
 
         {/* KPI Cards */}
