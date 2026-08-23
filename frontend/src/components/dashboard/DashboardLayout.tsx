@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Settings, LogOut, ChevronDown, User } from "lucide-react"; 4
+import { Settings, LogOut, ChevronDown, User } from "lucide-react";
+import { apiRequest } from "@/lib/api"; 4
 import { globalSearch, GlobalSearchResult } from "@/lib/search";
 
 /* ── Palette (matches reference: deep navy sidebar + violet accent) ── */
@@ -455,6 +456,24 @@ const BOTTOM_ITEMS: {
     },
   ];
 
+interface NotificationItem {
+  id: number;
+  notification_type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+  source_type?: string | null;
+  source_id?: number | null;
+}
+
+interface NotificationListResponse {
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
+  results?: NotificationItem[];
+}
+
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
@@ -475,6 +494,120 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [searchOpen, setSearchOpen] = useState(false);
 
   const searchRef = useRef<HTMLDivElement>(null);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  async function fetchUnreadNotificationCount() {
+    try {
+      const response = await apiRequest<{ unread_count: number }>(
+        "/api/notifications/unread-count/"
+      );
+      setUnreadNotificationCount(Number(response?.unread_count ?? 0));
+    } catch (error) {
+      console.error("Failed to fetch notification count:", error);
+    }
+  }
+
+  async function fetchNotifications() {
+    setNotificationLoading(true);
+    try {
+      const response = await apiRequest<NotificationListResponse | NotificationItem[]>(
+        "/api/notifications/"
+      );
+      setNotifications(Array.isArray(response) ? response : response?.results ?? []);
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+      setNotifications([]);
+    } finally {
+      setNotificationLoading(false);
+    }
+  }
+
+  async function markNotificationAsRead(id: number) {
+    try {
+      await apiRequest(`/api/notifications/${id}/read/`, { method: "PATCH" });
+      setNotifications((items) =>
+        items.map((item) => item.id === id ? { ...item, is_read: true } : item)
+      );
+      await fetchUnreadNotificationCount();
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+    }
+  }
+
+  async function markAllNotificationsAsRead() {
+    try {
+      await apiRequest("/api/notifications/mark-all-read/", { method: "PATCH" });
+      setNotifications((items) => items.map((item) => ({ ...item, is_read: true })));
+      await fetchUnreadNotificationCount();
+    } catch (error) {
+      console.error("Failed to mark all notifications as read:", error);
+    }
+  }
+
+  function getNotificationUrl(notification: NotificationItem): string | null {
+    if (!notification.source_type || !notification.source_id) return null;
+
+    const id = notification.source_id;
+
+    switch (notification.source_type.toLowerCase()) {
+      case "task":
+        return `/tasks/${id}/`;
+      case "activity":
+        return `/activities/${id}/`;
+      case "followup":
+      case "follow-up":
+        return `/followups/${id}/`;
+      case "lead":
+        return `/leads/${id}/`;
+      case "customer":
+        return `/customers/${id}/`;
+      case "company":
+        return `/companies/${id}/`;
+      case "contact":
+        return `/contacts/${id}/`;
+      case "deal":
+        return `/deals/${id}/`;
+      case "opportunity":
+        return `/opportunities/${id}/`;
+      case "note":
+        return `/notes/${id}/`;
+      case "email_template":
+      case "email-template":
+        return `/email-templates/${id}/`;
+      default:
+        return null;
+    }
+  }
+
+  async function handleNotificationClick(notification: NotificationItem) {
+    if (!notification.is_read) {
+      await markNotificationAsRead(notification.id);
+    }
+
+    const url = getNotificationUrl(notification);
+    if (url) {
+      setNotificationOpen(false);
+      router.push(url);
+    }
+  }
+
+  function formatNotificationTime(value: string) {
+    const created = new Date(value);
+    if (Number.isNaN(created.getTime())) return "";
+    const minutes = Math.floor(Math.max(0, Date.now() - created.getTime()) / 60000);
+    if (minutes < 1) return "Just now";
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return created.toLocaleDateString();
+  }
+
 
   useEffect(() => {
     const query = searchQuery.trim();
@@ -519,6 +652,29 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
+  }, []);
+
+  useEffect(() => {
+    fetchUnreadNotificationCount();
+    const interval = window.setInterval(fetchUnreadNotificationCount, 30000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (notificationOpen) {
+      fetchNotifications();
+      fetchUnreadNotificationCount();
+    }
+  }, [notificationOpen]);
+
+  useEffect(() => {
+    function handleNotificationClickOutside(event: MouseEvent) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setNotificationOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleNotificationClickOutside);
+    return () => document.removeEventListener("mousedown", handleNotificationClickOutside);
   }, []);
 
   // Route change hone par mobile sidebar apne aap band ho jaye
@@ -1207,48 +1363,189 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Right actions */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button
-              style={{
-                position: "relative",
-                background: "none",
-                border: "1.5px solid #e2e8f0",
-                borderRadius: 8,
-                width: 38,
-                height: 38,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                color: "#64748b",
-                transition: "border-color 0.15s, background 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#c7d2fe";
-                e.currentTarget.style.background = "#f8fafc";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#e2e8f0";
-                e.currentTarget.style.background = "none";
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-
-              <span
+            <div ref={notificationRef} style={{ position: "relative" }}>
+              <button
+                type="button"
+                aria-label="Notifications"
+                onClick={() => setNotificationOpen((open) => !open)}
                 style={{
-                  position: "absolute",
-                  top: 6,
-                  right: 6,
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: "#ef4444",
-                  border: "2px solid #fff",
+                  position: "relative",
+                  background: "none",
+                  border: "1.5px solid #e2e8f0",
+                  borderRadius: 8,
+                  width: 38,
+                  height: 38,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: "#64748b",
+                  transition: "border-color 0.15s, background 0.15s",
                 }}
-              />
-            </button>
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "#c7d2fe";
+                  e.currentTarget.style.background = "#f8fafc";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#e2e8f0";
+                  e.currentTarget.style.background = "none";
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                {unreadNotificationCount > 0 && (
+                  <span style={{
+                    position: "absolute",
+                    top: 5,
+                    right: 5,
+                    minWidth: 8,
+                    height: 8,
+                    padding: unreadNotificationCount > 9 ? "0 3px" : undefined,
+                    borderRadius: 9999,
+                    background: "#ef4444",
+                    border: "2px solid #fff",
+                    color: "#fff",
+                    fontSize: "0.55rem",
+                    lineHeight: "8px",
+                    textAlign: "center",
+                    boxSizing: "content-box",
+                  }}>
+                    {unreadNotificationCount > 9
+                      ? unreadNotificationCount > 99 ? "99+" : unreadNotificationCount
+                      : ""}
+                  </span>
+                )}
+              </button>
+
+              {notificationOpen && (
+                <div style={{
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  right: 0,
+                  width: 360,
+                  maxWidth: "calc(100vw - 24px)",
+                  background: "#fff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 12,
+                  boxShadow: "0 12px 30px rgba(15, 23, 42, 0.14)",
+                  zIndex: 9999,
+                  overflow: "hidden",
+                }}>
+                  <div style={{
+                    padding: "13px 14px",
+                    borderBottom: "1px solid #f1f5f9",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                  }}>
+                    <div>
+                      <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#0f172a" }}>
+                        Notifications
+                      </div>
+                      {unreadNotificationCount > 0 && (
+                        <div style={{ marginTop: 2, fontSize: "0.72rem", color: "#64748b" }}>
+                          {unreadNotificationCount} unread
+                        </div>
+                      )}
+                    </div>
+                    {unreadNotificationCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={markAllNotificationsAsRead}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          color: ACCENT_TO,
+                          cursor: "pointer",
+                          fontSize: "0.72rem",
+                          fontWeight: 600,
+                          padding: 4,
+                        }}
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ maxHeight: 420, overflowY: "auto" }}>
+                    {notificationLoading ? (
+                      <div style={{ padding: "28px 16px", textAlign: "center", color: "#64748b", fontSize: "0.8rem" }}>
+                        Loading notifications...
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div style={{ padding: "30px 16px", textAlign: "center", color: "#64748b", fontSize: "0.8rem" }}>
+                        No notifications
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <button
+                          key={notification.id}
+                          type="button"
+                          onClick={() => handleNotificationClick(notification)}
+                          style={{
+                            width: "100%",
+                            border: "none",
+                            borderBottom: "1px solid #f1f5f9",
+                            background: notification.is_read ? "#fff" : "#f8f7ff",
+                            padding: "12px 14px",
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: 10,
+                            cursor: "pointer",
+                            textAlign: "left",
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = notification.is_read ? "#fff" : "#f8f7ff"; }}
+                        >
+                          <span style={{
+                            width: 8,
+                            height: 8,
+                            marginTop: 5,
+                            borderRadius: "50%",
+                            flexShrink: 0,
+                            background: notification.is_read ? "#cbd5e1" : ACCENT_TO,
+                          }} />
+                          <span style={{ flex: 1, minWidth: 0, display: "block" }}>
+                            <span style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: 8,
+                            }}>
+                              <span style={{
+                                fontSize: "0.8rem",
+                                fontWeight: notification.is_read ? 600 : 700,
+                                color: "#0f172a",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}>
+                                {notification.title}
+                              </span>
+                              <span style={{ flexShrink: 0, fontSize: "0.65rem", color: "#94a3b8" }}>
+                                {formatNotificationTime(notification.created_at)}
+                              </span>
+                            </span>
+                            <span style={{
+                              display: "block",
+                              marginTop: 4,
+                              fontSize: "0.74rem",
+                              lineHeight: 1.45,
+                              color: "#64748b",
+                            }}>
+                              {notification.message}
+                            </span>
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <UserDropdown
               initials={initials}

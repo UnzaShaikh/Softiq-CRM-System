@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import TaskTable from "@/components/tasks/TaskTable";
@@ -11,9 +11,12 @@ import {
   Task,
   TaskStatus,
   TaskPriority,
-  MOCK_TASKS,
-  MOCK_ASSIGNEES,
 } from "@/data/tasks";
+import {
+  ApiTask,
+  listTasks,
+  deleteTask,
+} from "@/lib/tasksApi";
 import {
   ClipboardList,
   Circle,
@@ -47,10 +50,71 @@ type FilterAssignee = "All" | string;
 export default function TasksPage() {
   const router = useRouter();
 
-  /* ── data (static mock; swap for apiRequest when backend is ready) ── */
-  const [tasks]   = useState<Task[]>(MOCK_TASKS);
-  const [loading] = useState(false);
-  const [error]   = useState<string | null>(null);
+  /* ── data (real backend) ── */
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  function mapApiTask(api: ApiTask): Task {
+    const assigneeName =
+      api.assignee_details?.full_name ||
+      api.assignee_details?.username ||
+      "Unassigned";
+
+    return {
+      id: String(api.id),
+      title: api.title,
+      description: api.description || "",
+      assignee: assigneeName,
+      assigneeInitials:
+        assigneeName === "Unassigned"
+          ? "U"
+          : assigneeName
+              .split(/\\s+/)
+              .map((part) => part[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase(),
+      priority:
+        api.priority === "low"
+          ? "Low"
+          : api.priority === "high"
+            ? "High"
+            : "Medium",
+      status:
+        api.status === "todo"
+          ? "To Do"
+          : api.status === "in_progress"
+            ? "In Progress"
+            : api.status === "completed"
+              ? "Completed"
+              : api.status === "on_hold"
+                ? "On Hold"
+                : "Cancelled",
+      dueDate: api.due_date ? api.due_date.slice(0, 10) : "",
+      reminder: api.reminder || undefined,
+      tags: api.tags?.map((tag) => tag.name) || [],
+      createdDate: api.created_at ? api.created_at.slice(0, 10) : "",
+    };
+  }
+
+  async function loadTasks() {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await listTasks();
+      setTasks(response.results.map(mapApiTask));
+    } catch (err) {
+      console.error("Failed to load tasks:", err);
+      setError(err instanceof Error ? err.message : "Failed to load tasks.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadTasks();
+  }, []);
 
   /* ── filters ── */
   const [search,          setSearch]          = useState("");
@@ -111,10 +175,22 @@ export default function TasksPage() {
     setTimeout(() => setToastMsg(null), 3000);
   }
 
-  function handleDeleteConfirmed() {
+  async function handleDeleteConfirmed() {
     if (!deleteModal) return;
-    showToast(`"${deleteModal.title}" has been deleted.`);
-    setDeleteModal(null);
+
+    try {
+      await deleteTask(deleteModal.id);
+      setTasks((current) =>
+        current.filter((task) => task.id !== deleteModal.id)
+      );
+      showToast(`"${deleteModal.title}" has been deleted.`);
+      setDeleteModal(null);
+    } catch (err) {
+      console.error("Failed to delete task:", err);
+      showToast(
+        err instanceof Error ? err.message : "Failed to delete task."
+      );
+    }
   }
 
   function clearFilters() {
@@ -297,8 +373,8 @@ export default function TasksPage() {
                 aria-label="Filter by assignee"
               >
                 <option value="All">All Assignees</option>
-                {MOCK_ASSIGNEES.map((a) => (
-                  <option key={a.name} value={a.name}>{a.name}</option>
+                {Array.from(new Set(tasks.map((t) => t.assignee))).filter(Boolean).map((name) => (
+                  <option key={name} value={name}>{name}</option>
                 ))}
               </select>
 

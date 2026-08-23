@@ -13,9 +13,7 @@ from .serializers import (
 
 
 class NotificationListView(APIView):
-    """
-    Return notifications belonging to the authenticated user.
-    """
+    """Return notifications belonging to the authenticated user."""
 
     permission_classes = [IsAuthenticated]
 
@@ -33,9 +31,7 @@ class NotificationListView(APIView):
 
 
 class NotificationUnreadCountView(APIView):
-    """
-    Return the number of unread notifications for the authenticated user.
-    """
+    """Return the unread notification count for the authenticated user."""
 
     permission_classes = [IsAuthenticated]
 
@@ -45,15 +41,11 @@ class NotificationUnreadCountView(APIView):
             is_read=False,
         ).count()
 
-        return Response({
-            "unread_count": unread_count,
-        })
+        return Response({"unread_count": unread_count})
 
 
 class NotificationMarkReadView(APIView):
-    """
-    Mark one notification as read.
-    """
+    """Mark one notification as read."""
 
     permission_classes = [IsAuthenticated]
 
@@ -72,19 +64,15 @@ class NotificationMarkReadView(APIView):
         notification.is_read = True
         notification.save(update_fields=["is_read"])
 
-        serializer = NotificationSerializer(notification)
-
-        return Response(serializer.data)
+        return Response(NotificationSerializer(notification).data)
 
 
 class NotificationMarkAllReadView(APIView):
-    """
-    Mark all notifications belonging to the authenticated user as read.
-    """
+    """Mark all notifications belonging to the authenticated user as read."""
 
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def patch(self, request):
         updated_count = Notification.objects.filter(
             user=request.user,
             is_read=False,
@@ -97,9 +85,7 @@ class NotificationMarkAllReadView(APIView):
 
 
 class NotificationSettingsView(APIView):
-    """
-    Get or update notification settings for the authenticated user.
-    """
+    """Get or update notification settings for the authenticated user."""
 
     permission_classes = [IsAuthenticated]
 
@@ -107,19 +93,15 @@ class NotificationSettingsView(APIView):
         settings, created = NotificationSettings.objects.get_or_create(
             user=user
         )
-
         return settings
 
     def get(self, request):
         settings = self.get_settings(request.user)
-
         serializer = NotificationSettingsSerializer(settings)
-
         return Response(serializer.data)
 
     def patch(self, request):
         settings = self.get_settings(request.user)
-
         serializer = NotificationSettingsSerializer(
             settings,
             data=request.data,
@@ -128,7 +110,6 @@ class NotificationSettingsView(APIView):
 
         if serializer.is_valid():
             serializer.save()
-
             return Response(serializer.data)
 
         return Response(
