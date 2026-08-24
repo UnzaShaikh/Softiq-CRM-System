@@ -78,7 +78,7 @@ export default function ActivityDetailPage() {
 
   return (
     <DashboardLayout>
-      <div className="detail-wrapper">
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         <button className="back-btn" onClick={() => router.push("/activities")}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
           Back to Activities
@@ -87,41 +87,38 @@ export default function ActivityDetailPage() {
         {error && !notFound && <div className="msg-error">{error}</div>}
 
         {/* Profile Card */}
-        <div className="detail-profile-card">
-          <div className="detail-profile-banner" />
-          <div className="detail-profile-body">
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "1rem" }}>
-              <div className="detail-avatar" style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", fontSize: "1.25rem" }}>
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", padding: "24px 28px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", border: "3px solid rgba(255,255,255,0.4)", flexShrink: 0 }}>
                 {model.type === "Call" ? "📞" : model.type === "Meeting" ? "🤝" : model.type === "Email" ? "✉️" : model.type === "Task" ? "✅" : "🔄"}
               </div>
-              <div style={{ paddingBottom: "4px" }}>
-                <h1 className="detail-name">{model.title}</h1>
-                <p className="detail-meta">{model.relatedTo} · {model.relatedType}</p>
-                <div className="detail-badges">
+              <div>
+                <h1 style={{ margin: "0 0 4px", fontSize: "1.25rem", fontWeight: 700, color: "#ffffff" }}>{model.title}</h1>
+                <p style={{ margin: "0 0 8px", fontSize: "0.8rem", color: "rgba(255,255,255,0.8)" }}>{model.relatedTo} · {model.relatedType}</p>
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                   <ActivityTypeBadge type={model.type} />
                   <ActivityStatusBadge status={model.status} />
                   <ActivityPriorityBadge priority={model.priority} />
                 </div>
               </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
               {actionable && (
                 <>
-                  <button className="btn-add" onClick={() => handleStatusChange("Completed")} disabled={busy}>
+                  <button className="btn-add" onClick={() => handleStatusChange("Completed")} disabled={busy}
+                    style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.4)" }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                    Mark as Completed
+                    Mark Completed
                   </button>
-                  <button
-                    className="btn-secondary"
-                    onClick={() => handleStatusChange("Cancelled")}
-                    disabled={busy}
-                    style={{ color: "#dc2626", borderColor: "#fca5a5" }}
-                  >
+                  <button className="btn-secondary" onClick={() => handleStatusChange("Cancelled")} disabled={busy}
+                    style={{ color: "#dc2626", borderColor: "#fca5a5", background: "rgba(255,255,255,0.15)" }}>
                     Cancel Activity
                   </button>
                 </>
               )}
-              <button className="btn-secondary" onClick={() => router.push(`/activities/${id}/edit`)}>
+              <button className="btn-secondary" onClick={() => router.push(`/activities/${id}/edit`)}
+                style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.4)", color: "#fff" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                 Edit Activity
               </button>
@@ -130,51 +127,62 @@ export default function ActivityDetailPage() {
         </div>
 
         {/* Details Grid */}
-        <div className="detail-grid">
-          <div className="detail-info-card">
-            <h3 className="detail-info-title">Schedule Information</h3>
-            {[
-              { label: "Date", value: new Date(`${model.date}T00:00:00`).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }), icon: <Calendar size={15} color="#64748b" /> },
-              { label: "Time", value: `${model.time} · ${model.duration} minutes`, icon: <Clock size={15} color="#64748b" /> },
-              { label: "Location", value: model.location || "—", icon: <MapPin size={15} color="#64748b" /> },
-              { label: "Assigned To", value: model.assignedTo || "—", icon: <User size={15} color="#64748b" /> },
-            ].map(item => (
-              <div key={item.label} className="detail-info-row">
-                <span className="detail-info-icon">{item.icon}</span>
-                <div>
-                  <p className="detail-info-label">{item.label}</p>
-                  <p className="detail-info-value">{item.value}</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+            <h3 style={{ margin: "0 0 16px", fontSize: "0.875rem", fontWeight: 700, color: "#0f172a", paddingBottom: "12px", borderBottom: "1px solid #f1f5f9" }}>Schedule Information</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              {[
+                { label: "Date", value: new Date(`${model.date}T00:00:00`).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }), icon: <Calendar size={15} color="#4f46e5" /> },
+                { label: "Time", value: `${model.time} · ${model.duration} minutes`, icon: <Clock size={15} color="#4f46e5" /> },
+                { label: "Location", value: model.location || "—", icon: <MapPin size={15} color="#4f46e5" /> },
+                { label: "Assigned To", value: model.assignedTo || "—", icon: <User size={15} color="#4f46e5" /> },
+              ].map(item => (
+                <div key={item.label} style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "8px", background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {item.icon}
+                  </div>
+                  <div>
+                    <p style={{ margin: "0 0 2px", fontSize: "0.7rem", color: "#94a3b8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.04em" }}>{item.label}</p>
+                    <p style={{ margin: 0, fontSize: "0.875rem", color: "#0f172a", fontWeight: 600 }}>{item.value}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          <div className="detail-info-card">
-            <h3 className="detail-info-title">Related Information</h3>
-            {[
-              { label: "Related To", value: model.relatedTo, icon: <User size={15} color="#64748b" /> },
-              { label: "Related Type", value: model.relatedType, icon: <Tag size={15} color="#64748b" /> },
-              { label: "Activity ID", value: String(model.id), icon: <Tag size={15} color="#64748b" /> },
-              { label: "Created", value: model.createdDate ? new Date(`${model.createdDate}T00:00:00`).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "—", icon: <Calendar size={15} color="#64748b" /> },
-            ].map(item => (
-              <div key={item.label} className="detail-info-row">
-                <span className="detail-info-icon">{item.icon}</span>
-                <div>
-                  <p className="detail-info-label">{item.label}</p>
-                  <p className="detail-info-value">{item.value}</p>
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+            <h3 style={{ margin: "0 0 16px", fontSize: "0.875rem", fontWeight: 700, color: "#0f172a", paddingBottom: "12px", borderBottom: "1px solid #f1f5f9" }}>Related Information</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              {[
+                { label: "Related To", value: model.relatedTo || "—", icon: <User size={15} color="#4f46e5" /> },
+                { label: "Related Type", value: model.relatedType || "—", icon: <Tag size={15} color="#4f46e5" /> },
+                { label: "Activity ID", value: String(model.id), icon: <Tag size={15} color="#4f46e5" /> },
+                { label: "Created", value: model.createdDate ? new Date(`${model.createdDate}T00:00:00`).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "—", icon: <Calendar size={15} color="#4f46e5" /> },
+              ].map(item => (
+                <div key={item.label} style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "8px", background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {item.icon}
+                  </div>
+                  <div>
+                    <p style={{ margin: "0 0 2px", fontSize: "0.7rem", color: "#94a3b8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.04em" }}>{item.label}</p>
+                    <p style={{ margin: 0, fontSize: "0.875rem", color: "#0f172a", fontWeight: 600 }}>{item.value}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Description */}
         {model.description && (
-          <div className="detail-info-card" style={{ marginTop: "1rem" }}>
-            <h3 className="detail-info-title" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <FileText size={16} color="#64748b" /> Description
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+            <h3 style={{ margin: "0 0 12px", fontSize: "0.875rem", fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ width: 28, height: 28, borderRadius: "7px", background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <FileText size={14} color="#4f46e5" />
+              </div>
+              Description
             </h3>
-            <p style={{ margin: 0, color: "#475569", fontSize: "0.9rem", lineHeight: 1.7 }}>{model.description}</p>
+            <p style={{ margin: 0, color: "#475569", fontSize: "0.875rem", lineHeight: 1.7 }}>{model.description}</p>
           </div>
         )}
       </div>
