@@ -253,16 +253,18 @@ class SecuritySettingsSerializer(serializers.ModelSerializer):
         ]
 
     def validate_session_timeout(self, value):
-        if not (5 <= int(value) <= 1440):
+        # 0 means "never expire"
+        if value != 0 and not (5 <= int(value) <= 1440):
             raise serializers.ValidationError(
-                "Session timeout must be between 5 and 1440 minutes."
+                "Session timeout must be 0 (never) or between 5 and 1440 minutes."
             )
         return value
 
     def validate_max_login_attempts(self, value):
-        if not (3 <= int(value) <= 10):
+        # 0 means unlimited attempts
+        if value != 0 and not (3 <= int(value) <= 10):
             raise serializers.ValidationError(
-                "Maximum login attempts must be between 3 and 10."
+                "Maximum login attempts must be 0 (unlimited) or between 3 and 10."
             )
         return value
 
