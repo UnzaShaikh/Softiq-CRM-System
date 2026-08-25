@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import SearchBar from "@/components/customers/SearchBar";
 import Pagination from "@/components/customers/Pagination";
 import { Note, NoteCategory, ALL_CATEGORIES, CATEGORY_COLORS, PRIORITY_COLORS } from "@/data/notes";
@@ -257,7 +258,7 @@ export default function NotesPage() {
 
           <div style={{ padding: "20px" }}>
             {loading ? (
-              <div className="loading-state">Loading notes...</div>
+              <ThemeLoader label="Loading notes..." minHeight={220} />
             ) : filtered.length === 0 ? (
               <div className="empty-state">
                 <FileText size={48} color="#cbd5e1" style={{ margin: "0 auto 12px", display: "block" }} />

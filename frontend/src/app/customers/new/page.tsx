@@ -77,9 +77,11 @@ export default function AddCustomerPage() {
 
   return (
     <DashboardLayout>
-      <div className="form-card">
-        <div style={{ padding: "0 0 0.75rem" }}>
-          <button className="back-btn" onClick={() => router.push("/customers")}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+
+        {/* Page Header */}
+        <div>
+          <button className="back-btn" onClick={() => router.push("/customers")} style={{ marginBottom: "8px" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
             Back to Customers
           </button>
@@ -100,28 +102,33 @@ export default function AddCustomerPage() {
           </div>
         )}
 
-        <div className="form-card-header">
-          <h2 className="form-card-title">Customer Information</h2>
-        </div>
+        {/* Form Card */}
+        <form onSubmit={handleSubmit} noValidate className="company-form-card">
+          <div className="form-section">
+            <div className="form-section-header">
+              <h2>Customer Information</h2>
+              <p>Fill in all the required fields below.</p>
+            </div>
 
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="form-card-body">
-            <div className="form-row-2">
-              <FormField label="First Name" name="first_name" value={form.first_name} onChange={handleChange} error={errors.first_name} placeholder="e.g. Ahmed" required />
-              <FormField label="Last Name" name="last_name" value={form.last_name} onChange={handleChange} error={errors.last_name} placeholder="e.g. Ali" required />
-            </div>
-            <div className="form-row-2">
-              <FormField label="Email Address" name="email" type="email" value={form.email} onChange={handleChange} error={errors.email} placeholder="e.g. ahmed@example.com" required />
-              <FormField label="Phone Number" name="phone" type="tel" value={form.phone} onChange={handleChange} error={errors.phone} placeholder="e.g. +92 300 1234567" required />
-            </div>
-            <div className="form-row-2">
-              <FormField label="Company" name="company" value={form.company} onChange={handleChange} error={errors.company} placeholder="e.g. TechVision Pvt Ltd" required />
-              <FormField label="Status" name="status" type="select" value={form.status} onChange={handleChange} error={errors.status} required
-                options={[{ label: "Active", value: "Active" }, { label: "Inactive", value: "Inactive" }, { label: "Lead", value: "Lead" }]} />
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div className="form-row-2">
+                <FormField label="First Name" name="first_name" value={form.first_name} onChange={handleChange} error={errors.first_name} placeholder="e.g. Ahmed" required />
+                <FormField label="Last Name" name="last_name" value={form.last_name} onChange={handleChange} error={errors.last_name} placeholder="e.g. Ali" required />
+              </div>
+              <div className="form-row-2">
+                <FormField label="Email Address" name="email" type="email" value={form.email} onChange={handleChange} error={errors.email} placeholder="e.g. ahmed@example.com" required />
+                <FormField label="Phone Number" name="phone" type="tel" value={form.phone} onChange={handleChange} error={errors.phone} placeholder="e.g. +92 300 1234567" required />
+              </div>
+              <div className="form-row-2">
+                <FormField label="Company" name="company" value={form.company} onChange={handleChange} error={errors.company} placeholder="e.g. TechVision Pvt Ltd" required />
+                <FormField label="Status" name="status" type="select" value={form.status} onChange={handleChange} error={errors.status} required
+                  options={[{ label: "Active", value: "Active" }, { label: "Inactive", value: "Inactive" }, { label: "Lead", value: "Lead" }]} />
+              </div>
             </div>
           </div>
 
-          <div className="form-card-footer">
+          {/* Actions */}
+          <div className="form-actions">
             <button type="button" className="btn-secondary" onClick={() => router.push("/customers")} disabled={loading}>Cancel</button>
             <button type="submit" className="btn-add" disabled={loading || success}>
               {loading ? (

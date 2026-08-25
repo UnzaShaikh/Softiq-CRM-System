@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import emailTemplatesData, { EmailTemplate, CATEGORY_COLORS } from "@/data/emailTemplates";
-import { ArrowLeft, Pencil, Copy, Mail, Tag, User, Calendar, Clock, Eye, FileText, Settings } from "lucide-react";
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import { EmailTemplate, CATEGORY_COLORS } from "@/data/emailTemplates";
+import {
+  getEmailTemplate, mapEmailTemplateDetail,
+  duplicateEmailTemplate,
+  getEmailTemplateActivity, previewEmailTemplate,
+  type TemplateActivityItem, type TemplatePreview,
+} from "@/lib/emailTemplatesApi";
 import { HiArrowLeft, HiPencil, HiDuplicate, HiMail, HiTag, HiUser, HiCalendar, HiClock, HiEye, HiDocumentText, HiCog, HiClipboardCopy } from "react-icons/hi";
 
 type TabType = "overview" | "preview" | "details" | "activity";
@@ -16,17 +22,56 @@ export default function ViewEmailTemplatePage() {
   const [template, setTemplate] = useState<EmailTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [copied, setCopied] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
+  // Preview tab: rendered via the backend preview endpoint.
+  const [preview, setPreview] = useState<TemplatePreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState("");
+  // Activity tab: real audit entries from the backend.
+  const [activity, setActivity] = useState<TemplateActivityItem[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   useEffect(() => {
-    setTimeout(() => {
-      const found = emailTemplatesData.find(t => t.id === id);
-      if (!found) setNotFound(true);
-      else setTemplate(found);
-      setLoading(false);
-    }, 400);
+    let cancelled = false;
+    getEmailTemplate(id)
+      .then(t => { if (!cancelled) setTemplate(mapEmailTemplateDetail(t)); })
+      .catch(err => {
+        if (cancelled) return;
+        if (err instanceof Error && /not found|404/i.test(err.message)) setNotFound(true);
+        else setLoadError(err instanceof Error ? err.message : "Failed to load template.");
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [id]);
+
+  // Lazily load the rendered preview when the tab is opened.
+  useEffect(() => {
+    if (activeTab !== "preview" || !id || preview || previewLoading) return;
+    setPreviewLoading(true);
+    setPreviewError("");
+    previewEmailTemplate(id)
+      .then(setPreview)
+      .catch(err => setPreviewError(err instanceof Error ? err.message : "Failed to render preview."))
+      .finally(() => setPreviewLoading(false));
+  }, [activeTab, id, preview, previewLoading]);
+
+  // Lazily load activity entries when the tab is opened.
+  const loadActivity = useCallback(() => {
+    if (!id || activityLoading) return;
+    setActivityLoading(true);
+    getEmailTemplateActivity(id)
+      .then(setActivity)
+      .catch(() => setActivity([]))
+      .finally(() => setActivityLoading(false));
+  }, [id, activityLoading]);
+
+  useEffect(() => {
+    if (activeTab === "activity") loadActivity();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   function handleCopy() {
     if (!template) return;
@@ -35,12 +80,31 @@ export default function ViewEmailTemplatePage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  async function handleDuplicate() {
+    if (duplicating) return;
+    setDuplicating(true);
+    try {
+      const copy = await duplicateEmailTemplate(id);
+      router.push(`/email-templates/${copy.id}`);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to duplicate template.");
+      setDuplicating(false);
+    }
+  }
+
   if (loading) return (
     <DashboardLayout>
-      <div className="loading-state">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-        Loading...
-        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <ThemeLoader label="Loading template..." />
+    </DashboardLayout>
+  );
+
+  if (loadError && !template) return (
+    <DashboardLayout>
+      <div className="not-found-state">
+        <p style={{ fontSize: "3rem", margin: "0 0 12px" }}>⚠️</p>
+        <h2>Something went wrong</h2>
+        <p style={{ color: "#64748b" }}>{loadError}</p>
+        <button className="save-company-btn" onClick={() => router.push("/email-templates")}>Back to Templates</button>
       </div>
     </DashboardLayout>
   );
@@ -90,8 +154,9 @@ export default function ViewEmailTemplatePage() {
               style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#374151", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", fontFamily: "inherit" }}>
               <HiPencil size={14} /> Edit Template
             </button>
-            <button style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#374151", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", fontFamily: "inherit" }}>
-              <HiDuplicate size={14} /> Duplicate
+            <button onClick={handleDuplicate} disabled={duplicating}
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#374151", fontWeight: 600, fontSize: "0.875rem", cursor: duplicating ? "wait" : "pointer", fontFamily: "inherit" }}>
+              <HiDuplicate size={14} /> {duplicating ? "Duplicating..." : "Duplicate"}
             </button>
             <button style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", border: "none", borderRadius: "8px", background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", color: "#fff", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", fontFamily: "inherit" }}>
               ••• More
@@ -175,21 +240,38 @@ export default function ViewEmailTemplatePage() {
             {activeTab === "preview" && (
               <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "24px" }}>
                 <h3 style={{ margin: "0 0 16px", fontSize: "0.9rem", fontWeight: 700, color: "#0f172a" }}>Email Preview</h3>
-                <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden" }}>
-                  <div style={{ background: "#f8fafc", padding: "12px 16px", borderBottom: "1px solid #e2e8f0" }}>
-                    <p style={{ margin: "0 0 4px", fontSize: "0.8rem", color: "#94a3b8" }}>Subject: <strong style={{ color: "#374151" }}>{t.subject}</strong></p>
-                    <p style={{ margin: 0, fontSize: "0.8rem", color: "#94a3b8" }}>From: <strong style={{ color: "#374151" }}>noreply@softiqcrm.com</strong></p>
+                {previewLoading ? (
+                  <ThemeLoader label="Rendering preview..." minHeight={160} size={36} />
+                ) : previewError && !preview ? (
+                  <div>
+                    <div className="msg-error">{previewError}</div>
+                    {/* Fallback: raw template with placeholders highlighted */}
+                    <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden" }}>
+                      <div style={{ background: "#f8fafc", padding: "12px 16px", borderBottom: "1px solid #e2e8f0" }}>
+                        <p style={{ margin: "0 0 4px", fontSize: "0.8rem", color: "#94a3b8" }}>Subject: <strong style={{ color: "#374151" }}>{t.subject}</strong></p>
+                      </div>
+                      <div style={{ padding: "24px", fontSize: "0.9rem", lineHeight: 2, color: "#374151", whiteSpace: "pre-wrap", fontFamily: "inherit" }}>
+                        {t.content.split(/({{[^}]+}})/).map((part, i) =>
+                          part.startsWith("{{") && part.endsWith("}}") ? (
+                            <span key={i} style={{ background: "#fef3c7", color: "#b45309", padding: "1px 4px", borderRadius: "3px", fontStyle: "italic" }}>
+                              [{part.replace(/[{}]/g, "")}]
+                            </span>
+                          ) : part
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ padding: "24px", fontSize: "0.9rem", lineHeight: 2, color: "#374151", whiteSpace: "pre-wrap", fontFamily: "inherit" }}>
-                    {t.content.split(/({{[^}]+}})/).map((part, i) =>
-                      part.startsWith("{{") && part.endsWith("}}") ? (
-                        <span key={i} style={{ background: "#fef3c7", color: "#b45309", padding: "1px 4px", borderRadius: "3px", fontStyle: "italic" }}>
-                          [{part.replace(/[{}]/g, "")}]
-                        </span>
-                      ) : part
-                    )}
+                ) : preview ? (
+                  <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden" }}>
+                    <div style={{ background: "#f8fafc", padding: "12px 16px", borderBottom: "1px solid #e2e8f0" }}>
+                      <p style={{ margin: "0 0 4px", fontSize: "0.8rem", color: "#94a3b8" }}>Subject: <strong style={{ color: "#374151" }}>{preview.subject}</strong></p>
+                      <p style={{ margin: 0, fontSize: "0.8rem", color: "#94a3b8" }}>Rendered with sample values</p>
+                    </div>
+                    <div style={{ padding: "24px", fontSize: "0.9rem", lineHeight: 2, color: "#374151", whiteSpace: "pre-wrap", fontFamily: "inherit" }}>
+                      {preview.rendered_content}
+                    </div>
                   </div>
-                </div>
+                ) : null}
               </div>
             )}
 
@@ -217,18 +299,22 @@ export default function ViewEmailTemplatePage() {
             {activeTab === "activity" && (
               <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "20px" }}>
                 <h3 style={{ margin: "0 0 16px", fontSize: "0.9rem", fontWeight: 700, color: "#0f172a" }}>Activity</h3>
-                {[
-                  { action: "Template updated", by: t.createdBy, time: new Date(t.updatedAt).toLocaleString("en-US") },
-                  { action: "Template created", by: t.createdBy, time: new Date(t.createdAt).toLocaleString("en-US") },
-                ].map((item, i) => (
-                  <div key={i} style={{ display: "flex", gap: "10px", marginBottom: "14px" }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#e2e8f0", flexShrink: 0, marginTop: "5px" }} />
-                    <div>
-                      <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#374151" }}>{item.action}</p>
-                      <p style={{ margin: 0, fontSize: "0.78rem", color: "#94a3b8" }}>by {item.by} · {item.time}</p>
+                {activityLoading ? (
+                  <ThemeLoader label="Loading activity..." minHeight={120} size={32} />
+                ) : activity.length === 0 ? (
+                  <p style={{ margin: 0, fontSize: "0.875rem", color: "#94a3b8" }}>No activity recorded yet.</p>
+                ) : (
+                  activity.map(item => (
+                    <div key={item.id} style={{ display: "flex", gap: "10px", marginBottom: "14px" }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#e2e8f0", flexShrink: 0, marginTop: "5px" }} />
+                      <div>
+                        <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#374151" }}>{item.action_display}</p>
+                        {item.detail && <p style={{ margin: 0, fontSize: "0.78rem", color: "#64748b" }}>{item.detail}</p>}
+                        <p style={{ margin: 0, fontSize: "0.78rem", color: "#94a3b8" }}>by {item.user_name || "System"} · {new Date(item.timestamp).toLocaleString("en-US")}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             )}
           </div>

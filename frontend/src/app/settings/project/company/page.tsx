@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import SettingsNav from "@/components/project-settings/SettingsNav";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import {
   getCompanyInfo,
   updateCompanyInfo,
@@ -181,9 +182,7 @@ export default function CompanyInformationPage() {
             </div>
 
             {loading ? (
-              <div style={{ padding: "60px 24px", textAlign: "center", color: "#94a3b8", fontSize: "0.875rem" }}>
-                Loading company information...
-              </div>
+              <ThemeLoader label="Loading company information..." minHeight={220} />
             ) : (
 
             <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>

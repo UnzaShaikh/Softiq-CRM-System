@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import followupsData, { Followup, TYPE_COLORS, STATUS_COLORS, PRIORITY_COLORS } from "@/data/followups";
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import { Followup, TYPE_COLORS, STATUS_COLORS, PRIORITY_COLORS } from "@/data/followups";
+import {
+  getFollowUp, mapFollowUp, deleteFollowUp,
+} from "@/lib/followupsApi";
 import { ArrowLeft, Phone, Mail, Users, CheckSquare, Calendar, Clock, Building2, Tag, User, FileText, Pencil, Trash2 } from "lucide-react";
 
 export default function ViewFollowupPage() {
@@ -13,31 +17,41 @@ export default function ViewFollowupPage() {
   const [followup, setFollowup] = useState<Followup | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [deleteModal, setDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
 
   useEffect(() => {
-    setTimeout(() => {
-      const found = followupsData.find(f => f.id === id);
-      if (!found) setNotFound(true);
-      else setFollowup(found);
-      setLoading(false);
-    }, 400);
+    let cancelled = false;
+    getFollowUp(id)
+      .then(f => { if (!cancelled) setFollowup(mapFollowUp(f)); })
+      .catch(err => {
+        if (cancelled) return;
+        if (err instanceof Error && /not found|404/i.test(err.message)) setNotFound(true);
+        else setLoadError(err instanceof Error ? err.message : "Failed to load follow-up.");
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [id]);
 
-  function handleDelete() {
-    setDeleteModal(false);
-    setDeleteSuccess(true);
-    setTimeout(() => router.push("/followups"), 1500);
+  async function handleDelete() {
+    if (!followup || deleting) return;
+    setDeleting(true);
+    try {
+      await deleteFollowUp(followup.id);
+      setDeleteModal(false);
+      setDeleteSuccess(true);
+      setTimeout(() => router.push("/followups"), 1200);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to delete follow-up.");
+      setDeleting(false);
+    }
   }
 
   if (loading) return (
     <DashboardLayout>
-      <div className="loading-state">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-        Loading...
-        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-      </div>
+      <ThemeLoader label="Loading follow-up..." />
     </DashboardLayout>
   );
 
@@ -46,7 +60,17 @@ export default function ViewFollowupPage() {
       <div className="not-found-state">
         <p style={{ fontSize: "3rem", margin: "0 0 12px" }}>🔍</p>
         <h2>Follow-up Not Found</h2>
-        <p>No follow-up found with ID: {id}</p>
+        <button className="save-company-btn" onClick={() => router.push("/followups")}>Back to Follow-ups</button>
+      </div>
+    </DashboardLayout>
+  );
+
+  if (loadError) return (
+    <DashboardLayout>
+      <div className="not-found-state">
+        <p style={{ fontSize: "3rem", margin: "0 0 12px" }}>⚠️</p>
+        <h2>Something went wrong</h2>
+        <p style={{ color: "#64748b" }}>{loadError}</p>
         <button className="save-company-btn" onClick={() => router.push("/followups")}>Back to Follow-ups</button>
       </div>
     </DashboardLayout>
@@ -127,7 +151,7 @@ export default function ViewFollowupPage() {
                 { label: "Due Date", value: new Date(f.dueDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }), icon: <Calendar size={14} color="#94a3b8" /> },
                 { label: "Due Time", value: f.dueTime, icon: <Clock size={14} color="#94a3b8" /> },
                 { label: "Assigned To", value: f.assignedTo, icon: <User size={14} color="#94a3b8" /> },
-                { label: "Follow-up ID", value: f.id, icon: <Tag size={14} color="#94a3b8" /> },
+                { label: "Follow-up ID", value: f.code ?? f.id, icon: <Tag size={14} color="#94a3b8" /> },
               ].map(row => (
                 <div key={row.label} style={{ marginBottom: "14px" }}>
                   <p style={{ margin: "0 0 4px", fontSize: "0.72rem", color: "#94a3b8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{row.label}</p>
@@ -151,7 +175,9 @@ export default function ViewFollowupPage() {
             <p className="modal-text">Are you sure you want to delete <strong style={{ color: "var(--foreground)" }}>{f.subject}</strong>? This cannot be undone.</p>
             <div className="modal-actions">
               <button className="btn-secondary" onClick={() => setDeleteModal(false)}>Cancel</button>
-              <button className="btn-danger" onClick={handleDelete}>Delete</button>
+              <button className="btn-danger" onClick={handleDelete} disabled={deleting}>
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
             </div>
           </div>
         </div>

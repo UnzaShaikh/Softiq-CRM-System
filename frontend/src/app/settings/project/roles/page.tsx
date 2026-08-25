@@ -8,6 +8,7 @@ import {
   type Role as ApiRole,
 } from "@/lib/projectSettingsApi";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import SettingsNav from "@/components/project-settings/SettingsNav";
 import Link from "next/link";
 import {
@@ -309,9 +310,7 @@ export default function RolesPermissionsPage() {
 
             {/* ── ROLES TAB ── */}
             {activeTab === "roles" && (loading || !selectedRole || !selectedPerms) && (
-              <div style={{ padding: "60px 24px", textAlign: "center", color: "#94a3b8", fontSize: "0.875rem" }}>
-                Loading roles...
-              </div>
+              <ThemeLoader label="Loading roles..." minHeight={260} />
             )}
             {activeTab === "roles" && !loading && selectedRole && selectedPerms && (
               <div style={{ display: "grid", gridTemplateColumns: "185px minmax(0,1fr)", gap: "0" }}>

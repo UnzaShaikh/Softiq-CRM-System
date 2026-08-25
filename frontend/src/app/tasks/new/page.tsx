@@ -11,9 +11,8 @@ import {
   RelatedModule,
   MOCK_ASSIGNEES,
 } from "@/data/tasks";
-import { createTask } from "@/lib/tasksApi";
+import { createTask, type ApiTaskStatus, type ApiTaskPriority } from "@/lib/tasksApi";
 import {
-  X,
   ClipboardEdit,
   FileText,
   ChevronDown,
@@ -211,7 +210,7 @@ export default function NewTaskPage() {
       /*
        * Convert frontend display values to backend values.
        */
-      const statusMap: Record<TaskStatus, string> = {
+      const statusMap: Record<TaskStatus, ApiTaskStatus> = {
         "To Do": "todo",
         "In Progress": "in_progress",
         Completed: "completed",
@@ -219,7 +218,7 @@ export default function NewTaskPage() {
         Cancelled: "cancelled",
       };
 
-      const priorityMap: Record<TaskPriority, string> = {
+      const priorityMap: Record<TaskPriority, ApiTaskPriority> = {
         Low: "low",
         Medium: "medium",
         High: "high",
@@ -312,116 +311,52 @@ export default function NewTaskPage() {
 
   return (
     <DashboardLayout>
-      <div className="page-wrapper">
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
         {/* ─────────────────────────────────────────
             Page Header
         ───────────────────────────────────────── */}
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            marginBottom: 8,
-          }}
-        >
-          <div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                marginBottom: 6,
-              }}
-            >
-              <button
-                onClick={() => router.push("/tasks")}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#64748b",
-                  fontSize: "0.8125rem",
-                  fontWeight: 500,
-                  padding: 0,
-                  fontFamily: "inherit",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                }}
-              >
-                Tasks
-              </button>
-
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#94a3b8"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-
-              <span
-                style={{
-                  fontSize: "0.8125rem",
-                  color: "#94a3b8",
-                }}
-              >
-                New Task
-              </span>
-            </div>
-
-            <h1
-              className="page-title"
-              style={{ marginBottom: 0 }}
-            >
-              New Task
-            </h1>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginTop: 4,
-            }}
+        <div>
+          <button
+            className="back-btn"
+            onClick={() => router.push("/tasks")}
+            style={{ marginBottom: "8px" }}
           >
-            <button
-              className="tasks-btn-secondary"
-              onClick={() => router.push("/tasks")}
-            >
-              <X size={14} />
-              Cancel
-            </button>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            Back to Tasks
+          </button>
 
-            <button
-              className="btn-add tasks-create-btn"
-              onClick={handleSubmit}
-              disabled={saving}
-            >
-              <ClipboardEdit size={15} />
+          <h1 className="page-title">New Task</h1>
 
-              {saving ? "Creating…" : "Create Task"}
-            </button>
-          </div>
+          <p className="page-subtitle">
+            Fill in the details to create a new task.
+          </p>
         </div>
 
         {/* ─────────────────────────────────────────
-            Two Column Layout
+            Form Card
         ───────────────────────────────────────── */}
 
-        <div className="tasks-form-layout">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+          noValidate
+          className="company-form-card"
+        >
+          <div className="form-section">
+            <div className="form-section-header">
+              <h2>Task Details</h2>
+              <p>Fill in all the required fields below.</p>
+            </div>
 
-          {/* ───────────────────────────────────────
-              Left Column
-          ─────────────────────────────────────── */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div className="tasks-form-layout">
+              {/* ───────────────────────────────────────
+                  Left Column
+              ─────────────────────────────────────── */}
 
           <div className="tasks-form-main">
 
@@ -1390,8 +1325,39 @@ export default function NewTaskPage() {
               </div>
             </div>
           </div>
-        </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ─────────────────────────────────────────
+              Actions
+          ───────────────────────────────────────── */}
+
+          <div className="form-actions">
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => router.push("/tasks")}
+              disabled={saving}
+            >
+              Cancel
+            </button>
+
+            <button type="submit" className="btn-add" disabled={saving}>
+              {saving ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+                  Creating…
+                </>
+              ) : (
+                "Create Task"
+              )}
+            </button>
+          </div>
+        </form>
       </div>
+
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </DashboardLayout>
   );
 }

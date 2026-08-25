@@ -5,8 +5,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Settings, LogOut, ChevronDown, User } from "lucide-react";
-import { apiRequest } from "@/lib/api"; 4
+import { apiRequest } from "@/lib/api";
 import { globalSearch, GlobalSearchResult } from "@/lib/search";
+import { applyStoredTheme } from "@/lib/theme";
 
 /* ── Palette (matches reference: deep navy sidebar + violet accent) ── */
 const SIDEBAR_BG = "#1e1b4b"; // deep indigo/navy
@@ -281,7 +282,14 @@ function UserDropdown({
   );
 }
 
-const NAV_ITEMS = [
+interface NavItem {
+  label: string;
+  href: string;
+  icon: React.ReactNode;
+  badge?: React.ReactNode;
+}
+
+const NAV_ITEMS: NavItem[] = [
   {
     label: "Dashboard",
     href: "/dashboard",
@@ -354,17 +362,6 @@ const NAV_ITEMS = [
     ),
   },
   {
-    label: "Sales Pipeline",
-    href: "/Sales-Pipeline",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 6h18" />
-        <path d="M6 12h12" />
-        <path d="M10 18h4" />
-      </svg>
-    ),
-  },
-  {
     label: "Companies",
     href: "/company",
     icon: (
@@ -405,6 +402,16 @@ const NAV_ITEMS = [
     ),
   },
   {
+    label: "Tasks",
+    href: "/tasks",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="9 11 12 14 22 4" />
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+      </svg>
+    ),
+  },
+  {
     label: "Email Templates",
     href: "/email-templates",
     icon: (
@@ -414,6 +421,18 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    label: "Sales Pipeline",
+    href: "/Sales-Pipeline",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 6h18" />
+        <path d="M6 12h12" />
+        <path d="M10 18h4" />
+      </svg>
+    ),
+  },
+  
   {
     label: "Reports",
     href: "/reports",
@@ -425,18 +444,6 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
-  {
-    label: "Tasks",
-    href: "/tasks",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="9 11 12 14 22 4" />
-        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-      </svg>
-    ),
-    badge: 5,
-  },
-
 ];
 
 const BOTTOM_ITEMS: {
@@ -636,6 +643,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // Apply the saved theme (light/dark/system) on mount.
+  useEffect(() => {
+    applyStoredTheme();
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -1087,6 +1099,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Main content */}
       <div
+        className="dashboard-content"
         style={{
           flex: 1,
           display: "flex",

@@ -13,7 +13,6 @@ import {
 import {
   ArrowLeft,
   Save,
-  X,
   Loader2,
   ClipboardEdit,
 } from "lucide-react";
@@ -176,119 +175,43 @@ export default function EditTaskPage() {
 
   return (
     <DashboardLayout>
-      <div className="page-wrapper">
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: 16,
-            marginBottom: 20,
-          }}
-        >
-          <div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                marginBottom: 7,
-              }}
-            >
-              <button
-                onClick={() => router.push("/tasks")}
-                style={{
-                  border: "none",
-                  background: "none",
-                  padding: 0,
-                  color: "#64748b",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  fontSize: "0.8125rem",
-                }}
-              >
-                Tasks
-              </button>
-              <span style={{ color: "#94a3b8" }}>›</span>
-              <span style={{ color: "#94a3b8", fontSize: "0.8125rem" }}>
-                Edit Task
-              </span>
-            </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
-            <h1 className="page-title" style={{ marginBottom: 4 }}>
-              Edit Task
-            </h1>
-
-            <p className="page-subtitle">
-              Update the task details and save your changes.
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-            }}
+        {/* Page Header */}
+        <div>
+          <button
+            className="back-btn"
+            onClick={() => router.push("/tasks")}
+            style={{ marginBottom: "8px" }}
           >
-            <button
-              className="tasks-btn-secondary"
-              onClick={() =>
-                task
-                  ? router.push(`/tasks/${task.id}`)
-                  : router.push("/tasks")
-              }
-              disabled={saving}
-            >
-              <X size={15} />
-              Cancel
-            </button>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            Back to Tasks
+          </button>
 
-            <button
-              className="btn-add"
-              onClick={() =>
-                document
-                  .getElementById("edit-task-form")
-                  ?.dispatchEvent(
-                    new Event("submit", {
-                      bubbles: true,
-                      cancelable: true,
-                    })
-                  )
-              }
-              disabled={saving}
-            >
-              {saving ? (
-                <Loader2 size={15} className="animate-spin" />
-              ) : (
-                <Save size={15} />
-              )}
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
-          </div>
+          <h1 className="page-title">Edit Task</h1>
+
+          <p className="page-subtitle">
+            Update the task details and save your changes.
+          </p>
         </div>
 
-        {error && (
-          <div
-            style={{
-              marginBottom: 16,
-              padding: "11px 14px",
-              borderRadius: 8,
-              background: "#fef2f2",
-              border: "1px solid #fecaca",
-              color: "#b91c1c",
-              fontSize: "0.85rem",
-            }}
-          >
-            {error}
-          </div>
-        )}
+        {error && <div className="msg-error">{error}</div>}
 
+        {/* Form Card */}
         <form
           id="edit-task-form"
           onSubmit={handleSubmit}
-          className="tasks-form-layout"
+          noValidate
+          className="company-form-card"
         >
+          <div className="form-section">
+            <div className="form-section-header">
+              <h2>Task Details</h2>
+              <p>Update all the required fields below.</p>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div className="tasks-form-layout">
           <div className="tasks-form-main">
             <div className="tasks-form-card">
               <div className="tasks-form-card-header">
@@ -491,8 +414,43 @@ export default function EditTaskPage() {
               </label>
             </div>
           </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="form-actions">
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() =>
+                task
+                  ? router.push(`/tasks/${task.id}`)
+                  : router.push("/tasks")
+              }
+              disabled={saving}
+            >
+              Cancel
+            </button>
+
+            <button type="submit" className="btn-add" disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={15} />
+                  Save Changes
+                </>
+              )}
+            </button>
+          </div>
         </form>
       </div>
+
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </DashboardLayout>
   );
 }

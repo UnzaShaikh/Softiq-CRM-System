@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import { useAuth } from "@/context/AuthContext";
 import { getProfile, updateProfile, ApiProfile } from "@/lib/profileApi";
 import {
@@ -234,7 +235,9 @@ export default function MyProfilePage() {
             <div style={{ padding: "24px" }}>
               {success && <div className="msg-success" style={{ marginBottom: "16px" }}>✅ {success}</div>}
               {error && <div className="msg-error" style={{ marginBottom: "16px" }}>{error}</div>}
-              {loading && <div className="loading-state" style={{ marginBottom: "16px" }}>Loading profile...</div>}
+              {loading ? (
+                <ThemeLoader label="Loading profile..." minHeight={200} />
+              ) : (<>
 
               {/* Avatar */}
               <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px" }}>
@@ -318,6 +321,7 @@ export default function MyProfilePage() {
                 <textarea name="about" value={form.about} onChange={handleChange} rows={3}
                   style={{ ...inputStyle(), resize: "vertical" }} readOnly={!isEditing} />
               </div>
+              </>)}
             </div>
           </div>
         </div>

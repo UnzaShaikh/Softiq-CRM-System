@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import SettingsNav from "@/components/project-settings/SettingsNav";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import {
   getGeneralSettings,
   updateGeneralSettings,
@@ -297,10 +298,7 @@ export default function ProjectSettingsPage() {
                 </div>
 
                 {loading ? (
-                  <div style={{ padding: "60px 24px", textAlign: "center", color: "#94a3b8", fontSize: "0.875rem" }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite", marginBottom: "10px" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-                    <p style={{ margin: 0 }}>Loading project settings...</p>
-                  </div>
+                  <ThemeLoader label="Loading project settings..." minHeight={260} />
                 ) : (
 
                 <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>

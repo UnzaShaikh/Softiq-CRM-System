@@ -3,8 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import emailTemplatesData, { ALL_CATEGORIES, AVAILABLE_VARIABLES, TemplateCategory, TemplateType, TemplateStatus } from "@/data/emailTemplates";
-import { ChevronDown, Save, X } from "lucide-react";
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import { ALL_CATEGORIES, AVAILABLE_VARIABLES, TemplateCategory, TemplateType, TemplateStatus } from "@/data/emailTemplates";
+import {
+  getEmailTemplate, updateEmailTemplate,
+  CATEGORY_VALUES, TYPE_VALUES, STATUS_VALUES,
+} from "@/lib/emailTemplatesApi";
+import { ChevronDown } from "lucide-react";
 import { HiChevronDown, HiSave, HiX } from "react-icons/hi";
 
 interface FormValues {
@@ -25,12 +30,30 @@ export default function EditEmailTemplatePage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
   const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    const t = emailTemplatesData.find(t => t.id === id);
-    if (!t) { setNotFound(true); setLoading(false); return; }
-    setForm({ name: t.name, subject: t.subject, content: t.content, category: t.category, type: t.type, status: t.status, description: t.description });
-    setLoading(false);
+    let cancelled = false;
+    getEmailTemplate(id)
+      .then(t => {
+        if (cancelled) return;
+        setForm({
+          name: t.name,
+          subject: t.subject,
+          content: t.content ?? "",
+          category: (t.category.charAt(0).toUpperCase() + t.category.slice(1).replace("_", "-")) as TemplateCategory,
+          type: (t.template_type.charAt(0).toUpperCase() + t.template_type.slice(1)) as TemplateType,
+          status: (t.status.charAt(0).toUpperCase() + t.status.slice(1)) as TemplateStatus,
+          description: t.description || "",
+        });
+      })
+      .catch(err => {
+        if (cancelled) return;
+        if (err instanceof Error && /not found|404/i.test(err.message)) setNotFound(true);
+        else setLoadError(err instanceof Error ? err.message : "Failed to load template.");
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [id]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
@@ -55,22 +78,43 @@ export default function EditEmailTemplatePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setLoadError("");
     if (!validate()) return;
     setSaving(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setSaving(false);
-    setSuccess("Template updated successfully.");
-    setTimeout(() => router.push(`/email-templates/${id}`), 1500);
+    try {
+      await updateEmailTemplate(id, {
+        name: form.name.trim(),
+        subject: form.subject,
+        content: form.content,
+        description: form.description,
+        category: CATEGORY_VALUES[form.category as TemplateCategory],
+        template_type: TYPE_VALUES[form.type],
+        status: STATUS_VALUES[form.status],
+      });
+      setSuccess("Template updated successfully.");
+      setTimeout(() => router.push(`/email-templates/${id}`), 1500);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to update template.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const wordCount = form.content.split(/\s+/).filter(Boolean).length;
 
   if (loading) return (
     <DashboardLayout>
-      <div className="loading-state">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-        Loading...
-        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <ThemeLoader label="Loading template..." />
+    </DashboardLayout>
+  );
+
+  if (loadError && notFound === false && !success && !form.name) return (
+    <DashboardLayout>
+      <div className="not-found-state">
+        <p style={{ fontSize: "3rem", margin: "0 0 12px" }}>⚠️</p>
+        <h2>Something went wrong</h2>
+        <p style={{ color: "#64748b" }}>{loadError}</p>
+        <button className="save-company-btn" onClick={() => router.push("/email-templates")}>Back to Templates</button>
       </div>
     </DashboardLayout>
   );
@@ -108,6 +152,7 @@ export default function EditEmailTemplatePage() {
         </div>
 
         {success && <div className="msg-success" style={{ marginBottom: "20px" }}>✅ {success}</div>}
+        {loadError && !saving && <div className="msg-error" style={{ marginBottom: "20px" }}>❌ {loadError}</div>}
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "20px" }}>
 

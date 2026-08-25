@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import SettingsNav from "@/components/project-settings/SettingsNav";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import {
   getEmailSettings,
   updateEmailSettings,
@@ -245,9 +246,7 @@ export default function EmailSettingsPage() {
               </div>
 
               {loading ? (
-                <div style={{ padding: "60px 24px", textAlign: "center", color: "#94a3b8", fontSize: "0.875rem" }}>
-                  Loading email settings...
-                </div>
+                <ThemeLoader label="Loading email settings..." minHeight={260} />
               ) : (
 
               <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>

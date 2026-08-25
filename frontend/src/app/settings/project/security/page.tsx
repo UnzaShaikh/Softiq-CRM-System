@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import SettingsNav from "@/components/project-settings/SettingsNav";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import {
   getSecuritySettings,
   updateSecuritySettings,
@@ -176,9 +177,7 @@ export default function SecurityPage() {
           {/* Center */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {loading && (
-              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "60px 24px", textAlign: "center", color: "#94a3b8", fontSize: "0.875rem" }}>
-                Loading security settings...
-              </div>
+              <ThemeLoader label="Loading security settings..." minHeight={260} />
             )}
             {!loading && (<>
 

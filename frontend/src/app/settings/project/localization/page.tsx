@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import SettingsNav from "@/components/project-settings/SettingsNav";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import {
   getLocalizationSettings,
   updateLocalizationSettings,
@@ -189,9 +190,7 @@ export default function LocalizationPage() {
           {/* Center — Settings */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {loading && (
-              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "60px 24px", textAlign: "center", color: "#94a3b8", fontSize: "0.875rem" }}>
-                Loading localization settings...
-              </div>
+              <ThemeLoader label="Loading localization settings..." minHeight={260} />
             )}
             {!loading && (<>
 

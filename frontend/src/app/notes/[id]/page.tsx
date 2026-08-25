@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import { Note, CATEGORY_COLORS, PRIORITY_COLORS } from "@/data/notes";
 import { getNote, deleteNote, mapApiNoteToUi, listCategories } from "@/lib/notesApi";
 import { ArrowLeft, Edit, Star, FileText, Tag, Calendar, Clock, Building2, ThumbsUp, ThumbsDown, Trash2 } from "lucide-react";
@@ -61,11 +62,7 @@ export default function ViewNotePage() {
 
   if (loading) return (
     <DashboardLayout>
-      <div className="loading-state">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-        Loading note...
-        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-      </div>
+      <ThemeLoader label="Loading note..." />
     </DashboardLayout>
   );
 

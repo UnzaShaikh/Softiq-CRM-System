@@ -22,13 +22,72 @@ import {
 } from "@/lib/dashboard";
 import { Users, Handshake, DollarSign, UserCheck } from "lucide-react";
 
+function SkeletonBlock({ className = "", style }: { className?: string; style?: React.CSSProperties }) {
+  return <div className={`animate-pulse bg-slate-200/60 rounded-lg ${className}`} style={style} />;
+}
+
+function StatSkeleton() {
+  return (
+    <div className="stat-card-dashboard">
+      <SkeletonBlock className="w-10 h-10 rounded-xl" />
+      <div className="stat-card-dashboard-content">
+        <SkeletonBlock className="h-3 w-24 mb-2" />
+        <SkeletonBlock className="h-7 w-20 mb-2" />
+        <SkeletonBlock className="h-4 w-28" />
+      </div>
+    </div>
+  );
+}
+
+function ChartSkeleton({ height = "260px" }: { height?: string }) {
+  return <SkeletonBlock className="w-full" style={{ height } as React.CSSProperties} />;
+}
+
+function TableSkeleton({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="space-y-3 p-5">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3">
+          <SkeletonBlock className="w-8 h-8 rounded-full shrink-0" />
+          <SkeletonBlock className="h-3 flex-1" />
+          <SkeletonBlock className="h-3 w-20" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CardSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="p-5 space-y-3">
+      <SkeletonBlock className="h-5 w-40" />
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3">
+          <SkeletonBlock className="w-6 h-6 rounded-full shrink-0" />
+          <SkeletonBlock className="h-3 flex-1" />
+          <SkeletonBlock className="h-3 w-16" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { data, loading } = useDashboardData();
+
+  const hasSummary = data.summary !== null;
+  const hasSalesOverview = data.salesOverview !== null;
+  const hasLeadSources = data.leadSources.length > 0;
+  const hasDealsPipeline = data.dealsPipeline.length > 0;
+  const hasActivities = data.activities.length > 0;
+  const hasRecentCustomers = data.recentCustomers.length > 0;
+  const hasRecentLeads = data.recentLeads.length > 0;
+  const hasTopPerformers = data.topPerformers.length > 0;
 
   const stats = [
     {
       label: "Total Customers",
-      value: loading ? "..." : String(data?.summary?.total_customers ?? 0),
+      value: hasSummary ? String(data.summary!.total_customers ?? 0) : "...",
       change: "+12%",
       up: true,
       color: "#4f46e5",
@@ -36,7 +95,7 @@ export default function DashboardPage() {
     },
     {
       label: "Active Customers",
-      value: loading ? "..." : String(data?.summary?.active_customers ?? 0),
+      value: hasSummary ? String(data.summary!.active_customers ?? 0) : "...",
       change: "+5%",
       up: true,
       color: "#0891b2",
@@ -44,7 +103,7 @@ export default function DashboardPage() {
     },
     {
       label: "Revenue (MTD)",
-      value: loading ? "..." : `$${Number(data?.summary?.total_revenue ?? 0).toLocaleString()}`,
+      value: hasSummary ? `$${Number(data.summary!.total_revenue ?? 0).toLocaleString()}` : "...",
       change: "+8.3%",
       up: true,
       color: "#16a34a",
@@ -52,7 +111,7 @@ export default function DashboardPage() {
     },
     {
       label: "Total Deals",
-      value: loading ? "..." : String(data?.summary?.total_deals ?? 0),
+      value: hasSummary ? String(data.summary!.total_deals ?? 0) : "...",
       change: "+4%",
       up: true,
       color: "#d97706",
@@ -60,14 +119,14 @@ export default function DashboardPage() {
     },
   ];
 
-  const pipeline = dealsPipelineToWidget(data?.dealsPipeline ?? []);
-  const donutSources = leadSourcesToDonut(data?.leadSources ?? []);
-  const feedActivities = activitiesToFeed(data?.activities ?? []);
-  const widgetCustomers = recentCustomersToWidget(data?.recentCustomers ?? []);
-  const widgetLeads = recentLeadsToWidget(data?.recentLeads ?? []);
-  const widgetPerformers = topPerformersToWidget(data?.topPerformers ?? []);
+  const pipeline = dealsPipelineToWidget(data.dealsPipeline);
+  const donutSources = leadSourcesToDonut(data.leadSources);
+  const feedActivities = activitiesToFeed(data.activities);
+  const widgetCustomers = recentCustomersToWidget(data.recentCustomers);
+  const widgetLeads = recentLeadsToWidget(data.recentLeads);
+  const widgetPerformers = topPerformersToWidget(data.topPerformers);
   const salesOverview = salesOverviewToChart(
-    data?.salesOverview ?? { months: [], revenue: [], deals_closed: [] }
+    data.salesOverview ?? { months: [], revenue: [], deals_closed: [] }
   );
 
   return (
@@ -80,35 +139,101 @@ export default function DashboardPage() {
           <p className="page-subtitle">Here&apos;s what&apos;s happening today.</p>
         </div>
 
-        {/* KPI Cards */}
+        {/* KPI Cards — skeleton until summary arrives */}
         <div className="dashboard-stats-grid">
-          {stats.map((item) => (
-            <StatCard key={item.label} {...item} />
-          ))}
+          {!hasSummary
+            ? Array.from({ length: 4 }).map((_, i) => <StatSkeleton key={i} />)
+            : stats.map((item) => <StatCard key={item.label} {...item} />)
+          }
         </div>
 
         {/* Revenue + Donut */}
         <div className="dashboard-chart-grid">
-          <RevenueChart overview={salesOverview} />
-          <LeadsDonutChart sources={donutSources} />
+          {!hasSalesOverview ? (
+            <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+              <SkeletonBlock className="h-5 w-40 mb-4" />
+              <ChartSkeleton />
+            </div>
+          ) : (
+            <RevenueChart overview={salesOverview} />
+          )}
+
+          {!hasLeadSources ? (
+            <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+              <SkeletonBlock className="h-5 w-40 mb-4" />
+              <div className="flex items-center justify-center">
+                <SkeletonBlock className="w-40 h-40 rounded-full" />
+              </div>
+            </div>
+          ) : (
+            <LeadsDonutChart sources={donutSources} />
+          )}
         </div>
 
         {/* Pipeline + Activity */}
         <div className="dashboard-chart-grid">
-          <DealsPipeline stages={pipeline.stages} deals={pipeline.deals} />
-          <ActivityFeed activities={feedActivities} />
+          {!hasDealsPipeline ? (
+            <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+              <SkeletonBlock className="h-5 w-48 mb-4" />
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <SkeletonBlock className="h-3 w-20" />
+                    <SkeletonBlock className="h-3 flex-1" />
+                    <SkeletonBlock className="h-3 w-12" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <DealsPipeline stages={pipeline.stages} deals={pipeline.deals} />
+          )}
+
+          {!hasActivities ? (
+            <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
+              <SkeletonBlock className="h-5 w-36 mb-4" />
+              <CardSkeleton rows={4} />
+            </div>
+          ) : (
+            <ActivityFeed activities={feedActivities} />
+          )}
         </div>
 
         {/* Recent Customers */}
-        <RecentCustomers customers={widgetCustomers} />
+        {!hasRecentCustomers ? (
+          <div className="bg-white rounded-xl border border-slate-100 shadow-sm">
+            <div className="px-5 pt-5 pb-2">
+              <SkeletonBlock className="h-5 w-44" />
+            </div>
+            <TableSkeleton rows={4} />
+          </div>
+        ) : (
+          <RecentCustomers customers={widgetCustomers} />
+        )}
 
         {/* Recent Leads */}
-        <RecentLeads leads={widgetLeads} />
+        {!hasRecentLeads ? (
+          <div className="bg-white rounded-xl border border-slate-100 shadow-sm">
+            <div className="px-5 pt-5 pb-2">
+              <SkeletonBlock className="h-5 w-36" />
+            </div>
+            <TableSkeleton rows={4} />
+          </div>
+        ) : (
+          <RecentLeads leads={widgetLeads} />
+        )}
 
         {/* Top Performers */}
-        <TopPerformers performers={widgetPerformers} />
-
-        
+        {!hasTopPerformers ? (
+          <div className="bg-white rounded-xl border border-slate-100 shadow-sm">
+            <div className="px-5 pt-5 pb-2">
+              <SkeletonBlock className="h-5 w-40" />
+            </div>
+            <TableSkeleton rows={3} />
+          </div>
+        ) : (
+          <TopPerformers performers={widgetPerformers} />
+        )}
 
       </div>
     </DashboardLayout>

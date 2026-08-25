@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import Pagination from "@/components/customers/Pagination";
-import emailTemplatesData, { EmailTemplate, TemplateCategory, ALL_CATEGORIES, CATEGORY_COLORS } from "@/data/emailTemplates";
+import { EmailTemplate, TemplateCategory, ALL_CATEGORIES, CATEGORY_COLORS } from "@/data/emailTemplates";
+import {
+  listEmailTemplates, deleteEmailTemplate,
+  CATEGORY_LABELS, TYPE_LABELS, STATUS_LABELS,
+  type ApiEmailTemplateListItem,
+} from "@/lib/emailTemplatesApi";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import { Plus, Search, Eye, Pencil, Trash2, Mail, ChevronDown } from "lucide-react";
 import { HiPlus, HiSearch, HiEye, HiPencil, HiTrash, HiMail, HiChevronDown } from "react-icons/hi";
 
@@ -19,14 +25,52 @@ function TemplateIcon({ category }: { category: TemplateCategory }) {
   );
 }
 
+/** Maps an API list row onto the UI's EmailTemplate shape (fields the list uses). */
+function mapTemplate(t: ApiEmailTemplateListItem): EmailTemplate {
+  const category = CATEGORY_LABELS[t.category] as TemplateCategory;
+  return {
+    id: String(t.id),
+    name: t.name,
+    subject: t.subject,
+    content: "",
+    category,
+    type: TYPE_LABELS[t.template_type] as EmailTemplate["type"],
+    status: STATUS_LABELS[t.status] as EmailTemplate["status"],
+    description: "",
+    createdBy: "",
+    createdAt: t.updated_at,
+    updatedAt: t.updated_at,
+    variables: [],
+    language: "",
+  };
+}
+
 export default function EmailTemplatesPage() {
   const router = useRouter();
-  const [templates, setTemplates] = useState<EmailTemplate[]>(emailTemplatesData);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"All Categories" | TemplateCategory>("All Categories");
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteModal, setDeleteModal] = useState<EmailTemplate | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const fetchTemplates = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const data = await listEmailTemplates();
+      setTemplates(data.map(mapTemplate));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load templates.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -42,11 +86,19 @@ export default function EmailTemplatesPage() {
 
   function showToast(msg: string) { setToastMsg(msg); setTimeout(() => setToastMsg(null), 3000); }
 
-  function confirmDelete() {
-    if (!deleteModal) return;
-    setTemplates(prev => prev.filter(t => t.id !== deleteModal.id));
-    showToast(`"${deleteModal.name}" deleted successfully.`);
-    setDeleteModal(null);
+  async function confirmDelete() {
+    if (!deleteModal || deleting) return;
+    setDeleting(true);
+    try {
+      await deleteEmailTemplate(deleteModal.id);
+      showToast(`"${deleteModal.name}" deleted successfully.`);
+      await fetchTemplates();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to delete template.");
+    } finally {
+      setDeleting(false);
+      setDeleteModal(null);
+    }
   }
 
   function formatDate(str: string) {
@@ -68,6 +120,21 @@ export default function EmailTemplatesPage() {
             <HiPlus size={16} /> Add Template
           </button>
         </div>
+
+        {/* Loading / error states — while loading, only the loader shows
+            (search bar, filters and table stay hidden). */}
+        {loading ? (
+          <ThemeLoader label="Loading templates..." minHeight={240} />
+        ) : (
+          <>
+          {loadError && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", fontSize: "0.8125rem", color: "#b91c1c", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span>❌ {loadError}</span>
+            <button onClick={fetchTemplates} style={{ background: "none", border: "none", color: "#4f46e5", cursor: "pointer", fontWeight: 600, textDecoration: "underline", fontFamily: "inherit", fontSize: "0.8125rem" }}>
+              Retry
+            </button>
+          </div>
+        )}
 
         {/* Table Card */}
         <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
@@ -120,13 +187,13 @@ export default function EmailTemplatesPage() {
           </div>
 
           {/* Table */}
-          {filtered.length === 0 ? (
+          {!loading && filtered.length === 0 ? (
             <div className="empty-state">
             <HiMail size={40} color="#cbd5e1" style={{ margin: "0 auto 12px", display: "block" }} />
-              <p className="empty-state-title">No templates found</p>
-              <p className="empty-state-sub">Try adjusting your search or create a new template.</p>
+              <p className="empty-state-title">{templates.length === 0 ? "No templates yet" : "No templates found"}</p>
+              <p className="empty-state-sub">{templates.length === 0 ? "Create your first email template to get started." : "Try adjusting your search or create a new template."}</p>
             </div>
-          ) : (
+          ) : !loading && (
             <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "inherit" }}>
               <thead>
                 <tr style={{ background: "#f8fafc" }}>
@@ -220,6 +287,8 @@ export default function EmailTemplatesPage() {
             </div>
           )}
         </div>
+          </>
+        )}
       </div>
 
       {/* Delete Modal — reference design exact match */}
@@ -248,11 +317,11 @@ export default function EmailTemplatesPage() {
                 onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#f8fafc"}
                 onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "#fff"}
               >Cancel</button>
-              <button onClick={confirmDelete}
-                style={{ flex: 1, padding: "11px 20px", borderRadius: "8px", border: "none", background: "#ef4444", color: "#fff", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", transition: "opacity 0.15s" }}
-                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.opacity = "0.88"}
-                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.opacity = "1"}
-              ><Trash2 size={15} /> Delete Template</button>
+              <button onClick={confirmDelete} disabled={deleting}
+                style={{ flex: 1, padding: "11px 20px", borderRadius: "8px", border: "none", background: "#ef4444", color: "#fff", fontWeight: 600, fontSize: "0.9rem", cursor: deleting ? "wait" : "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", opacity: deleting ? 0.7 : 1, transition: "opacity 0.15s" }}
+                onMouseEnter={e => { if (!deleting) (e.currentTarget as HTMLButtonElement).style.opacity = "0.88"; }}
+                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.opacity = deleting ? "0.7" : "1"}
+              ><Trash2 size={15} /> {deleting ? "Deleting..." : "Delete Template"}</button>
             </div>
           </div>
         </div>

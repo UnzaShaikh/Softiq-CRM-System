@@ -1,33 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import FormField from "@/components/customers/FormField";
 import { FollowupType, FollowupStatus, FollowupPriority } from "@/data/followups";
+import {
+  createFollowUp, toTypeValue, toStatusValue, toPriorityValue, parseRelatedKey,
+  getCustomerOptions, getLeadOptions, getDealOptions, getCompanyOptions,
+  type RelatedOption,
+} from "@/lib/followupsApi";
 
 interface FormValues {
-  subject: string; relatedTo: string; company: string;
+  subject: string; relatedKey: string; companyId: string;
   type: FollowupType | ""; status: FollowupStatus | "";
   priority: FollowupPriority | ""; dueDate: string; dueTime: string;
-  assignedTo: string; notes: string;
+  notes: string;
 }
 interface FormErrors {
-  subject?: string; relatedTo?: string; type?: string;
+  subject?: string; relatedKey?: string; type?: string;
   status?: string; priority?: string; dueDate?: string;
 }
 
 export default function AddFollowupPage() {
   const router = useRouter();
   const [form, setForm] = useState<FormValues>({
-    subject: "", relatedTo: "", company: "", type: "",
+    subject: "", relatedKey: "", companyId: "", type: "",
     status: "", priority: "", dueDate: "", dueTime: "",
-    assignedTo: "", notes: "",
+    notes: "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  // Options for the Related To / Company selects.
+  const [relatedOptions, setRelatedOptions] = useState<RelatedOption[]>([]);
+  const [companies, setCompanies] = useState<{ id: number; name: string }[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([getCustomerOptions(), getLeadOptions(), getDealOptions(), getCompanyOptions()])
+      .then(([customers, leads, deals, comps]) => {
+        if (cancelled) return;
+        setRelatedOptions([...customers, ...leads, ...deals]);
+        setCompanies(comps);
+      })
+      .catch(() => { /* options stay empty; selects still render */ });
+    return () => { cancelled = true; };
+  }, []);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
@@ -38,7 +58,7 @@ export default function AddFollowupPage() {
   function validate(): boolean {
     const e: FormErrors = {};
     if (!form.subject.trim()) e.subject = "Subject is required";
-    if (!form.relatedTo.trim()) e.relatedTo = "Related contact is required";
+    if (!form.relatedKey) e.relatedKey = "Please select a related record";
     if (!form.type) e.type = "Please select a type";
     if (!form.status) e.status = "Please select a status";
     if (!form.priority) e.priority = "Please select a priority";
@@ -52,17 +72,33 @@ export default function AddFollowupPage() {
     setSubmitError("");
     if (!validate()) return;
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setLoading(false);
-    setSuccess(true);
-    setTimeout(() => router.push("/followups"), 1800);
+    try {
+      await createFollowUp({
+        subject: form.subject.trim(),
+        notes: form.notes,
+        ...parseRelatedKey(form.relatedKey),
+        company: form.companyId ? Number(form.companyId) : null,
+        type: toTypeValue(form.type),
+        status: toStatusValue(form.status),
+        priority: toPriorityValue(form.priority),
+        due_date: form.dueDate,
+        due_time: form.dueTime || null,
+      });
+      setSuccess(true);
+      setTimeout(() => router.push("/followups"), 1200);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Failed to create follow-up.");
+      setLoading(false);
+    }
   }
 
   return (
     <DashboardLayout>
-      <div className="form-card">
-        <div style={{ padding: "0 0 0.75rem" }}>
-          <button className="back-btn" onClick={() => router.push("/followups")}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+
+        {/* Page Header */}
+        <div>
+          <button className="back-btn" onClick={() => router.push("/followups")} style={{ marginBottom: "8px" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
             Back to Follow-ups
           </button>
@@ -83,12 +119,15 @@ export default function AddFollowupPage() {
           </div>
         )}
 
-        <div className="form-card-header">
-          <h2 className="form-card-title">Follow-up Details</h2>
-        </div>
+        {/* Form Card */}
+        <form onSubmit={handleSubmit} noValidate className="company-form-card">
+          <div className="form-section">
+            <div className="form-section-header">
+              <h2>Follow-up Details</h2>
+              <p>Fill in all the required fields below.</p>
+            </div>
 
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="form-card-body">
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
             {/* Subject */}
             <FormField label="Subject" name="subject" value={form.subject}
@@ -97,11 +136,36 @@ export default function AddFollowupPage() {
 
             {/* Related To + Company */}
             <div className="form-row-2">
-              <FormField label="Related To" name="relatedTo" value={form.relatedTo}
-                onChange={handleChange} error={errors.relatedTo}
-                placeholder="e.g. Ahmed Khan" required />
-              <FormField label="Company" name="company" value={form.company}
-                onChange={handleChange} placeholder="e.g. SoftiqTech" />
+              <div className="form-group">
+                <label className="form-label">Related To <span style={{ color: "var(--error)" }}>*</span></label>
+                <select name="relatedKey" value={form.relatedKey} onChange={handleChange}
+                  className={`form-input${errors.relatedKey ? " error" : ""}`}>
+                  <option value="">Select customer, lead, or deal</option>
+                  <optgroup label="Customers">
+                    {relatedOptions.filter(o => o.key.startsWith("customer:")).map(o => (
+                      <option key={o.key} value={o.key}>{o.name}{o.detail ? ` — ${o.detail}` : ""}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Leads">
+                    {relatedOptions.filter(o => o.key.startsWith("lead:")).map(o => (
+                      <option key={o.key} value={o.key}>{o.name}{o.detail ? ` — ${o.detail}` : ""}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Deals">
+                    {relatedOptions.filter(o => o.key.startsWith("deal:")).map(o => (
+                      <option key={o.key} value={o.key}>{o.name}</option>
+                    ))}
+                  </optgroup>
+                </select>
+                {errors.relatedKey && <p className="form-error">{errors.relatedKey}</p>}
+              </div>
+              <div className="form-group">
+                <label className="form-label">Company</label>
+                <select name="companyId" value={form.companyId} onChange={handleChange} className="form-input">
+                  <option value="">No company</option>
+                  {companies.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
+                </select>
+              </div>
             </div>
 
             {/* Type + Priority */}
@@ -114,7 +178,7 @@ export default function AddFollowupPage() {
                 options={[{ label: "High", value: "High" }, { label: "Medium", value: "Medium" }, { label: "Low", value: "Low" }]} />
             </div>
 
-            {/* Status + Assigned To */}
+            {/* Status */}
             <div className="form-row-2">
               <FormField label="Status" name="status" type="select" value={form.status}
                 onChange={handleChange} error={errors.status} required
@@ -124,8 +188,12 @@ export default function AddFollowupPage() {
                   { label: "Overdue", value: "Overdue" },
                   { label: "Cancelled", value: "Cancelled" },
                 ]} />
-              <FormField label="Assigned To" name="assignedTo" value={form.assignedTo}
-                onChange={handleChange} placeholder="e.g. Khaanzadi" />
+              <div className="form-group">
+                <label className="form-label">Assigned To</label>
+                <input value="You (creator)" disabled className="form-input"
+                  style={{ background: "#f8fafc", color: "#94a3b8", cursor: "not-allowed" }} />
+                <p className="form-error" style={{ color: "#94a3b8" }}>Follow-ups are assigned to you when created.</p>
+              </div>
             </div>
 
             {/* Due Date + Time */}
@@ -146,10 +214,11 @@ export default function AddFollowupPage() {
             {/* Notes */}
             <FormField label="Notes" name="notes" type="textarea" value={form.notes}
               onChange={handleChange} placeholder="Add any notes or details…" />
-
+            </div>
           </div>
 
-          <div className="form-card-footer">
+          {/* Actions */}
+          <div className="form-actions">
             <button type="button" className="btn-secondary"
               onClick={() => router.push("/followups")} disabled={loading}>Cancel</button>
             <button type="submit" className="btn-add" disabled={loading || success}>

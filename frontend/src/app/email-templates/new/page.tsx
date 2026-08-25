@@ -4,7 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { ALL_CATEGORIES, AVAILABLE_VARIABLES, TemplateCategory, TemplateType, TemplateStatus } from "@/data/emailTemplates";
-import { ChevronDown, Save, X } from "lucide-react";
+import {
+  createEmailTemplate, CATEGORY_VALUES, TYPE_VALUES, STATUS_VALUES,
+} from "@/lib/emailTemplatesApi";
+import { ChevronDown } from "lucide-react";
 import { HiChevronDown, HiSave, HiX } from "react-icons/hi";
 
 interface FormValues {
@@ -23,6 +26,7 @@ export default function AddEmailTemplatePage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
+  const [submitError, setSubmitError] = useState("");
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
@@ -50,12 +54,35 @@ export default function AddEmailTemplatePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setSubmitError("");
     if (!validate()) return;
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setLoading(false);
-    setSuccess("Template saved successfully.");
-    setTimeout(() => router.push("/email-templates"), 1500);
+    try {
+      // Extract {{variable}} placeholders used across subject + content.
+      const vars = Array.from(
+        new Set(
+          `${form.subject}\n${form.content}`
+            .match(/\{\{\s*([a-zA-Z_]+)\s*\}\}/g)?.map(v => v.replace(/[{}\s]/g, "")) ?? []
+        )
+      );
+      await createEmailTemplate({
+        name: form.name.trim(),
+        subject: form.subject,
+        content: form.content,
+        category: CATEGORY_VALUES[form.category as TemplateCategory],
+        template_type: TYPE_VALUES[form.type],
+        status: STATUS_VALUES[form.status],
+        description: "",
+        language: "en",
+        variables_used: vars,
+      });
+      setSuccess("Template saved successfully.");
+      setTimeout(() => router.push("/email-templates"), 1500);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Failed to save template.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const wordCount = form.content.split(/\s+/).filter(Boolean).length;
@@ -71,18 +98,19 @@ export default function AddEmailTemplatePage() {
             <p style={{ margin: 0, color: "#64748b", fontSize: "0.9rem" }}>Create a new email template to save time and communicate consistently.</p>
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
-            <button type="button" onClick={() => router.push("/email-templates")}
-              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 20px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#475569", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer", fontFamily: "inherit" }}>
+            <button type="button" onClick={() => router.push("/email-templates")} disabled={loading}
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 20px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#475569", fontWeight: 600, fontSize: "0.9rem", cursor: loading ? "wait" : "pointer", fontFamily: "inherit" }}>
               <HiX size={14} /> Cancel
             </button>
-            <button type="submit" form="template-form"
-              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 20px", border: "none", borderRadius: "8px", background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", color: "#fff", fontWeight: 600, fontSize: "0.9rem", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 8px rgba(79,70,229,0.35)" }}>
-              <HiSave size={14} /> Save Template
+            <button type="submit" form="template-form" disabled={loading || !!success}
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 20px", border: "none", borderRadius: "8px", background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", color: "#fff", fontWeight: 600, fontSize: "0.9rem", cursor: loading ? "wait" : "pointer", fontFamily: "inherit", boxShadow: "0 2px 8px rgba(79,70,229,0.35)", opacity: loading || success ? 0.8 : 1 }}>
+              <HiSave size={14} /> {loading ? "Saving..." : success ? "Saved!" : "Save Template"}
             </button>
           </div>
         </div>
 
         {success && <div className="msg-success" style={{ marginBottom: "20px" }}>✅ {success}</div>}
+        {submitError && <div className="msg-error" style={{ marginBottom: "20px" }}>❌ {submitError}</div>}
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "20px" }}>
 

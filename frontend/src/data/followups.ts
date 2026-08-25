@@ -4,6 +4,8 @@ export type FollowupPriority = "High" | "Medium" | "Low";
 
 export interface Followup {
   id: string;
+  /** Human-readable backend code, e.g. "FU001". */
+  code?: string;
   subject: string;
   relatedTo: string;
   company: string;
