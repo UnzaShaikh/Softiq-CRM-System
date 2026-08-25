@@ -6,8 +6,9 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework import viewsets, permissions
 
-from .serializers import RegisterSerializer, UserSerializer, UserUpdateSerializer
+from .serializers import RegisterSerializer, UserSerializer, UserUpdateSerializer,AdminUserSerializer
 
 User = get_user_model()
 
@@ -84,3 +85,37 @@ def me_view(request):
     serializer.save()
 
     return Response(UserSerializer(user).data)
+class AdminUserViewSet(viewsets.ModelViewSet):
+    """
+    Admin-only user management API.
+    """
+
+    queryset = User.objects.all().order_by("-date_joined")
+
+    serializer_class = AdminUserSerializer
+
+    permission_classes = [
+        permissions.IsAuthenticated,
+        permissions.IsAdminUser,
+    ]
+
+    search_fields = [
+        "username",
+        "email",
+        "first_name",
+        "last_name",
+    ]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        is_active = self.request.query_params.get(
+            "is_active"
+        )
+
+        if is_active in ["true", "false"]:
+            queryset = queryset.filter(
+                is_active=is_active == "true"
+            )
+
+        return queryset
