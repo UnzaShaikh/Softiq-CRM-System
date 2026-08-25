@@ -1,67 +1,241 @@
 """
 URL configuration for core project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, include
-from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
-from users.views import me_view, register_view
-from users.authentication import EmailTokenObtainPairView  # using upstream's location
+
+from rest_framework_simplejwt.views import (
+    TokenRefreshView,
+    TokenVerifyView,
+)
+
+from users.views import (
+    me_view,
+    register_view,
+)
+
+from users.authentication import (
+    EmailTokenObtainPairView,
+)
+
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path(
+        "admin/",
+        admin.site.urls,
+    ),
 
-    # JWT Auth endpoints (using custom email login)
+    # =========================================================
+    # JWT Authentication
+    # =========================================================
+
     path(
         "api/auth/login/",
         EmailTokenObtainPairView.as_view(),
         name="token_obtain_pair",
     ),
-    path("api/auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-    path("api/auth/verify/", TokenVerifyView.as_view(), name="token_verify"),
-    path("api/auth/register/", register_view, name="register"),
-    path("api/users/me/", me_view, name="me"),
-    # Dashboard
-    path("api/", include("dashboard.urls")),
-    # Customers
-    path("api/", include("customers.urls")),
-    # Leads
-    path("api/", include("leads.urls")),
-    path("api/deals/", include("deals.urls")),
-    path("api/", include("opportunities.urls")),
-    path("api/", include("contacts.urls")),
-    path("api/", include("companies.urls")),
-    path("api/", include("activities.urls")),
-    path("api/", include("notes.urls")),
-    path("api/", include("followups.urls")),
-    path("api/", include("email_templates.urls")),
-    path("api/", include("user_profile.urls")),
-    path("api/", include('task_management.urls')),
-    
 
-# Pipeline
-path("api/", include("pipeline.urls")),
-# Global Search
-path("api/", include("search.urls")),
-# Notifications
-path("api/", include("notifications.urls")),
-# Project Settings (General / Company / Localization / Email / Security / Roles)
-path("api/", include("project_settings.urls")),
+    path(
+        "api/auth/refresh/",
+        TokenRefreshView.as_view(),
+        name="token_refresh",
+    ),
+
+    path(
+        "api/auth/verify/",
+        TokenVerifyView.as_view(),
+        name="token_verify",
+    ),
+
+    path(
+        "api/auth/register/",
+        register_view,
+        name="register",
+    ),
+
+    # =========================================================
+    # Users
+    # =========================================================
+
+    # Current logged-in user
+    path(
+        "api/users/me/",
+        me_view,
+        name="me",
+    ),
+
+    # Admin user management
+    path(
+        "api/users/",
+        include("users.urls"),
+    ),
+
+    # =========================================================
+    # Dashboard
+    # =========================================================
+
+    path(
+        "api/",
+        include("dashboard.urls"),
+    ),
+
+    # =========================================================
+    # Customers
+    # =========================================================
+
+    path(
+        "api/",
+        include("customers.urls"),
+    ),
+
+    # =========================================================
+    # Leads
+    # =========================================================
+
+    path(
+        "api/",
+        include("leads.urls"),
+    ),
+
+    # =========================================================
+    # Deals
+    # =========================================================
+
+    path(
+        "api/deals/",
+        include("deals.urls"),
+    ),
+
+    # =========================================================
+    # Opportunities
+    # =========================================================
+
+    path(
+        "api/",
+        include("opportunities.urls"),
+    ),
+
+    # =========================================================
+    # Contacts
+    # =========================================================
+
+    path(
+        "api/",
+        include("contacts.urls"),
+    ),
+
+    # =========================================================
+    # Companies
+    # =========================================================
+
+    path(
+        "api/",
+        include("companies.urls"),
+    ),
+
+    # =========================================================
+    # Activities
+    # =========================================================
+
+    path(
+        "api/",
+        include("activities.urls"),
+    ),
+
+    # =========================================================
+    # Notes
+    # =========================================================
+
+    path(
+        "api/",
+        include("notes.urls"),
+    ),
+
+    # =========================================================
+    # Follow-ups
+    # =========================================================
+
+    path(
+        "api/",
+        include("followups.urls"),
+    ),
+
+    # =========================================================
+    # Email Templates
+    # =========================================================
+
+    path(
+        "api/",
+        include("email_templates.urls"),
+    ),
+
+    # =========================================================
+    # User Profile
+    # =========================================================
+
+    path(
+        "api/",
+        include("user_profile.urls"),
+    ),
+
+    # =========================================================
+    # Tasks
+    # =========================================================
+
+    path(
+        "api/",
+        include("task_management.urls"),
+    ),
+
+    # =========================================================
+    # Pipeline
+    # =========================================================
+
+    path(
+        "api/",
+        include("pipeline.urls"),
+    ),
+
+    # =========================================================
+    # Global Search
+    # =========================================================
+
+    path(
+        "api/",
+        include("search.urls"),
+    ),
+
+    # =========================================================
+    # Notifications
+    # =========================================================
+
+    path(
+        "api/",
+        include("notifications.urls"),
+    ),
+
+    # =========================================================
+    # Project Settings
+    # General / Company / Localization /
+    # Email / Security / Roles
+    # =========================================================
+
+    path(
+        "api/",
+        include("project_settings.urls"),
+    ),
 ]
 
+
+# =============================================================
+# Media files during development
+# =============================================================
+
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(
+        settings.MEDIA_URL,
+        document_root=settings.MEDIA_ROOT,
+    )
