@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";   // ← added useEffect
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { ProfileNav } from "../page";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import { HiBell, HiSave } from "react-icons/hi";
 
 // ---------- API imports ----------
@@ -25,55 +26,45 @@ export default function NotificationsPage() {
     systemAlerts: true,
   });
 
-  const [loading, setLoading] = useState(true);   // ← new
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");         // ← new
+  const [error, setError] = useState("");
 
   // ---------- Load real settings on mount ----------
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchSettings() {
-      try {
-        const data = await getNotificationSettings();
-        if (isMounted) {
-          // Map backend snake_case → our camelCase state
-          setPrefs({
-            emailNotifs: data.email_notifications,
-            pushNotifs: data.push_notifications,
-            smsNotifs: data.sms_notifications,
-            newLead: data.new_lead,
-            dealUpdates: data.deal_updates,
-            taskReminders: data.task_reminders,
-            weeklyReport: data.weekly_report,
-            systemAlerts: data.system_alerts,
-          });
-          setLoading(false);
-        }
-      } catch (err: any) {
-        if (isMounted) {
-          setError(err.message || "Failed to load notification settings.");
-          setLoading(false);
-        }
-      }
+  const fetchSettings = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await getNotificationSettings();
+      setPrefs({
+        emailNotifs: data.email_notifications,
+        pushNotifs: data.push_notifications,
+        smsNotifs: data.sms_notifications,
+        newLead: data.new_lead,
+        dealUpdates: data.deal_updates,
+        taskReminders: data.task_reminders,
+        weeklyReport: data.weekly_report,
+        systemAlerts: data.system_alerts,
+      });
+    } catch (err: any) {
+      setError(err.message || "Failed to load notification settings.");
+    } finally {
+      setLoading(false);
     }
-
-    fetchSettings();
-    return () => {
-      isMounted = false;
-    };
   }, []);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   // ---------- Save via API ----------
   async function handleSave() {
     if (saving) return;
-
     setSaving(true);
     setError("");
     setSuccess("");
 
-    // Map our camelCase → backend snake_case
     const payload = {
       email_notifications: prefs.emailNotifs,
       push_notifications: prefs.pushNotifs,
@@ -87,7 +78,6 @@ export default function NotificationsPage() {
 
     try {
       const updated = await updateNotificationSettings(payload);
-      // Optionally sync state with the returned data (includes updated_at)
       setPrefs({
         emailNotifs: updated.email_notifications,
         pushNotifs: updated.push_notifications,
@@ -107,42 +97,17 @@ export default function NotificationsPage() {
     }
   }
 
-  // ---------- Toggle component (unchanged) ----------
+  // ---------- Toggle component ----------
   function Toggle({ value, onChange }: { value: boolean; onChange: () => void }) {
     return (
-      <button
-        type="button"
-        onClick={onChange}
-        style={{
-          width: 44,
-          height: 24,
-          borderRadius: "9999px",
-          border: "none",
-          background: value ? "#4f46e5" : "#e2e8f0",
-          cursor: "pointer",
-          position: "relative",
-          transition: "background 0.2s",
-          flexShrink: 0,
-        }}
-      >
-        <span
-          style={{
-            position: "absolute",
-            top: "2px",
-            left: value ? "22px" : "2px",
-            width: 20,
-            height: 20,
-            borderRadius: "50%",
-            background: "#fff",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-            transition: "left 0.2s",
-          }}
-        />
+      <button type="button" onClick={onChange}
+        style={{ width: 44, height: 24, borderRadius: "9999px", border: "none", background: value ? "#4f46e5" : "#e2e8f0", cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
+        <span style={{ position: "absolute", top: "2px", left: value ? "22px" : "2px", width: 20, height: 20, borderRadius: "50%", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s" }} />
       </button>
     );
   }
 
-  // ---------- UI groups (unchanged) ----------
+  // ---------- UI groups ----------
   const GROUPS = [
     {
       title: "Notification Channels",
@@ -165,39 +130,6 @@ export default function NotificationsPage() {
   ];
 
   // ---------- Render ----------
-  // Show loading state while fetching
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "40px" }}>
-          <div style={{ textAlign: "center", color: "#64748b" }}>
-            <p>Loading notification settings…</p>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  // Show error if fetch failed and we have no data (i.e., initial load failed)
-  if (error && !loading) {
-    return (
-      <DashboardLayout>
-        <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "40px" }}>
-          <div style={{ textAlign: "center", color: "#ef4444" }}>
-            <p>Error: {error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              style={{ marginTop: "16px", padding: "8px 20px", background: "#4f46e5", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer" }}
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  // ---------- Main layout (unchanged) ----------
   return (
     <DashboardLayout>
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
@@ -209,145 +141,62 @@ export default function NotificationsPage() {
         <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: "20px", alignItems: "start" }}>
           <ProfileNav active="notifs" />
 
-          <div
-            style={{
-              background: "#fff",
-              border: "1px solid #e2e8f0",
-              borderRadius: "14px",
-              overflow: "hidden",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-            }}
-          >
-            <div
-              style={{
-                padding: "18px 24px",
-                borderBottom: "1px solid #f1f5f9",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-              }}
-            >
-              <div
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: "8px",
-                  background: "#eef2ff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+            <div style={{ padding: "18px 24px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ width: 34, height: 34, borderRadius: "8px", background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <HiBell size={17} color="#4f46e5" />
               </div>
               <div>
-                <h2 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>
-                  Notification Settings
-                </h2>
-                <p style={{ margin: 0, fontSize: "0.75rem", color: "#94a3b8" }}>
-                  Choose how and when you want to be notified
-                </p>
+                <h2 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>Notification Settings</h2>
+                <p style={{ margin: 0, fontSize: "0.75rem", color: "#94a3b8" }}>Choose how and when you want to be notified</p>
               </div>
             </div>
 
             <div style={{ padding: "24px" }}>
-              {/* Success / Error messages */}
-              {success && (
-                <div className="msg-success" style={{ marginBottom: "16px" }}>
-                  ✅ {success}
-                </div>
-              )}
-              {error && (
-                <div
-                  className="msg-error"
-                  style={{
-                    marginBottom: "16px",
-                    color: "#dc2626",
-                    background: "#fee2e2",
-                    padding: "10px 14px",
-                    borderRadius: "8px",
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  ❌ {error}
+              {success && <div className="msg-success" style={{ marginBottom: "16px" }}>✅ {success}</div>}
+
+              {error && !loading && (
+                <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", fontSize: "0.8125rem", color: "#b91c1c", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span>⚠ {error}</span>
+                  <button onClick={fetchSettings} style={{ background: "none", border: "none", color: "#4f46e5", cursor: "pointer", fontWeight: 600, textDecoration: "underline", fontFamily: "inherit", fontSize: "0.8125rem" }}>
+                    Retry
+                  </button>
                 </div>
               )}
 
-              {GROUPS.map((group, gi) => (
-                <div
-                  key={group.title}
-                  style={{ marginBottom: gi < GROUPS.length - 1 ? "24px" : 0 }}
-                >
-                  <h3
-                    style={{
-                      margin: "0 0 14px",
-                      fontSize: "0.875rem",
-                      fontWeight: 700,
-                      color: "#374151",
-                      paddingBottom: "8px",
-                      borderBottom: "1px solid #f1f5f9",
-                    }}
-                  >
-                    {group.title}
-                  </h3>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    {group.items.map((item) => (
-                      <div
-                        key={item.key}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "10px 0",
-                        }}
-                      >
-                        <div>
-                          <p style={{ margin: "0 0 2px", fontSize: "0.875rem", fontWeight: 500, color: "#374151" }}>
-                            {item.label}
-                          </p>
-                          <p style={{ margin: 0, fontSize: "0.75rem", color: "#94a3b8" }}>
-                            {item.sub}
-                          </p>
-                        </div>
-                        <Toggle
-                          value={prefs[item.key as keyof typeof prefs] as boolean}
-                          onChange={() =>
-                            setPrefs((p) => ({
-                              ...p,
-                              [item.key]: !p[item.key as keyof typeof p],
-                            }))
-                          }
-                        />
+              {loading ? (
+                <ThemeLoader label="Loading notification settings..." minHeight={300} />
+              ) : (
+                <>
+                  {GROUPS.map((group, gi) => (
+                    <div key={group.title} style={{ marginBottom: gi < GROUPS.length - 1 ? "24px" : 0 }}>
+                      <h3 style={{ margin: "0 0 14px", fontSize: "0.875rem", fontWeight: 700, color: "#374151", paddingBottom: "8px", borderBottom: "1px solid #f1f5f9" }}>
+                        {group.title}
+                      </h3>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        {group.items.map((item) => (
+                          <div key={item.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
+                            <div>
+                              <p style={{ margin: "0 0 2px", fontSize: "0.875rem", fontWeight: 500, color: "#374151" }}>{item.label}</p>
+                              <p style={{ margin: 0, fontSize: "0.75rem", color: "#94a3b8" }}>{item.sub}</p>
+                            </div>
+                            <Toggle
+                              value={prefs[item.key as keyof typeof prefs] as boolean}
+                              onChange={() => setPrefs((p) => ({ ...p, [item.key]: !p[item.key as keyof typeof p] }))}
+                            />
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                    </div>
+                  ))}
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  marginTop: "20px",
-                  paddingTop: "16px",
-                  borderTop: "1px solid #f1f5f9",
-                }}
-              >
-                <button
-                  onClick={handleSave}
-                  className="btn-add"
-                  disabled={saving}
-                  style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
-                >
-                  {saving ? (
-                    "Saving..."
-                  ) : (
-                    <>
-                      <HiSave size={15} /> Save Changes
-                    </>
-                  )}
-                </button>
-              </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px", paddingTop: "16px", borderTop: "1px solid #f1f5f9" }}>
+                    <button onClick={handleSave} className="btn-add" disabled={saving} style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                      {saving ? "Saving..." : <><HiSave size={15} /> Save Changes</>}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

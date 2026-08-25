@@ -122,37 +122,26 @@ export default function EditCompanyPage() {
 
   return (
     <DashboardLayout>
-      <div className="page-wrapper">
-        {/* Header */}
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Edit Company</h1>
-
-            <p className="page-subtitle">
-              Update company information.
-            </p>
-          </div>
-
-          <div className="page-header-actions">
-            <Link href={`/company/${companyId}`}>
-              <button type="button" className="filter-btn">
-                ← Back
-              </button>
-            </Link>
-          </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        {/* Page Header */}
+        <div>
+          <button className="back-btn" onClick={() => router.push(`/company/${companyId}`)} style={{ marginBottom: "8px" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            Back to Company
+          </button>
+          <h1 className="page-title">Edit Company</h1>
+          <p className="page-subtitle">Update company information.</p>
         </div>
 
         {/* Company Form */}
-        <div className="company-form-card">
-          <CompanyForm
-            initialData={initialData}
-            onSubmit={handleSubmit}
-            submitText="Update Company"
-            loading={loading}
-            error={error}
-            success={success}
-          />
-        </div>
+        <CompanyForm
+          initialData={initialData}
+          onSubmit={handleSubmit}
+          submitText="Update Company"
+          loading={loading}
+          error={error}
+          success={success}
+        />
       </div>
     </DashboardLayout>
   );

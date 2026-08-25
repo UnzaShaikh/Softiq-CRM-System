@@ -3,17 +3,17 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import { NoteCategory, NotePriority, ALL_CATEGORIES, CATEGORY_COLORS } from "@/data/notes";
 import {
   getNote,
   updateNote,
-  deleteNote,
   listCategories,
   mapApiNoteToUi,
   PRIORITY_TO_API,
   ApiNoteCategory,
 } from "@/lib/notesApi";
-import { ArrowLeft, FileText, Calendar, Clock, Trash2, Tag, X } from "lucide-react";
+import { X } from "lucide-react";
 
 interface FormValues {
   title: string;
@@ -43,9 +43,7 @@ export default function EditNotePage() {
   const [success, setSuccess] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [deleteModal, setDeleteModal] = useState(false);
   const [tagInput, setTagInput] = useState("");
-  const [originalNote, setOriginalNote] = useState<ReturnType<typeof mapApiNoteToUi> | null>(null);
   const [apiCategories, setApiCategories] = useState<ApiNoteCategory[]>([]);
 
   useEffect(() => {
@@ -61,7 +59,6 @@ export default function EditNotePage() {
         setApiCategories(cats);
         const apiNote = await getNote(id);
         const uiNote = mapApiNoteToUi(apiNote, cats);
-        setOriginalNote(uiNote);
         setForm({
           title: uiNote.title,
           category: uiNote.category,
@@ -134,28 +131,9 @@ export default function EditNotePage() {
     }
   }
 
-  async function handleDelete() {
-    try {
-      await deleteNote(id);
-      setDeleteModal(false);
-      router.push("/notes");
-    } catch (err) {
-      setApiError(err instanceof Error ? err.message : "Failed to delete note.");
-      setDeleteModal(false);
-    }
-  }
-
-  function formatDate(str: string) {
-    return new Date(str).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
-  }
-
   if (loading) return (
     <DashboardLayout>
-      <div className="loading-state">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-        Loading note...
-        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-      </div>
+      <ThemeLoader label="Loading note..." />
     </DashboardLayout>
   );
 
@@ -172,202 +150,133 @@ export default function EditNotePage() {
 
   return (
     <DashboardLayout>
-      <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
-        <button className="back-btn" onClick={() => router.push(`/notes/${id}`)}>
-          <ArrowLeft size={16} /> Back to Note
-        </button>
-
-        {apiError && (
-          <div className="msg-error" style={{ marginBottom: "20px" }}>{apiError}</div>
-        )}
+        {/* Page Header */}
+        <div>
+          <button className="back-btn" onClick={() => router.push(`/notes/${id}`)} style={{ marginBottom: "8px" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            Back to Notes
+          </button>
+          <h1 className="page-title">Edit Note</h1>
+          <p className="page-subtitle">Update the note details below.</p>
+        </div>
 
         {success && (
-          <div className="msg-success" style={{ marginBottom: "20px" }}>
+          <div className="msg-success">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
             Note updated successfully! Redirecting...
           </div>
         )}
+        {apiError && <div className="msg-error">{apiError}</div>}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "24px" }}>
-
-          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid #f1f5f9" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <div style={{ width: 34, height: 34, borderRadius: "8px", background: "#eef2ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <FileText size={16} color="#4f46e5" />
-                </div>
-                <h2 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 700, color: "#0f172a" }}>Edit Note</h2>
-              </div>
-              <button onClick={() => router.push(`/notes/${id}`)} style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", borderRadius: "6px" }}>
-                <X size={18} />
-              </button>
+        {/* Form Card */}
+        <form onSubmit={handleSubmit} noValidate className="company-form-card">
+          <div className="form-section">
+            <div className="form-section-header">
+              <h2>Note Details</h2>
+              <p>Update all the required fields below.</p>
             </div>
 
-            <form onSubmit={handleSubmit} noValidate>
-              <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div className="form-group">
+                <label className="form-label">Title <span style={{ color: "var(--error)" }}>*</span></label>
+                <div style={{ position: "relative" }}>
+                  <input name="title" value={form.title} onChange={handleChange} maxLength={200}
+                    className={`form-input${errors.title ? " error" : ""}`}
+                    placeholder="Enter note title..." />
+                  <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "0.75rem", color: "#94a3b8" }}>{form.title.length}/200</span>
+                </div>
+                {errors.title && <p className="form-error">{errors.title}</p>}
+              </div>
 
+              <div className="form-row-2">
                 <div className="form-group">
-                  <label className="form-label">Title <span style={{ color: "var(--error)" }}>*</span></label>
+                  <label className="form-label">Category</label>
                   <div style={{ position: "relative" }}>
-                    <input name="title" value={form.title} onChange={handleChange} maxLength={200}
-                      className={`form-input${errors.title ? " error" : ""}`}
-                      placeholder="Enter note title..." />
-                    <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "0.75rem", color: "#94a3b8" }}>{form.title.length}/200</span>
-                  </div>
-                  {errors.title && <p className="form-error">{errors.title}</p>}
-                </div>
-
-                <div className="form-row-2">
-                  <div className="form-group">
-                    <label className="form-label">Category</label>
-                    <div style={{ position: "relative" }}>
-                      <select name="category" value={form.category} onChange={handleChange}
-                        className={`form-input${errors.category ? " error" : ""}`}
-                        style={{ cursor: "pointer" }}>
-                        <option value="">Select category</option>
-                        {ALL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                      {form.category && (
-                        <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", padding: "2px 8px", borderRadius: "5px", fontSize: "0.72rem", fontWeight: 600, background: CATEGORY_COLORS[form.category as NoteCategory]?.bg, color: CATEGORY_COLORS[form.category as NoteCategory]?.color, pointerEvents: "none" }}>
-                          {form.category}
-                        </span>
-                      )}
-                    </div>
-                    {errors.category && <p className="form-error">{errors.category}</p>}
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Priority</label>
-                    <select name="priority" value={form.priority} onChange={handleChange}
-                      className={`form-input${errors.priority ? " error" : ""}`}
+                    <select name="category" value={form.category} onChange={handleChange}
+                      className={`form-input${errors.category ? " error" : ""}`}
                       style={{ cursor: "pointer" }}>
-                      <option value="">Select priority</option>
-                      <option value="High Priority">High Priority</option>
-                      <option value="Medium Priority">Medium Priority</option>
-                      <option value="Low Priority">Low Priority</option>
+                      <option value="">Select category</option>
+                      {ALL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
-                    {errors.priority && <p className="form-error">{errors.priority}</p>}
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Tags</label>
-                  <div style={{ border: "1.5px solid #e2e8f0", borderRadius: "8px", padding: "8px 12px", display: "flex", flexWrap: "wrap", gap: "6px", background: "#fff", minHeight: "44px" }}
-                    onClick={() => document.getElementById("tag-input")?.focus()}>
-                    {form.tags.map(tag => (
-                      <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "3px 8px", borderRadius: "9999px", fontSize: "0.78rem", fontWeight: 500, background: "#eef2ff", color: "#4f46e5" }}>
-                        {tag}
-                        <button type="button" onClick={() => removeTag(tag)} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, color: "#4f46e5", display: "flex", alignItems: "center" }}>
-                          <X size={12} />
-                        </button>
+                    {form.category && (
+                      <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", padding: "2px 8px", borderRadius: "5px", fontSize: "0.72rem", fontWeight: 600, background: CATEGORY_COLORS[form.category as NoteCategory]?.bg, color: CATEGORY_COLORS[form.category as NoteCategory]?.color, pointerEvents: "none" }}>
+                        {form.category}
                       </span>
-                    ))}
-                    <input id="tag-input" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={addTag}
-                      placeholder={form.tags.length === 0 ? "Add a tag..." : ""}
-                      style={{ border: "none", outline: "none", fontSize: "0.875rem", flex: 1, minWidth: "100px", fontFamily: "inherit", background: "transparent" }} />
+                    )}
                   </div>
-                  <p style={{ margin: "4px 0 0", fontSize: "0.75rem", color: "#94a3b8" }}>Press Enter to add a tag</p>
+                  {errors.category && <p className="form-error">{errors.category}</p>}
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Note Content <span style={{ color: "var(--error)" }}>*</span></label>
-                  <div style={{ border: "1.5px solid #e2e8f0", borderRadius: "8px 8px 0 0", padding: "8px 12px", background: "#f8fafc", display: "flex", alignItems: "center", gap: "4px", borderBottom: "none" }}>
-                    {["B", "I", "U"].map(f => (
-                      <button key={f} type="button" style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", borderRadius: "4px", fontWeight: f === "B" ? 700 : 400, fontStyle: f === "I" ? "italic" : "normal", textDecoration: f === "U" ? "underline" : "none", color: "#374151", fontSize: "0.8rem" }}>{f}</button>
-                    ))}
-                    <div style={{ width: 1, height: 20, background: "#e2e8f0", margin: "0 4px" }} />
-                    {["≡", "•"].map(f => (
-                      <button key={f} type="button" style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", borderRadius: "4px", color: "#374151", fontSize: "1rem" }}>{f}</button>
-                    ))}
-                  </div>
-                  <textarea name="content" value={form.content} onChange={handleChange} rows={12}
-                    className={`form-input${errors.content ? " error" : ""}`}
-                    style={{ borderRadius: "0 0 8px 8px", resize: "vertical", minHeight: "240px" }}
-                    placeholder="Write your note content here..." />
-                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
-                    {errors.content && <p className="form-error">{errors.content}</p>}
-                    <p style={{ margin: "0 0 0 auto", fontSize: "0.75rem", color: "#94a3b8" }}>
-                      {form.content.split(/\s+/).filter(Boolean).length} words
-                    </p>
-                  </div>
+                  <label className="form-label">Priority</label>
+                  <select name="priority" value={form.priority} onChange={handleChange}
+                    className={`form-input${errors.priority ? " error" : ""}`}
+                    style={{ cursor: "pointer" }}>
+                    <option value="">Select priority</option>
+                    <option value="High Priority">High Priority</option>
+                    <option value="Medium Priority">Medium Priority</option>
+                    <option value="Low Priority">Low Priority</option>
+                  </select>
+                  {errors.priority && <p className="form-error">{errors.priority}</p>}
                 </div>
               </div>
 
-              <div style={{ padding: "16px 24px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <button type="button" onClick={() => setDeleteModal(true)}
-                  style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", border: "1.5px solid #fca5a5", borderRadius: "8px", background: "#fef2f2", color: "#ef4444", fontWeight: 600, fontSize: "0.875rem", cursor: "pointer", fontFamily: "inherit" }}>
-                  <Trash2 size={14} /> Delete Note
-                </button>
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button type="button" className="btn-secondary" onClick={() => router.push(`/notes/${id}`)}>Cancel</button>
-                  <button type="submit" className="btn-add" disabled={saving || success}>
-                    {saving ? (
-                      <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>Saving...</>
-                    ) : success ? "✓ Saved!" : "Save Changes"}
-                  </button>
+              <div className="form-group">
+                <label className="form-label">Tags</label>
+                <div style={{ border: "1.5px solid #e2e8f0", borderRadius: "8px", padding: "8px 12px", display: "flex", flexWrap: "wrap", gap: "6px", background: "#fff", minHeight: "44px" }}
+                  onClick={() => document.getElementById("tag-input")?.focus()}>
+                  {form.tags.map(tag => (
+                    <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "3px 8px", borderRadius: "9999px", fontSize: "0.78rem", fontWeight: 500, background: "#eef2ff", color: "#4f46e5" }}>
+                      {tag}
+                      <button type="button" onClick={() => removeTag(tag)} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, color: "#4f46e5", display: "flex", alignItems: "center" }}>
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                  <input id="tag-input" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={addTag}
+                    placeholder={form.tags.length === 0 ? "Add a tag..." : ""}
+                    style={{ border: "none", outline: "none", fontSize: "0.875rem", flex: 1, minWidth: "100px", fontFamily: "inherit", background: "transparent" }} />
                 </div>
-              </div>
-            </form>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-              <h3 style={{ margin: "0 0 16px", fontSize: "0.875rem", fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center", gap: "6px" }}>
-                <FileText size={15} color="#4f46e5" /> Note Details
-              </h3>
-
-              <div style={{ marginBottom: "16px" }}>
-                <p style={{ margin: "0 0 8px", fontSize: "0.72rem", color: "#94a3b8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>Created By</p>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "0.7rem" }}>
-                    {originalNote?.authorInitials}
-                  </div>
-                  <div>
-                    <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#0f172a" }}>{originalNote?.author}</p>
-                    <p style={{ margin: 0, fontSize: "0.72rem", color: "#94a3b8" }}>Admin</p>
-                  </div>
-                </div>
+                <p style={{ margin: "4px 0 0", fontSize: "0.75rem", color: "#94a3b8" }}>Press Enter to add a tag</p>
               </div>
 
-              {[
-                { label: "Created", value: originalNote ? formatDate(originalNote.createdAt) : "", icon: <Calendar size={13} color="#94a3b8" /> },
-                { label: "Last Updated", value: originalNote ? formatDate(originalNote.updatedAt) : "", icon: <Clock size={13} color="#94a3b8" /> },
-              ].map(row => (
-                <div key={row.label} style={{ marginBottom: "14px" }}>
-                  <p style={{ margin: "0 0 4px", fontSize: "0.72rem", color: "#94a3b8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{row.label}</p>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    {row.icon}
-                    <span style={{ fontSize: "0.8125rem", color: "#374151" }}>{row.value}</span>
-                  </div>
+              <div className="form-group">
+                <label className="form-label">Note Content <span style={{ color: "var(--error)" }}>*</span></label>
+                <div style={{ border: "1.5px solid #e2e8f0", borderRadius: "8px 8px 0 0", padding: "8px 12px", background: "#f8fafc", display: "flex", alignItems: "center", gap: "4px", borderBottom: "none" }}>
+                  {["B", "I", "U"].map(f => (
+                    <button key={f} type="button" style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", borderRadius: "4px", fontWeight: f === "B" ? 700 : 400, fontStyle: f === "I" ? "italic" : "normal", textDecoration: f === "U" ? "underline" : "none", color: "#374151", fontSize: "0.8rem" }}>{f}</button>
+                  ))}
+                  <div style={{ width: 1, height: 20, background: "#e2e8f0", margin: "0 4px" }} />
+                  {["≡", "•"].map(f => (
+                    <button key={f} type="button" style={{ width: 28, height: 28, border: "none", background: "none", cursor: "pointer", borderRadius: "4px", color: "#374151", fontSize: "1rem" }}>{f}</button>
+                  ))}
                 </div>
-              ))}
-
-              <div>
-                <p style={{ margin: "0 0 6px", fontSize: "0.72rem", color: "#94a3b8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>Related To</p>
-                <input name="relatedTo" value={form.relatedTo} onChange={handleChange}
-                  className="form-input" placeholder="e.g. Alpha Dynamics" style={{ fontSize: "0.8125rem", padding: "7px 10px" }} />
+                <textarea name="content" value={form.content} onChange={handleChange} rows={12}
+                  className={`form-input${errors.content ? " error" : ""}`}
+                  style={{ borderRadius: "0 0 8px 8px", resize: "vertical", minHeight: "240px" }}
+                  placeholder="Write your note content here..." />
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
+                  {errors.content && <p className="form-error">{errors.content}</p>}
+                  <p style={{ margin: "0 0 0 auto", fontSize: "0.75rem", color: "#94a3b8" }}>
+                    {form.content.split(/\s+/).filter(Boolean).length} words
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+
+          {/* Actions */}
+          <div className="form-actions">
+            <button type="button" className="btn-secondary" onClick={() => router.push(`/notes/${id}`)}>Cancel</button>
+            <button type="submit" className="btn-add" disabled={saving || success}>
+              {saving ? (<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>Saving...</>) : success ? "Saved!" : "Save Note"}
+            </button>
+          </div>
+        </form>
       </div>
-
-      {deleteModal && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setDeleteModal(false); }}>
-          <div className="modal-box">
-            <div className="modal-icon"><Trash2 size={24} color="#ef4444" /></div>
-            <h2 className="modal-title">Delete Note</h2>
-            <p className="modal-text">Are you sure you want to delete this note? This cannot be undone.</p>
-            <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => setDeleteModal(false)}>Cancel</button>
-              <button className="btn-danger" onClick={handleDelete}>Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </DashboardLayout>
   );
 }

@@ -1,7 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import {
+  listRoles,
+  createRole,
+  updateRole,
+  type Role as ApiRole,
+} from "@/lib/projectSettingsApi";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import SettingsNav from "@/components/project-settings/SettingsNav";
 import Link from "next/link";
 import {
@@ -24,6 +31,47 @@ interface Role {
   permissions: RolePermissions;
 }
 
+const ACCESS_LEVEL_LABELS: Record<string, string> = {
+  full: "Full system access",
+  team: "Manage team and data",
+  sales: "Manage leads, opportunities, and deals",
+  view: "View-only access",
+  custom: "Custom access",
+};
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString("en-US", {
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+}
+
+function roleIcon(name: string, accessLevel: string): React.ReactNode {
+  const hay = `${name} ${accessLevel}`;
+  if (/admin/i.test(hay)) return <HiShieldCheck size={18} />;
+  if (/manager/i.test(hay)) return <HiUserGroup size={18} />;
+  if (/(sales|\brep\b)/i.test(hay)) return <MdTrendingUp size={18} />;
+  if (/view/i.test(hay)) return <HiEye size={18} />;
+  return <HiUserGroup size={18} />;
+}
+
+// Maps a backend role record onto the UI's Role shape.
+function mapApiRole(r: ApiRole): Role {
+  return {
+    id: String(r.id),
+    name: r.name,
+    description: r.description || "Custom role",
+    accessLevel: ACCESS_LEVEL_LABELS[r.access_level] ?? r.access_level ?? "Custom access",
+    color: r.color || "#4f46e5",
+    bgColor: r.bg_color || "#eef2ff",
+    icon: roleIcon(r.name, r.access_level),
+    usersAssigned: r.users_assigned ?? 0,
+    createdOn: formatDate(r.created_at),
+    lastUpdated: formatDate(r.updated_at),
+    permissions: r.permissions,
+  };
+}
+
 // ── CRM Modules ───────────────────────────────────────────────────────
 const CRM_MODULES = [
   { key: "dashboard",     label: "Dashboard",     icon: <MdDashboard size={15} /> },
@@ -36,59 +84,6 @@ const CRM_MODULES = [
   { key: "companies",     label: "Companies",     icon: <MdBusiness size={15} /> },
   { key: "reports",       label: "Reports",       icon: <MdBarChart size={15} /> },
   { key: "settings",      label: "Settings",      icon: <MdSettings size={15} /> },
-];
-
-function allPerms(v: boolean, c: boolean, e: boolean, d: boolean): RolePermissions {
-  const p: RolePermissions = {};
-  CRM_MODULES.forEach(m => { p[m.key] = { view: v, create: c, edit: e, delete: d }; });
-  return p;
-}
-
-const DEFAULT_ROLES: Role[] = [
-  {
-    id: "administrator", name: "Administrator", description: "Full system access",
-    accessLevel: "Full system access", color: "#4f46e5", bgColor: "#eef2ff",
-    icon: <HiShieldCheck size={18} />, usersAssigned: 2,
-    createdOn: "01 Jan 2025, 09:00 AM", lastUpdated: "18 May 2025, 10:30 AM",
-    permissions: allPerms(true, true, true, true),
-  },
-  {
-    id: "manager", name: "Manager", description: "Manage team and data",
-    accessLevel: "Manage team and data", color: "#0891b2", bgColor: "#ecfeff",
-    icon: <HiUserGroup size={18} />, usersAssigned: 5,
-    createdOn: "01 Jan 2025, 09:00 AM", lastUpdated: "18 May 2025, 10:30 AM",
-    permissions: (() => {
-      const p = allPerms(true, true, true, false);
-      p["settings"] = { view: false, create: false, edit: false, delete: false };
-      return p;
-    })(),
-  },
-  {
-    id: "sales_rep", name: "Sales Representative", description: "Manage leads and deals",
-    accessLevel: "Manage leads, opportunities, and deals", color: "#16a34a", bgColor: "#f0fdf4",
-    icon: <MdTrendingUp size={18} />, usersAssigned: 8,
-    createdOn: "01 Jan 2025, 09:00 AM", lastUpdated: "18 May 2025, 10:30 AM",
-    permissions: (() => {
-      const p = allPerms(false, false, false, false);
-      ["leads","opportunities","deals","customers","contacts","activities"].forEach(m => {
-        p[m] = { view: true, create: true, edit: true, delete: false };
-      });
-      p["dashboard"] = { view: true, create: false, edit: false, delete: false };
-      p["reports"]   = { view: true, create: false, edit: false, delete: false };
-      return p;
-    })(),
-  },
-  {
-    id: "viewer", name: "Viewer", description: "View only access",
-    accessLevel: "View-only access", color: "#d97706", bgColor: "#fefce8",
-    icon: <HiEye size={18} />, usersAssigned: 3,
-    createdOn: "01 Jan 2025, 09:00 AM", lastUpdated: "18 May 2025, 10:30 AM",
-    permissions: (() => {
-      const p = allPerms(true, false, false, false);
-      p["settings"] = { view: false, create: false, edit: false, delete: false };
-      return p;
-    })(),
-  },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────
@@ -120,16 +115,39 @@ function PermCheckbox({ checked, onChange }: { checked: boolean; onChange: () =>
 
 // ── Main Page ─────────────────────────────────────────────────────────
 export default function RolesPermissionsPage() {
-  const [roles, setRoles] = useState<Role[]>(DEFAULT_ROLES);
-  const [selectedRoleId, setSelectedRoleId] = useState("administrator");
-  const [permissions, setPermissions] = useState<Record<string, RolePermissions>>(
-    Object.fromEntries(DEFAULT_ROLES.map(r => [r.id, JSON.parse(JSON.stringify(r.permissions))]))
-  );
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = useState<string>("");
+  const [permissions, setPermissions] = useState<Record<string, RolePermissions>>({});
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState("");
   const [saveError, setSaveError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  // Role ids whose permissions were modified since the last save.
+  const [dirtyRoleIds, setDirtyRoleIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<"roles" | "matrix">("roles");
+
+  const fetchRoles = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const data = await listRoles();
+      const mapped = data.map(mapApiRole);
+      setRoles(mapped);
+      setPermissions(
+        Object.fromEntries(mapped.map(r => [r.id, JSON.parse(JSON.stringify(r.permissions))]))
+      );
+      setSelectedRoleId(prev => (prev && mapped.some(r => r.id === prev) ? prev : mapped[0]?.id ?? ""));
+      setDirtyRoleIds(new Set());
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load roles.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchRoles(); }, [fetchRoles]);
 
   // Add Role Modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -137,49 +155,70 @@ export default function RolesPermissionsPage() {
   const [newRoleDesc, setNewRoleDesc] = useState("");
   const [roleNameError, setRoleNameError] = useState("");
 
-  const selectedRole = roles.find(r => r.id === selectedRoleId)!;
-  const selectedPerms = permissions[selectedRoleId];
+  const selectedRole = roles.find(r => r.id === selectedRoleId);
+  const selectedPerms = selectedRole ? permissions[selectedRole.id] : undefined;
 
   function togglePerm(module: string, perm: PermType) {
+    if (!selectedRole) return;
+    const roleId = selectedRole.id;
     setPermissions(prev => ({
       ...prev,
-      [selectedRoleId]: {
-        ...prev[selectedRoleId],
-        [module]: { ...prev[selectedRoleId][module], [perm]: !prev[selectedRoleId][module][perm] },
+      [roleId]: {
+        ...prev[roleId],
+        [module]: { ...prev[roleId][module], [perm]: !prev[roleId][module][perm] },
       },
     }));
+    setDirtyRoleIds(prev => new Set(prev).add(roleId));
     setHasChanges(true);
   }
 
   async function handleSave() {
+    if (saving || dirtyRoleIds.size === 0) return;
     setSaving(true); setSaveSuccess(""); setSaveError("");
-    await new Promise(r => setTimeout(r, 1200));
-    setSaving(false); setHasChanges(false);
-    setSaveSuccess("Roles & Permissions saved successfully.");
-    setTimeout(() => setSaveSuccess(""), 4000);
+    try {
+      await Promise.all(
+        Array.from(dirtyRoleIds).map(id =>
+          updateRole(Number(id), { permissions: permissions[id] })
+        )
+      );
+      setHasChanges(false);
+      setDirtyRoleIds(new Set());
+      setSaveSuccess("Roles & Permissions saved successfully.");
+      await fetchRoles();
+      setTimeout(() => setSaveSuccess(""), 4000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save roles.");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function handleAddRole() {
+  async function handleAddRole() {
     const trimmed = newRoleName.trim();
     if (!trimmed) { setRoleNameError("Role name is required."); return; }
     if (trimmed.length > 50) { setRoleNameError("Max 50 characters."); return; }
     if (roles.some(r => r.name.toLowerCase() === trimmed.toLowerCase())) {
       setRoleNameError("Role name already exists."); return;
     }
-    const id = trimmed.toLowerCase().replace(/\s+/g, "_") + "_" + Date.now();
-    const newRole: Role = {
-      id, name: trimmed, description: newRoleDesc.trim() || "Custom role",
-      accessLevel: newRoleDesc.trim() || "Custom role",
-      color: "#7c3aed", bgColor: "#f5f3ff",
-      icon: <HiUserGroup size={18} />, usersAssigned: 0,
-      createdOn: new Date().toLocaleString("en-US", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }),
-      lastUpdated: new Date().toLocaleString("en-US", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }),
-      permissions: allPerms(false, false, false, false),
-    };
-    setRoles(prev => [...prev, newRole]);
-    setPermissions(prev => ({ ...prev, [id]: allPerms(false, false, false, false) }));
-    setSelectedRoleId(id);
-    setShowAddModal(false); setNewRoleName(""); setNewRoleDesc(""); setRoleNameError("");
+    try {
+      const created = await createRole({
+        name: trimmed,
+        description: newRoleDesc.trim(),
+        access_level: "custom",
+        color: "#7c3aed",
+        bg_color: "#f5f3ff",
+      });
+      const mapped = mapApiRole(created);
+      setRoles(prev => [...prev, mapped]);
+      setPermissions(prev => ({
+        ...prev,
+        [mapped.id]: JSON.parse(JSON.stringify(mapped.permissions)),
+      }));
+      setSelectedRoleId(mapped.id);
+      setShowAddModal(false); setNewRoleName(""); setNewRoleDesc(""); setRoleNameError("");
+    } catch (err) {
+      setRoleNameError(err instanceof Error ? err.message : "Failed to create role.");
+    }
   }
 
   const PERM_COLS: { key: PermType; label: string }[] = [
@@ -222,6 +261,14 @@ export default function RolesPermissionsPage() {
         </div>
 
         {/* Banners */}
+        {loadError && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", fontSize: "0.8125rem", color: "#b91c1c" }}>
+            ❌ {loadError}{" "}
+            <button onClick={fetchRoles} style={{ background: "none", border: "none", color: "#4f46e5", cursor: "pointer", fontWeight: 600, textDecoration: "underline", fontFamily: "inherit", fontSize: "0.8125rem" }}>
+              Retry
+            </button>
+          </div>
+        )}
         {saveSuccess && <div className="msg-success" style={{ marginBottom: "16px" }}>✅ {saveSuccess}</div>}
         {saveError   && <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", fontSize: "0.8125rem", color: "#dc2626", fontWeight: 500 }}>❌ {saveError}</div>}
         {hasChanges && !saveSuccess && (
@@ -262,7 +309,10 @@ export default function RolesPermissionsPage() {
             </div>
 
             {/* ── ROLES TAB ── */}
-            {activeTab === "roles" && (
+            {activeTab === "roles" && (loading || !selectedRole || !selectedPerms) && (
+              <ThemeLoader label="Loading roles..." minHeight={260} />
+            )}
+            {activeTab === "roles" && !loading && selectedRole && selectedPerms && (
               <div style={{ display: "grid", gridTemplateColumns: "185px minmax(0,1fr)", gap: "0" }}>
 
                 {/* Roles List column */}
@@ -388,7 +438,7 @@ export default function RolesPermissionsPage() {
             )}
 
             {/* ── PERMISSIONS MATRIX TAB ── */}
-            {activeTab === "matrix" && (
+            {activeTab === "matrix" && !loading && roles.length > 0 && (
               <div style={{ padding: "16px 20px", overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "inherit" }}>
                   <thead>
@@ -447,6 +497,7 @@ export default function RolesPermissionsPage() {
           </div>
 
           {/* ── Right: Role Overview ── */}
+          {selectedRole && selectedPerms && (
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)", position: "sticky", top: "20px" }}>
             <h3 style={{ margin: "0 0 2px", fontSize: "0.875rem", fontWeight: 700, color: "#0f172a" }}>Role Overview</h3>
             <p style={{ margin: "0 0 16px", fontSize: "0.72rem", color: "#94a3b8" }}>Summary of the selected role.</p>
@@ -496,6 +547,7 @@ export default function RolesPermissionsPage() {
               </div>
             </div>
           </div>
+          )}
         </div>
       </div>
 

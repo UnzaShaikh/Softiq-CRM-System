@@ -1,8 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import SettingsNav from "@/components/project-settings/SettingsNav";
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import {
+  getSecuritySettings,
+  updateSecuritySettings,
+} from "@/lib/projectSettingsApi";
 import Link from "next/link";
 import {
   HiChevronRight, HiSave, HiShieldCheck, HiLockClosed,
@@ -42,17 +47,82 @@ export default function SecurityPage() {
 
   const [saving,  setSaving]  = useState(false);
   const [success, setSuccess] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  // Numeric helpers: the dropdowns use "Never"/"Unlimited" labels while the
+  // backend stores numbers (0 = never/unlimited).
+  function sessionTimeoutLabel(n: number): string {
+    return n === 0 ? "Never" : String(n);
+  }
+  function attemptsLabel(n: number): string {
+    return n === 0 ? "Unlimited" : String(n);
+  }
+  function expiryLabel(n: number): string {
+    return n === 0 ? "Never" : String(n);
+  }
+
+  const fetchSecurity = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const s = await getSecuritySettings();
+      setSettings(prev => ({
+        ...prev,
+        twoFactorAuth: s.two_factor_auth,
+        loginNotifications: s.login_notifications,
+        sessionTimeout: sessionTimeoutLabel(s.session_timeout),
+        maxLoginAttempts: attemptsLabel(s.max_login_attempts),
+        passwordExpiry: expiryLabel(s.password_expiry_days),
+        requireUppercase: s.require_uppercase,
+        requireNumbers: s.require_numbers,
+        requireSymbols: s.require_special_chars,
+        minPasswordLength: String(s.min_password_length),
+        ipWhitelist: s.ip_whitelist,
+        forceHttps: s.force_https,
+        auditLog: s.audit_log,
+      }));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load security settings.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchSecurity(); }, [fetchSecurity]);
 
   function set<K extends keyof typeof settings>(key: K, val: typeof settings[K]) {
     setSettings(p => ({ ...p, [key]: val }));
   }
 
   async function handleSave() {
+    if (saving) return;
     setSaving(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setSaving(false);
-    setSuccess("Security settings saved successfully.");
-    setTimeout(() => setSuccess(""), 4000);
+    setSuccess("");
+    setSaveError("");
+    try {
+      await updateSecuritySettings({
+        two_factor_auth: settings.twoFactorAuth,
+        login_notifications: settings.loginNotifications,
+        session_timeout: settings.sessionTimeout === "Never" ? 0 : Number(settings.sessionTimeout),
+        max_login_attempts: settings.maxLoginAttempts === "Unlimited" ? 0 : Number(settings.maxLoginAttempts),
+        password_expiry_days: settings.passwordExpiry === "Never" ? 0 : Number(settings.passwordExpiry),
+        require_uppercase: settings.requireUppercase,
+        require_numbers: settings.requireNumbers,
+        require_special_chars: settings.requireSymbols,
+        min_password_length: Number(settings.minPasswordLength),
+        ip_whitelist: settings.ipWhitelist.trim(),
+        force_https: settings.forceHttps,
+        audit_log: settings.auditLog,
+      });
+      setSuccess("Security settings saved successfully.");
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save security settings.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const selectStyle: React.CSSProperties = {
@@ -90,6 +160,15 @@ export default function SecurityPage() {
           </button>
         </div>
 
+        {loadError && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", fontSize: "0.8125rem", color: "#b91c1c" }}>
+            ❌ {loadError}{" "}
+            <button onClick={fetchSecurity} style={{ background: "none", border: "none", color: "#4f46e5", cursor: "pointer", fontWeight: 600, textDecoration: "underline", fontFamily: "inherit", fontSize: "0.8125rem" }}>
+              Retry
+            </button>
+          </div>
+        )}
+        {saveError && <div className="msg-error" style={{ marginBottom: "16px", whiteSpace: "pre-line" }}>❌ {saveError}</div>}
         {success && <div className="msg-success" style={{ marginBottom: 16 }}>✅ {success}</div>}
 
         <div style={{ display: "grid", gridTemplateColumns: "220px 1fr 280px", gap: 20, alignItems: "start" }}>
@@ -97,6 +176,10 @@ export default function SecurityPage() {
 
           {/* Center */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {loading && (
+              <ThemeLoader label="Loading security settings..." minHeight={260} />
+            )}
+            {!loading && (<>
 
             {/* Two-Factor Auth */}
             <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
@@ -219,6 +302,7 @@ export default function SecurityPage() {
                 ))}
               </div>
             </div>
+            </>)}
           </div>
 
           {/* Right */}

@@ -222,3 +222,5 @@ node_modules/
 out/
 dist/
 *.tsbuildinfo
+# Media uploads (project logos)
+backend/media/

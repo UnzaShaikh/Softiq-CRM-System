@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Link from "next/link";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import CompanyForm from "@/components/company/CompanyForm";
@@ -49,41 +48,25 @@ export default function AddCompanyPage() {
 
   return (
     <DashboardLayout>
-      <div className="page-wrapper">
-        {/* Header */}
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">
-              Add Company
-            </h1>
-
-            <p className="page-subtitle">
-              Create a new company record.
-            </p>
-          </div>
-
-          <div className="page-header-actions">
-            <Link href="/company">
-              <button
-                type="button"
-                className="filter-btn"
-              >
-                ← Back
-              </button>
-            </Link>
-          </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        {/* Page Header */}
+        <div>
+          <button className="back-btn" onClick={() => router.push("/company")} style={{ marginBottom: "8px" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            Back to Companies
+          </button>
+          <h1 className="page-title">Add Company</h1>
+          <p className="page-subtitle">Create a new company record.</p>
         </div>
 
         {/* Company Form */}
-        <div className="company-form-card">
-          <CompanyForm
-            onSubmit={handleSubmit}
-            submitText="Save Company"
-            loading={loading}
-            error={error}
-            success={success}
-          />
-        </div>
+        <CompanyForm
+          onSubmit={handleSubmit}
+          submitText="Save Company"
+          loading={loading}
+          error={error}
+          success={success}
+        />
 
       </div>
     </DashboardLayout>

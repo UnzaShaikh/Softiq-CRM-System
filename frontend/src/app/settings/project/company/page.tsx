@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import SettingsNav from "@/components/project-settings/SettingsNav";
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import {
+  getCompanyInfo,
+  updateCompanyInfo,
+} from "@/lib/projectSettingsApi";
 import { HiSave, HiGlobe, HiPhone, HiMail, HiLocationMarker, HiReceiptTax, HiCurrencyDollar, HiChevronRight } from "react-icons/hi";
 import Link from "next/link";
 
@@ -28,19 +33,51 @@ const selectStyle: React.CSSProperties = {
 
 export default function CompanyInformationPage() {
   const [form, setForm] = useState<CompanyForm>({
-    companyName: "Softiq Tech (Pvt) Ltd.", website: "https://softiqtech.com",
-    tagline: "Building Smarter Solutions", industry: "Software & IT Services",
-    address: "Office # 204, 2nd Floor, Tech Plaza,\nShahrah-e-Faisal, Karachi, Pakistan.",
-    city: "Karachi", state: "Sindh", postalCode: "75350", country: "Pakistan",
-    phone: "+92 300 1234567", email: "info@softiqtech.com",
-    taxNumber: "1234567-8", currency: "PKR - Pakistani Rupee (Rs.)",
-    description: "Softiq Tech is a leading provider of innovative CRM solutions designed to help businesses build stronger relationships, streamline operations, and drive growth.",
+    companyName: "", website: "", tagline: "", industry: "Software & IT Services",
+    address: "", city: "", state: "", postalCode: "", country: "Pakistan",
+    phone: "", email: "", taxNumber: "",
+    currency: "PKR - Pakistani Rupee (Rs.)",
+    description: "",
     logoUrl: null,
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
+
+  const fetchCompany = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const c = await getCompanyInfo();
+      setForm(prev => ({
+        ...prev,
+        companyName: c.company_name,
+        website: c.website,
+        tagline: c.tagline,
+        industry: INDUSTRIES.includes(c.industry) ? c.industry : prev.industry,
+        address: c.address,
+        city: c.city,
+        state: c.state,
+        postalCode: c.postal_code,
+        country: COUNTRIES.includes(c.country) ? c.country : prev.country,
+        phone: c.phone,
+        email: c.email,
+        taxNumber: c.tax_number,
+        currency: CURRENCIES.includes(c.currency) ? c.currency : prev.currency,
+        description: c.company_description,
+      }));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load company information.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchCompany(); }, [fetchCompany]);
 
   function handleChange(field: keyof CompanyForm, value: string) {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -60,13 +97,35 @@ export default function CompanyInformationPage() {
   }
 
   async function handleSave() {
-    if (!validate()) return;
+    if (!validate() || saving) return;
     setSaving(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setSaving(false);
-    setHasChanges(false);
-    setSuccess("Company information saved successfully.");
-    setTimeout(() => setSuccess(""), 4000);
+    setSuccess("");
+    setSaveError("");
+    try {
+      await updateCompanyInfo({
+        company_name: form.companyName.trim(),
+        website: form.website.trim(),
+        tagline: form.tagline.trim(),
+        industry: form.industry,
+        address: form.address,
+        city: form.city.trim(),
+        state: form.state.trim(),
+        postal_code: form.postalCode.trim(),
+        country: form.country,
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        tax_number: form.taxNumber.trim(),
+        currency: form.currency,
+        company_description: form.description,
+      });
+      setHasChanges(false);
+      setSuccess("Company information saved successfully.");
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save company information.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const inputStyle = (err?: string): React.CSSProperties => ({
@@ -100,6 +159,15 @@ export default function CompanyInformationPage() {
           </button>
         </div>
 
+        {loadError && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", fontSize: "0.8125rem", color: "#b91c1c" }}>
+            ❌ {loadError}{" "}
+            <button onClick={fetchCompany} style={{ background: "none", border: "none", color: "#4f46e5", cursor: "pointer", fontWeight: 600, textDecoration: "underline", fontFamily: "inherit", fontSize: "0.8125rem" }}>
+              Retry
+            </button>
+          </div>
+        )}
+        {saveError && <div className="msg-error" style={{ marginBottom: "16px", whiteSpace: "pre-line" }}>❌ {saveError}</div>}
         {success && <div className="msg-success" style={{ marginBottom: "16px" }}>✅ {success}</div>}
 
         <div style={{ display: "grid", gridTemplateColumns: "220px 1fr 280px", gap: "20px", alignItems: "start" }}>
@@ -112,6 +180,10 @@ export default function CompanyInformationPage() {
               <h2 style={{ margin: "0 0 2px", fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>Company Information</h2>
               <p style={{ margin: 0, fontSize: "0.78rem", color: "#94a3b8" }}>Update your company details that will appear in your CRM documents and communications.</p>
             </div>
+
+            {loading ? (
+              <ThemeLoader label="Loading company information..." minHeight={220} />
+            ) : (
 
             <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
 
@@ -223,6 +295,7 @@ export default function CompanyInformationPage() {
                 <p style={{ margin: "4px 0 0", fontSize: "0.72rem", color: "#94a3b8", textAlign: "right" }}>{form.description.length}/500</p>
               </div>
             </div>
+            )}
           </div>
 
           {/* Right — Company Preview */}

@@ -1,8 +1,15 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import SettingsNav from "@/components/project-settings/SettingsNav";
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import {
+  getGeneralSettings,
+  updateGeneralSettings,
+  uploadProjectLogo,
+  removeProjectLogo,
+} from "@/lib/projectSettingsApi";
 import {
   HiSave, HiUpload, HiTrash,
 } from "react-icons/hi";
@@ -93,18 +100,29 @@ function ProjectPreview({ data }: { data: ProjectFormData }) {
 
 // ── Main Page ─────────────────────────────────
 export default function ProjectSettingsPage() {
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
+  const [saveError, setSaveError] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [hasChanges, setHasChanges] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const TIMEZONE_OPTIONS = [
+    { label: "(GMT+05:00) Asia/Karachi", value: "(GMT+05:00) Asia/Karachi" },
+    { label: "(GMT+00:00) UTC", value: "(GMT+00:00) UTC" },
+    { label: "(GMT-05:00) America/New_York", value: "(GMT-05:00) America/New_York" },
+    { label: "(GMT+01:00) Europe/London", value: "(GMT+01:00) Europe/London" },
+    { label: "(GMT+05:30) Asia/Kolkata", value: "(GMT+05:30) Asia/Kolkata" },
+  ];
+
   const [form, setForm] = useState<ProjectFormData>({
-    name: "Softiq Tech CRM",
-    key: "STCRM",
-    description: "A modern Customer Relationship Management system to manage customers, leads, deals and activities efficiently.",
-    timezone: "(GMT+05:00) Asia/Karachi",
+    name: "",
+    key: "",
+    description: "",
+    timezone: TIMEZONE_OPTIONS[0].value,
     dateFormat: "MM/DD/YYYY",
     timeFormat: "12 Hour (AM/PM)",
     currency: "PKR (Rs.)",
@@ -112,7 +130,32 @@ export default function ProjectSettingsPage() {
     logoUrl: null,
   });
 
-  const [savedForm, setSavedForm] = useState<ProjectFormData>({ ...form });
+  // Load the saved project settings from the backend on mount. Backend values
+  // always overwrite local state (even when empty) so the UI reflects the real
+  // saved state instead of demo data.
+  const fetchSettings = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const s = await getGeneralSettings();
+      const matchedTz = TIMEZONE_OPTIONS.find(o => o.value === s.project_timezone);
+      setForm(prev => ({
+        ...prev,
+        name: s.project_name,
+        key: s.project_code,
+        description: s.project_description,
+        timezone: matchedTz ? matchedTz.value : prev.timezone,
+        logoUrl: s.logo_url,
+      }));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load project settings.");
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => { fetchSettings(); }, [fetchSettings]);
 
   function handleChange(field: keyof ProjectFormData, value: string) {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -130,15 +173,33 @@ export default function ProjectSettingsPage() {
   }
 
   async function handleSave() {
-    if (!validate()) return;
+    if (!validate() || saving) return;
     setSaving(true);
     setSuccess("");
-    await new Promise(r => setTimeout(r, 1200));
-    setSaving(false);
-    setSavedForm({ ...form });
-    setHasChanges(false);
-    setSuccess("Project settings saved successfully.");
-    setTimeout(() => setSuccess(""), 4000);
+    setSaveError("");
+    try {
+      const updated = await updateGeneralSettings({
+        project_name: form.name.trim(),
+        project_code: form.key.trim().toUpperCase(),
+        project_description: form.description,
+        project_timezone: form.timezone,
+      });
+      // Sync state with what the server actually stored.
+      setForm(prev => ({
+        ...prev,
+        name: updated.project_name,
+        key: updated.project_code,
+        description: updated.project_description,
+        logoUrl: updated.logo_url ?? null,
+      }));
+      setHasChanges(false);
+      setSuccess("Project settings saved successfully.");
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save project settings.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -147,17 +208,36 @@ export default function ProjectSettingsPage() {
     if (!file.type.startsWith("image/")) { alert("Please select an image file."); return; }
     if (file.size > 2 * 1024 * 1024) { alert("File size must be under 2MB."); return; }
     setLogoUploading(true);
-    await new Promise(r => setTimeout(r, 800));
-    const url = URL.createObjectURL(file);
-    setForm(prev => ({ ...prev, logoUrl: url }));
-    setHasChanges(true);
-    setLogoUploading(false);
+    setSuccess("");
+    setSaveError("");
+    try {
+      const updated = await uploadProjectLogo(file);
+      setForm(prev => ({ ...prev, logoUrl: updated.logo_url }));
+      setSuccess("Project logo updated successfully.");
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to upload logo.");
+    } finally {
+      setLogoUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   }
 
-  function handleRemoveLogo() {
-    setForm(prev => ({ ...prev, logoUrl: null }));
-    setHasChanges(true);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  async function handleRemoveLogo() {
+    setLogoUploading(true);
+    setSuccess("");
+    setSaveError("");
+    try {
+      const updated = await removeProjectLogo();
+      setForm(prev => ({ ...prev, logoUrl: updated.logo_url }));
+      setSuccess("Project logo removed.");
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to remove logo.");
+    } finally {
+      setLogoUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   }
 
   const inputStyle = (hasError?: boolean): React.CSSProperties => ({
@@ -165,14 +245,6 @@ export default function ProjectSettingsPage() {
     borderRadius: "8px", background: "#fff", color: "#0f172a",
     fontSize: "0.875rem", fontFamily: "inherit", outline: "none",
   });
-
-  const TIMEZONE_OPTIONS = [
-    { label: "(GMT+05:00) Asia/Karachi", value: "(GMT+05:00) Asia/Karachi" },
-    { label: "(GMT+00:00) UTC", value: "(GMT+00:00) UTC" },
-    { label: "(GMT-05:00) America/New_York", value: "(GMT-05:00) America/New_York" },
-    { label: "(GMT+01:00) Europe/London", value: "(GMT+01:00) Europe/London" },
-    { label: "(GMT+05:30) Asia/Kolkata", value: "(GMT+05:30) Asia/Kolkata" },
-  ];
 
   return (
     <DashboardLayout>
@@ -195,6 +267,15 @@ export default function ProjectSettingsPage() {
           </button>
         </div>
 
+        {loadError && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", fontSize: "0.8125rem", color: "#b91c1c" }}>
+            ❌ {loadError}{" "}
+            <button onClick={fetchSettings} style={{ background: "none", border: "none", color: "#4f46e5", cursor: "pointer", fontWeight: 600, textDecoration: "underline", fontFamily: "inherit", fontSize: "0.8125rem" }}>
+              Retry
+            </button>
+          </div>
+        )}
+        {saveError && <div className="msg-error" style={{ marginBottom: "16px", whiteSpace: "pre-line" }}>❌ {saveError}</div>}
         {success && <div className="msg-success" style={{ marginBottom: "16px" }}>✅ {success}</div>}
         {hasChanges && !success && (
           <div style={{ background: "#fef3c7", border: "1px solid #fde68a", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", fontSize: "0.8125rem", color: "#b45309", fontWeight: 500 }}>
@@ -215,6 +296,10 @@ export default function ProjectSettingsPage() {
                   <h2 style={{ margin: "0 0 2px", fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>General Settings</h2>
                   <p style={{ margin: 0, fontSize: "0.78rem", color: "#94a3b8" }}>Update your project name, description and other general preferences.</p>
                 </div>
+
+                {loading ? (
+                  <ThemeLoader label="Loading project settings..." minHeight={260} />
+                ) : (
 
                 <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
 
@@ -322,6 +407,7 @@ export default function ProjectSettingsPage() {
                     </div>
                   </div>
                 </div>
+                )}
               </div>
           </div>
 

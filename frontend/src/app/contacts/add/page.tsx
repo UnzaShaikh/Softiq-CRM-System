@@ -81,14 +81,16 @@ export default function AddContactPage() {
 
   return (
     <DashboardLayout>
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
-        {/* Header */}
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Add Contact</h1>
-            <p className="page-subtitle">Create a new contact for your CRM.</p>
-          </div>
+        {/* Page Header */}
+        <div>
+          <button className="back-btn" onClick={() => router.push("/contacts")} style={{ marginBottom: "8px" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            Back to Contacts
+          </button>
+          <h1 className="page-title">Add Contact</h1>
+          <p className="page-subtitle">Create a new contact for your CRM.</p>
         </div>
 
         {/* Success */}
@@ -163,13 +165,15 @@ export default function AddContactPage() {
           {/* Actions */}
           <div className="form-actions">
             <Link href="/contacts" className="btn-secondary" style={{ textDecoration: "none" }}>Cancel</Link>
-            <button type="submit" disabled={loading} className="btn-add"
-              style={{ cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
-              {loading ? "Saving..." : "Save Contact"}
+            <button type="submit" disabled={loading} className="btn-add">
+              {loading ? (
+                <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>Saving...</>
+              ) : "Save Contact"}
             </button>
           </div>
         </form>
       </div>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </DashboardLayout>
   );
 }

@@ -1272,6 +1272,32 @@ body {
   }
 }
 
+/* ════════════════════════════════════════
+   DARK MODE
+   The theme preference is applied as html[data-theme="dark"]
+   (see src/lib/theme.ts). The content shell is full of hardcoded
+   light hex values (inline styles + module classes), so dark mode
+   inverts the shell: invert(1) flips light↔dark and
+   hue-rotate(180deg) keeps the original hues. Images/video are
+   inverted a second time so they render true-to-life. The sidebar
+   is excluded because it is already dark indigo.
+════════════════════════════════════════ */
+html[data-theme="dark"] body {
+  background: #0b1120;
+}
+
+html[data-theme="dark"] .dashboard-content {
+  filter: invert(1) hue-rotate(180deg);
+  /* Source background — the inversion turns this into the dark app canvas. */
+  background: #f1f3f9;
+  transition: filter 0.25s ease;
+}
+
+html[data-theme="dark"] .dashboard-content img,
+html[data-theme="dark"] .dashboard-content video,
+html[data-theme="dark"] .dashboard-content iframe {
+  filter: invert(1) hue-rotate(180deg);
+}
 /* =========================
    Dashboard Layout
 ========================= */

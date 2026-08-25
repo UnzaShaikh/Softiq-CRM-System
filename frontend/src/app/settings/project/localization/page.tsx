@@ -1,8 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import SettingsNav from "@/components/project-settings/SettingsNav";
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import {
+  getLocalizationSettings,
+  updateLocalizationSettings,
+} from "@/lib/projectSettingsApi";
 import { HiSave, HiRefresh, HiChevronRight } from "react-icons/hi";
 import Link from "next/link";
 
@@ -43,8 +48,40 @@ export default function LocalizationPage() {
   const [form, setForm] = useState<LocalizationForm>({ ...DEFAULTS });
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  const fetchLocalization = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const s = await getLocalizationSettings();
+      setForm({
+        language: s.language || DEFAULTS.language,
+        region: s.region || DEFAULTS.region,
+        timezone: s.timezone || DEFAULTS.timezone,
+        weekStartsOn: s.week_starts_on || DEFAULTS.weekStartsOn,
+        fiscalYearStart: s.fiscal_year_start || DEFAULTS.fiscalYearStart,
+        dateFormat: s.date_format || DEFAULTS.dateFormat,
+        timeFormat: s.time_format || DEFAULTS.timeFormat,
+        dateTimeFormat: s.datetime_format || DEFAULTS.dateTimeFormat,
+        currency: s.localization_currency || DEFAULTS.currency,
+        currencyPosition: s.currency_position || DEFAULTS.currencyPosition,
+        decimalSeparator: s.decimal_separator || DEFAULTS.decimalSeparator,
+        thousandsSeparator: s.thousands_separator || DEFAULTS.thousandsSeparator,
+        decimalPlaces: String(s.decimal_places ?? DEFAULTS.decimalPlaces),
+      });
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load localization settings.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchLocalization(); }, [fetchLocalization]);
 
   function handleChange(field: keyof LocalizationForm, value: string) {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -52,19 +89,45 @@ export default function LocalizationPage() {
   }
 
   async function handleSave() {
+    if (saving) return;
     setSaving(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setSaving(false);
-    setHasChanges(false);
-    setSuccess("Localization settings saved successfully.");
-    setTimeout(() => setSuccess(""), 4000);
+    setSuccess("");
+    setSaveError("");
+    try {
+      const updated = await updateLocalizationSettings({
+        language: form.language,
+        region: form.region,
+        timezone: form.timezone,
+        week_starts_on: form.weekStartsOn,
+        fiscal_year_start: form.fiscalYearStart,
+        date_format: form.dateFormat,
+        time_format: form.timeFormat,
+        datetime_format: form.dateTimeFormat,
+        localization_currency: form.currency,
+        currency_position: form.currencyPosition,
+        decimal_separator: form.decimalSeparator,
+        thousands_separator: form.thousandsSeparator,
+        decimal_places: Number(form.decimalPlaces),
+      });
+      setForm(prev => ({
+        ...prev,
+        decimalPlaces: String(updated.decimal_places),
+      }));
+      setHasChanges(false);
+      setSuccess("Localization settings saved successfully.");
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save localization settings.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleReset() {
     setForm({ ...DEFAULTS });
-    setHasChanges(false);
+    setHasChanges(true);
     setShowResetConfirm(false);
-    setSuccess("Settings reset to default.");
+    setSuccess("Settings reset to default. Click \"Save Changes\" to apply.");
     setTimeout(() => setSuccess(""), 3000);
   }
 
@@ -101,13 +164,22 @@ export default function LocalizationPage() {
               style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
               <HiRefresh size={15} /> Reset to Default
             </button>
-            <button onClick={handleSave} disabled={saving} className="btn-add"
+            <button onClick={handleSave} disabled={saving || !hasChanges} className="btn-add"
               style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
               {saving ? "Saving..." : <><HiSave size={15} /> Save Changes</>}
             </button>
           </div>
         </div>
 
+        {loadError && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", fontSize: "0.8125rem", color: "#b91c1c" }}>
+            ❌ {loadError}{" "}
+            <button onClick={fetchLocalization} style={{ background: "none", border: "none", color: "#4f46e5", cursor: "pointer", fontWeight: 600, textDecoration: "underline", fontFamily: "inherit", fontSize: "0.8125rem" }}>
+              Retry
+            </button>
+          </div>
+        )}
+        {saveError && <div className="msg-error" style={{ marginBottom: "16px", whiteSpace: "pre-line" }}>❌ {saveError}</div>}
         {success && <div className="msg-success" style={{ marginBottom: "16px" }}>✅ {success}</div>}
 
         {/* Layout */}
@@ -117,6 +189,10 @@ export default function LocalizationPage() {
 
           {/* Center — Settings */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {loading && (
+              <ThemeLoader label="Loading localization settings..." minHeight={260} />
+            )}
+            {!loading && (<>
 
             {/* Language & Region */}
             <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
@@ -195,6 +271,7 @@ export default function LocalizationPage() {
                 </button>
               </div>
             </div>
+            </>)}
           </div>
 
           {/* Right Previews */}

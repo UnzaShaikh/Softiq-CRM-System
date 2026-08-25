@@ -1,14 +1,19 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import SearchBar from "@/components/customers/SearchBar";
 import Pagination from "@/components/customers/Pagination";
-import followupsData, {
+import {
   Followup, FollowupType, FollowupStatus, FollowupPriority,
   TYPE_COLORS, STATUS_COLORS, PRIORITY_COLORS,
 } from "@/data/followups";
+import {
+  listFollowUps, mapFollowUp, deleteFollowUp,
+  getFollowUpStatistics, getFollowUpReminders, exportFollowUpsCsv,
+} from "@/lib/followupsApi";
 import {
   Phone, Mail, Users, CheckSquare, Calendar,
   Eye, Pencil, Trash2, Plus, Download, Clock, AlertCircle, CheckCircle,
@@ -62,7 +67,9 @@ function PriorityBadge({ priority }: { priority: FollowupPriority }) {
 
 export default function FollowupsPage() {
   const router = useRouter();
-  const [followups, setFollowups] = useState<Followup[]>(followupsData);
+  const [followups, setFollowups] = useState<Followup[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"All" | FollowupType>("All");
   const [statusFilter, setStatusFilter] = useState<"All" | FollowupStatus>("All");
@@ -71,7 +78,39 @@ export default function FollowupsPage() {
   const [dateTo, setDateTo] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteModal, setDeleteModal] = useState<Followup | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  // Live stats from the backend statistics endpoint.
+  const [stats, setStats] = useState({ total: 0, upcoming: 0, completed: 0, overdue: 0 });
+  // Upcoming reminders (next 5) — fetched from the reminders endpoint.
+  const [reminders, setReminders] = useState<Followup[]>([]);
+
+  const fetchFollowups = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const [list, statistics, remindersData] = await Promise.all([
+        listFollowUps(),
+        getFollowUpStatistics(),
+        getFollowUpReminders(5),
+      ]);
+      setFollowups(list.map(mapFollowUp));
+      setStats({
+        total: statistics.total_followups,
+        upcoming: statistics.upcoming,
+        completed: statistics.completed,
+        overdue: statistics.overdue,
+      });
+      setReminders(remindersData.map(mapFollowUp));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load follow-ups.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchFollowups(); }, [fetchFollowups]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -90,23 +129,41 @@ export default function FollowupsPage() {
   const paginated = useMemo(() => filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE), [filtered, currentPage]);
 
   function showToast(msg: string) { setToastMsg(msg); setTimeout(() => setToastMsg(null), 3000); }
-  function confirmDelete() {
-    if (!deleteModal) return;
-    setFollowups(prev => prev.filter(f => f.id !== deleteModal.id));
-    showToast(`"${deleteModal.subject}" deleted successfully.`);
-    setDeleteModal(null);
+  async function confirmDelete() {
+    if (!deleteModal || deleting) return;
+    setDeleting(true);
+    try {
+      await deleteFollowUp(deleteModal.id);
+      setFollowups(prev => prev.filter(f => f.id !== deleteModal.id));
+      showToast(`"${deleteModal.subject}" deleted successfully.`);
+      await fetchFollowups();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to delete follow-up.");
+    } finally {
+      setDeleting(false);
+      setDeleteModal(null);
+    }
   }
 
-  // Stats
-  const total = followups.length;
-  const upcoming = followups.filter(f => f.status === "Upcoming").length;
-  const completed = followups.filter(f => f.status === "Completed").length;
-  const overdue = followups.filter(f => f.status === "Overdue").length;
+  async function handleExport() {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      await exportFollowUpsCsv();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Export failed.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  // Stats come from the backend; fall back to the loaded rows if unavailable.
+  const total = stats.total || followups.length;
+  const upcoming = stats.upcoming;
+  const completed = stats.completed;
+  const overdue = stats.overdue;
   const conversionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
   void conversionRate; // retained for insights chart below
-
-  // Upcoming reminders (next 5)
-  const reminders = followups.filter(f => f.status === "Upcoming").sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 5);
 
   const thStyle: React.CSSProperties = { padding: "10px 14px", textAlign: "left", fontSize: "0.72rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" };
   const tdStyle: React.CSSProperties = { padding: "12px 14px", fontSize: "0.8125rem", color: "#374151", borderBottom: "1px solid #f1f5f9", verticalAlign: "middle" };
@@ -126,6 +183,18 @@ export default function FollowupsPage() {
           </button>
         </div>
 
+        {/* Loading / error states */}
+        {loading && <ThemeLoader label="Loading follow-ups..." minHeight={240} />}
+        {loadError && !loading && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", fontSize: "0.8125rem", color: "#b91c1c", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span>❌ {loadError}</span>
+            <button onClick={fetchFollowups} style={{ background: "none", border: "none", color: "#4f46e5", cursor: "pointer", fontWeight: 600, textDecoration: "underline", fontFamily: "inherit", fontSize: "0.8125rem" }}>
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!loading && (<>
         {/* Stats Cards */}
         <div className="stats-grid-4">
           {[
@@ -287,8 +356,9 @@ export default function FollowupsPage() {
                 style={{ padding: "8px 10px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#374151", fontSize: "0.8rem", fontFamily: "inherit", outline: "none" }} />
 
               {/* Export */}
-              <button style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 14px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#374151", fontSize: "0.8125rem", fontFamily: "inherit", cursor: "pointer", fontWeight: 500 }}>
-                <Download size={14} /> Export
+              <button onClick={handleExport} disabled={exporting}
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 14px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#374151", fontSize: "0.8125rem", fontFamily: "inherit", cursor: exporting ? "wait" : "pointer", fontWeight: 500 }}>
+                <Download size={14} /> {exporting ? "Exporting..." : "Export"}
               </button>
             </div>
 
@@ -296,8 +366,8 @@ export default function FollowupsPage() {
             <div className="table-scroll-wrapper">
               {filtered.length === 0 ? (
                 <div className="empty-state">
-                  <p className="empty-state-title">No follow-ups found.</p>
-                  <p className="empty-state-sub">Try adjusting your search or filters.</p>
+                  <p className="empty-state-title">{followups.length === 0 ? "No follow-ups yet." : "No matching follow-ups."}</p>
+                  <p className="empty-state-sub">{followups.length === 0 ? "Create your first follow-up to get started." : "Try adjusting your search or filters."}</p>
                 </div>
               ) : (
                 <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "inherit" }}>
@@ -376,6 +446,7 @@ export default function FollowupsPage() {
           </div>
 
         </div>
+        </>)}
       </div>
 
       {/* Delete Modal */}
@@ -387,7 +458,9 @@ export default function FollowupsPage() {
             <p className="modal-text">Are you sure you want to delete <strong style={{ color: "var(--foreground)" }}>{deleteModal.subject}</strong>? This cannot be undone.</p>
             <div className="modal-actions">
               <button className="btn-secondary" onClick={() => setDeleteModal(null)}>Cancel</button>
-              <button className="btn-danger" onClick={confirmDelete}>Delete</button>
+              <button className="btn-danger" onClick={confirmDelete} disabled={deleting}>
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
             </div>
           </div>
         </div>

@@ -67,7 +67,8 @@ INSTALLED_APPS = [
     "email_templates",
     "user_profile",
     'task_management',
-    
+    # Project Settings
+    "project_settings",
 ]
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
@@ -156,6 +157,10 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+# Media files (project logo uploads)
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
@@ -188,3 +193,7 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
+
+# Max upload size for project assets (2MB)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024

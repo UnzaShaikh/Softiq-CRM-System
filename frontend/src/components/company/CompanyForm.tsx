@@ -191,16 +191,14 @@ export default function CompanyForm({
       </div>
     )}
 
-    <div className="form-card">
-      {/* Form Header */}
-      <div className="form-card-header">
-        <h2 className="form-card-title">
-          Company Information
-        </h2>
-      </div>
+    <form onSubmit={handleSubmit} noValidate className="company-form-card">
+      <div className="form-section">
+        <div className="form-section-header">
+          <h2>Company Information</h2>
+          <p>Fill in all the required fields below.</p>
+        </div>
 
-      <form onSubmit={handleSubmit} noValidate>
-        <div className="form-card-body">
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
           {/* Company Name + Industry */}
           <div className="form-row-2">
@@ -209,7 +207,7 @@ export default function CompanyForm({
                 className="form-label"
                 htmlFor="name"
               >
-                Company Name *
+                Company Name <span style={{ color: "var(--error)" }}>*</span>
               </label>
 
               <input
@@ -238,7 +236,7 @@ export default function CompanyForm({
                 className="form-label"
                 htmlFor="industry"
               >
-                Industry *
+                Industry <span style={{ color: "var(--error)" }}>*</span>
               </label>
 
               <input
@@ -270,7 +268,7 @@ export default function CompanyForm({
                 className="form-label"
                 htmlFor="website"
               >
-                Website *
+                Website <span style={{ color: "var(--error)" }}>*</span>
               </label>
 
               <input
@@ -299,7 +297,7 @@ export default function CompanyForm({
                 className="form-label"
                 htmlFor="phone"
               >
-                Phone *
+                Phone <span style={{ color: "var(--error)" }}>*</span>
               </label>
 
               <input
@@ -331,7 +329,7 @@ export default function CompanyForm({
                 className="form-label"
                 htmlFor="email"
               >
-                Email *
+                Email <span style={{ color: "var(--error)" }}>*</span>
               </label>
 
               <input
@@ -391,7 +389,7 @@ export default function CompanyForm({
                 className="form-label"
                 htmlFor="address"
               >
-                Address *
+                Address <span style={{ color: "var(--error)" }}>*</span>
               </label>
 
               <textarea
@@ -419,7 +417,7 @@ export default function CompanyForm({
                 className="form-label"
                 htmlFor="status"
               >
-                Status *
+                Status <span style={{ color: "var(--error)" }}>*</span>
               </label>
 
               <select
@@ -479,8 +477,8 @@ export default function CompanyForm({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="form-card-footer">
+        {/* Actions */}
+        <div className="form-actions">
           <button
             type="button"
             className="btn-secondary"
@@ -526,8 +524,8 @@ export default function CompanyForm({
             )}
           </button>
         </div>
-      </form>
-    </div>
+      </div>
+    </form>
 
     <style>{`
       @keyframes spin {

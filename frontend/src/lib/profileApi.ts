@@ -113,13 +113,13 @@ export interface UpdateNotificationSettingsPayload {
 }
 
 export function getNotificationSettings(): Promise<ApiNotificationSettings> {
-  return apiRequest<ApiNotificationSettings>(`/api/profile/notification-settings/`);
+  return apiRequest<ApiNotificationSettings>(`/api/profile/notifications/`);
 }
 
 export function updateNotificationSettings(
   payload: UpdateNotificationSettingsPayload
 ): Promise<ApiNotificationSettings> {
-  return apiRequest<ApiNotificationSettings>(`/api/profile/notification-settings/`, {
+  return apiRequest<ApiNotificationSettings>(`/api/profile/notifications/`, {
     method: "PATCH",
     body: payload,
   });

@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import SettingsNav from "@/components/project-settings/SettingsNav";
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import {
+  getEmailSettings,
+  updateEmailSettings,
+  sendTestEmail,
+} from "@/lib/projectSettingsApi";
 import Link from "next/link";
 import { HiSave, HiEye, HiEyeOff, HiGlobe, HiPhone, HiMail, HiLocationMarker } from "react-icons/hi";
 import { FiSend } from "react-icons/fi";
@@ -33,12 +39,10 @@ function Toggle({ value, onChange }: { value: boolean; onChange: () => void }) {
 
 export default function EmailSettingsPage() {
   const [outgoing, setOutgoing] = useState<OutgoingEmail>({
-    fromName: "Softiq Tech CRM", fromEmail: "no-reply@softiqtech.com",
-    replyTo: "support@softiqtech.com", signature: "Default Signature",
+    fromName: "", fromEmail: "", replyTo: "", signature: "Default Signature",
   });
   const [smtp, setSmtp] = useState<SmtpConfig>({
-    host: "smtp.softiqtech.com", port: "587", encryption: "STARTTLS",
-    username: "no-reply@softiqtech.com", password: "••••••••••••••",
+    host: "", port: "587", encryption: "STARTTLS", username: "", password: "",
   });
   const [prefs, setPrefs] = useState<EmailPrefs>({
     enableTracking: true, enableLinkTracking: true,
@@ -50,8 +54,48 @@ export default function EmailSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState("");
+  const [saveError, setSaveError] = useState("");
   const [testSuccess, setTestSuccess] = useState("");
+  const [testError, setTestError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
+  // Whether a password is stored on the server (never returned to the client).
+  const [hasStoredPassword, setHasStoredPassword] = useState(false);
+
+  const fetchEmailSettings = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const s = await getEmailSettings();
+      setHasStoredPassword(s.has_smtp_password);
+      setOutgoing({
+        fromName: s.from_name,
+        fromEmail: s.from_email,
+        replyTo: s.reply_to_email,
+        signature: s.email_signature || "Default Signature",
+      });
+      setSmtp({
+        host: s.smtp_host,
+        port: String(s.smtp_port ?? 587),
+        encryption: ["STARTTLS", "SSL/TLS", "None"].includes(s.smtp_encryption) ? s.smtp_encryption : "STARTTLS",
+        username: s.smtp_username,
+        password: "",
+      });
+      setPrefs({
+        enableTracking: s.enable_email_tracking,
+        enableLinkTracking: s.enable_link_tracking,
+        logToActivity: s.log_emails_to_activity,
+        attachSignature: s.attach_email_signature,
+      });
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load email settings.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchEmailSettings(); }, [fetchEmailSettings]);
 
   const inputStyle = (err?: string): React.CSSProperties => ({
     width: "100%", padding: "10px 14px",
@@ -86,19 +130,47 @@ export default function EmailSettingsPage() {
     if (!smtp.port.trim()) e.smtpPort = "SMTP port is required.";
     else if (isNaN(Number(smtp.port))) e.smtpPort = "Enter a valid port number.";
     if (!smtp.username.trim()) e.username = "Username is required.";
-    if (!smtp.password.trim()) e.password = "Password is required.";
+    // A password is only required when none is stored on the server yet.
+    if (!smtp.password.trim() && !hasStoredPassword) e.password = "Password is required.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
   async function handleSave() {
-    if (!validate()) return;
+    if (!validate() || saving) return;
     setSaving(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setSaving(false);
-    setHasChanges(false);
-    setSuccess("Email settings saved successfully.");
-    setTimeout(() => setSuccess(""), 4000);
+    setSuccess("");
+    setSaveError("");
+    try {
+      await updateEmailSettings({
+        from_name: outgoing.fromName.trim(),
+        from_email: outgoing.fromEmail.trim(),
+        reply_to_email: outgoing.replyTo.trim(),
+        email_signature: outgoing.signature,
+        smtp_host: smtp.host.trim(),
+        smtp_port: Number(smtp.port),
+        smtp_encryption: smtp.encryption,
+        smtp_username: smtp.username.trim(),
+        // Only send a new password when the user typed one; otherwise the
+        // stored password is kept untouched on the server.
+        ...(smtp.password ? { smtp_password: smtp.password } : {}),
+        enable_email_tracking: prefs.enableTracking,
+        enable_link_tracking: prefs.enableLinkTracking,
+        log_emails_to_activity: prefs.logToActivity,
+        attach_email_signature: prefs.attachSignature,
+      });
+      if (smtp.password) {
+        setHasStoredPassword(true);
+        setSmtp(prev => ({ ...prev, password: "" }));
+      }
+      setHasChanges(false);
+      setSuccess("Email settings saved successfully.");
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save email settings.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleSendTest() {
@@ -106,10 +178,18 @@ export default function EmailSettingsPage() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testEmail)) { setErrors(prev => ({ ...prev, testEmail: "Enter a valid email." })); return; }
     setErrors(prev => ({ ...prev, testEmail: undefined }));
     setSending(true);
-    await new Promise(r => setTimeout(r, 1500));
-    setSending(false);
-    setTestSuccess(`Test email sent to ${testEmail} successfully.`);
-    setTimeout(() => setTestSuccess(""), 4000);
+    setTestSuccess("");
+    setTestError("");
+    try {
+      const res = await sendTestEmail(testEmail.trim());
+      setTestSuccess(res.detail || `Test email sent to ${testEmail} successfully.`);
+      setTimeout(() => setTestSuccess(""), 6000);
+    } catch (err) {
+      setTestError(err instanceof Error ? err.message : "Failed to send test email.");
+      setTimeout(() => setTestError(""), 8000);
+    } finally {
+      setSending(false);
+    }
   }
 
   const EMAIL_PREFS = [
@@ -141,6 +221,15 @@ export default function EmailSettingsPage() {
           </button>
         </div>
 
+        {loadError && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", fontSize: "0.8125rem", color: "#b91c1c" }}>
+            ❌ {loadError}{" "}
+            <button onClick={fetchEmailSettings} style={{ background: "none", border: "none", color: "#4f46e5", cursor: "pointer", fontWeight: 600, textDecoration: "underline", fontFamily: "inherit", fontSize: "0.8125rem" }}>
+              Retry
+            </button>
+          </div>
+        )}
+        {saveError && <div className="msg-error" style={{ marginBottom: "16px", whiteSpace: "pre-line" }}>❌ {saveError}</div>}
         {success && <div className="msg-success" style={{ marginBottom: "16px" }}>✅ {success}</div>}
 
         <div style={{ display: "grid", gridTemplateColumns: "220px 1fr 300px", gap: "20px", alignItems: "start" }}>
@@ -155,6 +244,10 @@ export default function EmailSettingsPage() {
                 <h2 style={{ margin: "0 0 2px", fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>Email Settings</h2>
                 <p style={{ margin: 0, fontSize: "0.78rem", color: "#94a3b8" }}>Configure your outgoing email settings and preferences.</p>
               </div>
+
+              {loading ? (
+                <ThemeLoader label="Loading email settings..." minHeight={260} />
+              ) : (
 
               <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
 
@@ -232,6 +325,7 @@ export default function EmailSettingsPage() {
                       <div style={{ position: "relative" }}>
                         <input type={showPassword ? "text" : "password"} value={smtp.password}
                           onChange={e => handleSmtp("password", e.target.value)}
+                          placeholder={hasStoredPassword ? "•••••••• (saved — leave blank to keep)" : ""}
                           style={{ ...inputStyle(errors.password), paddingRight: "40px" }} />
                         <button type="button" onClick={() => setShowPassword(p => !p)}
                           style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}>
@@ -255,6 +349,7 @@ export default function EmailSettingsPage() {
                     </div>
                   </div>
                   {testSuccess && <div className="msg-success" style={{ marginTop: "10px" }}>✅ {testSuccess}</div>}
+                  {testError && <div className="msg-error" style={{ marginTop: "10px", whiteSpace: "pre-line" }}>❌ {testError}</div>}
                 </div>
 
                 <div style={{ height: 1, background: "#f1f5f9" }} />
@@ -278,6 +373,7 @@ export default function EmailSettingsPage() {
                   </div>
                 </div>
               </div>
+              )}
             </div>
           </div>
 

@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import ThemeLoader from "@/components/ui/ThemeLoader";
 import { ProfileNav } from "../page";
 import { getPreferences, updatePreferences, ApiPreferences } from "@/lib/profileApi";
 import { getProfile, updateProfile } from "@/lib/profileApi";
+import { applyTheme } from "@/lib/theme";
 import { HiGlobe, HiCalendar, HiCurrencyDollar, HiColorSwatch, HiViewList, HiAdjustments, HiSave, HiSupport } from "react-icons/hi";
 import { HiSun, HiMoon, HiDesktopComputer } from "react-icons/hi";
 
@@ -57,6 +59,8 @@ export default function PreferencesPage() {
         compactSidebar: p.compact_sidebar,
         soundNotifications: p.sound_notifications,
       });
+      // Keep the UI in sync with the saved preference on load.
+      applyTheme(p.theme);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load preferences.");
     } finally {
@@ -94,6 +98,8 @@ export default function PreferencesPage() {
         compactSidebar: updated.compact_sidebar,
         soundNotifications: updated.sound_notifications,
       }));
+      // Apply the theme immediately so the change is visible on save.
+      applyTheme(updated.theme);
       setSuccess("Preferences saved successfully.");
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
@@ -283,7 +289,7 @@ export default function PreferencesPage() {
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "14px", overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
             {success && <div className="msg-success" style={{ margin: "16px 24px 0" }}>✅ {success}</div>}
             {error && <div className="msg-error" style={{ margin: "16px 24px 0" }}>{error}</div>}
-            {loading && <div className="loading-state" style={{ margin: "16px 24px 0" }}>Loading preferences...</div>}
+            {loading && <ThemeLoader label="Loading preferences..." minHeight={200} />}
 
             {SECTIONS.map((section, idx) => (
               <div key={section.title} style={{ padding: "20px 24px", borderBottom: idx < SECTIONS.length - 1 ? "1px solid #f1f5f9" : "none", display: "grid", gridTemplateColumns: "220px 1fr", gap: "20px", alignItems: "start" }}>
