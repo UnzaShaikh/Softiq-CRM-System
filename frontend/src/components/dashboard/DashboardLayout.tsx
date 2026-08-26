@@ -446,6 +446,25 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+// Map nav href → permission module for RBAC filtering
+const HREF_MODULE_MAP: Record<string, string> = {
+  "/dashboard": "dashboard",
+  "/customers": "customers",
+  "/contacts": "contacts",
+  "/opportunities": "opportunities",
+  "/leads": "leads",
+  "/activities": "activities",
+  "/company": "companies",
+  "/notes": "notes",
+  "/followups": "followups",
+  "/tasks": "tasks",
+  "/email-templates": "email_templates",
+  "/Sales-Pipeline": "deals",
+  "/reports": "reports",
+  "/settings": "settings",
+  "/admin": "admin",
+};
+
 const BOTTOM_ITEMS: {
   label: string;
   href: string;
@@ -488,7 +507,8 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission, isAdmin, permissions } = useAuth();
+  const permissionsLoaded = Object.keys(permissions).length > 0;
 
   const [collapsed, setCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -960,7 +980,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </p>
           )}
 
-          {NAV_ITEMS.map((item) => {
+          {NAV_ITEMS.filter((item) => {
+            const mod = HREF_MODULE_MAP[item.href];
+            if (!mod) return true;
+            if (mod === "admin") return isAdmin;
+            if (!permissionsLoaded) return true;
+            return hasPermission(mod, "view");
+          }).map((item) => {
             const active =
               pathname === item.href ||
               (item.href !== "/dashboard" && pathname.startsWith(item.href));
@@ -1061,7 +1087,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               padding: collapsed ? "10px" : "10px 16px 0",
             }}
           >
-            {BOTTOM_ITEMS.map((item) => {
+            {BOTTOM_ITEMS.filter((item) => {
+              const mod = HREF_MODULE_MAP[item.href];
+              if (!mod) return true;
+              if (!permissionsLoaded) return true;
+              return hasPermission(mod, "view");
+            }).map((item) => {
               const active = pathname === item.href;
 
               return (

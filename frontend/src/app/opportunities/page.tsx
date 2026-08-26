@@ -18,6 +18,7 @@ import {
 import { apiRequest, getAccessToken, emitDataChanged } from "@/lib/api";
 import { Target, CheckCircle, Trophy, DollarSign, BarChart2 } from "lucide-react";
 import ThemeLoader from "@/components/ui/ThemeLoader";
+import { usePermission } from "@/hooks/usePermissions";
 
 const PAGE_SIZE = 10;
 type FilterStage = "All" | OpportunityStage;
@@ -36,6 +37,8 @@ interface OpportunityStats {
 export default function OpportunitiesPage() {
   const router = useRouter();
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const canCreate = usePermission("opportunities", "create");
+  const canDelete = usePermission("opportunities", "delete");
   const [stats, setStats] = useState<OpportunityStats>({ total: 0, active: 0, closedWon: 0, pipelineValue: 0, avgProbability: 0 });
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState<FilterStage>("All");
@@ -150,12 +153,14 @@ export default function OpportunitiesPage() {
             <h1 className="page-title">Opportunities</h1>
             <p className="page-subtitle">Track and manage all your sales opportunities.</p>
           </div>
+          {canCreate && (
           <button className="btn-add" onClick={() => router.push("/opportunities/new")}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
             Add Opportunity
           </button>
+          )}
         </div>
 
         {/* Error banner */}

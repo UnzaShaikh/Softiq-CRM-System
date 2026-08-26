@@ -1,6 +1,7 @@
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Sum, Avg, Count
+from core.permissions import HasRolePermission
 from notifications.services import create_notification
 
 from django_filters.rest_framework import DjangoFilterBackend
@@ -176,7 +177,8 @@ class OpportunityViewSet(viewsets.ModelViewSet):
 
     serializer_class = OpportunitySerializer
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasRolePermission]
+    permission_module = "opportunities"
 
     filter_backends = [
         DjangoFilterBackend,

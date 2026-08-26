@@ -4,6 +4,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
+from core.permissions import HasRolePermission
 from .models import Task, ChecklistItem, TaskAttachment
 from .serializers import (
     TaskSerializer,
@@ -54,9 +55,10 @@ class TaskViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     permission_classes = [
-        permissions.IsAuthenticated,
-        IsTaskOwnerOrAdmin
+        HasRolePermission,
+        IsTaskOwnerOrAdmin,
     ]
+    permission_module = "tasks"
 
     def get_serializer_class(self):
         if self.action in [
@@ -289,8 +291,9 @@ class ChecklistItemViewSet(viewsets.ModelViewSet):
     serializer_class = ChecklistItemSerializer
 
     permission_classes = [
-        permissions.IsAuthenticated
+        HasRolePermission,
     ]
+    permission_module = "tasks"
 
     def get_queryset(self):
         qs = super().get_queryset()

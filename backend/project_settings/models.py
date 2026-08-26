@@ -161,6 +161,10 @@ class Role(models.Model):
         "deals",
         "activities",
         "companies",
+        "notes",
+        "followups",
+        "tasks",
+        "email_templates",
         "reports",
         "settings",
     ]

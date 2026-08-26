@@ -4,13 +4,15 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound
 
+from core.permissions import HasRolePermission
 from .models import Note, NoteCategory
 from .serializers import NoteSerializer, NoteCategorySerializer
 
 
 class NoteCategoryViewSet(viewsets.ModelViewSet):
     serializer_class = NoteCategorySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasRolePermission]
+    permission_module = "notes"
     queryset = NoteCategory.objects.all()
 
     def perform_create(self, serializer):
@@ -19,7 +21,8 @@ class NoteCategoryViewSet(viewsets.ModelViewSet):
 
 class NoteViewSet(viewsets.ModelViewSet):
     serializer_class = NoteSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasRolePermission]
+    permission_module = "notes"
 
     filter_backends = [
         filters.SearchFilter,

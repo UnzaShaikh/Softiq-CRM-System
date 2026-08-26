@@ -12,6 +12,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from core.permissions import HasRolePermission
 from .models import FollowUp
 from .serializers import FollowUpSerializer
 
@@ -46,7 +47,8 @@ class FollowUpViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = FollowUpSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasRolePermission]
+    permission_module = "followups"
     pagination_class = FollowUpPagination
 
     filter_backends = [

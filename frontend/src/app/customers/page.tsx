@@ -8,6 +8,7 @@ import SearchBar from "@/components/customers/SearchBar";
 import Pagination from "@/components/customers/Pagination";
 import { Customer, CustomerStatus, ApiCustomerList, toCustomer } from "@/data/customers";
 import { apiRequest, getAccessToken, emitDataChanged } from "@/lib/api";
+import { usePermission } from "@/hooks/usePermissions";
 import { Users, UserCheck, PauseCircle, Zap } from "lucide-react";
 import ThemeLoader from "@/components/ui/ThemeLoader";
 
@@ -29,6 +30,8 @@ export default function CustomersPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [deleteModal, setDeleteModal] = useState<Customer | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const canCreate = usePermission("customers", "create");
+  const canDelete = usePermission("customers", "delete");
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -124,12 +127,14 @@ export default function CustomersPage() {
             <h1 className="page-title">Customers</h1>
             <p className="page-subtitle">Manage and track all your customers in one place.</p>
           </div>
+          {canCreate && (
           <button className="btn-add" onClick={() => router.push("/customers/new")}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
             Add Customer
           </button>
+          )}
         </div>
 
         {/* Stats */}

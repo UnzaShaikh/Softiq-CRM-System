@@ -8,6 +8,7 @@ from rest_framework.exceptions import NotFound
 
 from django.db.models import Count, Q
 
+from core.permissions import HasRolePermission
 from notifications.services import create_notification
 
 from .models import Activity
@@ -19,7 +20,8 @@ User = get_user_model()
 
 class ActivityViewSet(viewsets.ModelViewSet):
     serializer_class = ActivitySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasRolePermission]
+    permission_module = "activities"
 
     filter_backends = [
         filters.SearchFilter,

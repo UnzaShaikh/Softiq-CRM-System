@@ -1,6 +1,7 @@
 from rest_framework import generics, filters
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
+from core.permissions import HasRolePermission
 from .models import Customer
 from .serializers import CustomerSerializer
 from notifications.services import create_notification
@@ -14,7 +15,8 @@ class CustomerListCreateView(generics.ListCreateAPIView):
 
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasRolePermission]
+    permission_module = "customers"
 
     filter_backends = [
         DjangoFilterBackend,
@@ -63,4 +65,5 @@ class CustomerDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasRolePermission]
+    permission_module = "customers"

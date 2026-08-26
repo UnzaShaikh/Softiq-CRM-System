@@ -18,6 +18,7 @@ import {
   Phone, Mail, Users, CheckSquare, Calendar,
   Eye, Pencil, Trash2, Plus, Download, Clock, AlertCircle, CheckCircle,
 } from "lucide-react";
+import { usePermission } from "@/hooks/usePermissions";
 
 function hexToRgba(hex: string, alpha: number): string {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -75,6 +76,8 @@ export default function FollowupsPage() {
   const [statusFilter, setStatusFilter] = useState<"All" | FollowupStatus>("All");
   const [priorityFilter, setPriorityFilter] = useState<"All" | FollowupPriority>("All");
   const [dateFrom, setDateFrom] = useState("");
+  const canCreate = usePermission("followups", "create");
+  const canDelete = usePermission("followups", "delete");
   const [dateTo, setDateTo] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteModal, setDeleteModal] = useState<Followup | null>(null);
@@ -178,9 +181,11 @@ export default function FollowupsPage() {
             <h1 className="page-title">Follow-ups</h1>
             <p className="page-subtitle">Manage and track all your follow-ups in one place.</p>
           </div>
+          {canCreate && (
           <button className="btn-add" onClick={() => router.push("/followups/new")}>
             <Plus size={16} /> Create Follow-up
           </button>
+          )}
         </div>
 
         {/* Loading / error states */}

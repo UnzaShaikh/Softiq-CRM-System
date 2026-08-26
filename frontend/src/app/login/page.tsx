@@ -291,10 +291,14 @@ export default function LoginPage() {
 
   login(
   {
+    id: data.user.id,
     username: data.user.username,
     email: data.user.email,
     firstName: data.user.first_name,
     lastName: data.user.last_name,
+    isStaff: data.user.is_staff ?? false,
+    role: data.user.role ?? null,
+    roleId: data.user.role_id ?? null,
   },
   data.access,
   data.refresh

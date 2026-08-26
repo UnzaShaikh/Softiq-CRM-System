@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
+from user_profile.models import UserProfile
+
 User = get_user_model()
 
 
@@ -90,6 +92,8 @@ class AdminUserSerializer(serializers.ModelSerializer):
         required=False,
         min_length=8,
     )
+    role = serializers.CharField(source="profile.role", read_only=True)
+    role_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = User
@@ -102,10 +106,13 @@ class AdminUserSerializer(serializers.ModelSerializer):
             "password",
             "is_active",
             "date_joined",
+            "role",
+            "role_id",
         ]
         read_only_fields = [
             "id",
             "date_joined",
+            "role",
         ]
 
     def validate_username(self, value):
@@ -144,19 +151,28 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop("password", None)
+        role_id = validated_data.pop("role_id", None)
 
         if not password:
             raise serializers.ValidationError({
                 "password": "Password is required when creating a user."
             })
 
-        return User.objects.create_user(
+        user = User.objects.create_user(
             password=password,
             **validated_data
         )
 
+        if role_id is not None:
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.role = role_id
+            profile.save()
+
+        return user
+
     def update(self, instance, validated_data):
         password = validated_data.pop("password", None)
+        role_id = validated_data.pop("role_id", None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -165,5 +181,10 @@ class AdminUserSerializer(serializers.ModelSerializer):
             instance.set_password(password)
 
         instance.save()
+
+        if role_id is not None:
+            profile, _ = UserProfile.objects.get_or_create(user=instance)
+            profile.role = role_id
+            profile.save()
 
         return instance

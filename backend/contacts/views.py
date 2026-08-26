@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
+from core.permissions import HasRolePermission
 from notifications.services import create_notification
 
 from .models import Contact
@@ -24,7 +25,8 @@ class ContactViewSet(viewsets.ModelViewSet):
 
     queryset = Contact.objects.select_related("created_by").all()
     serializer_class = ContactSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasRolePermission]
+    permission_module = "contacts"
 
     filter_backends = [
         DjangoFilterBackend,

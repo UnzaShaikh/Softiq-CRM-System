@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   Kanban,
 } from "lucide-react";
+import { usePermission } from "@/hooks/usePermissions";
 
 // hexToRgba helper — same as dashboard StatCard
 function hexToRgba(hex: string, alpha: number): string {
@@ -54,6 +55,8 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const canCreate = usePermission("tasks", "create");
+  const canDelete = usePermission("tasks", "delete");
 
   function mapApiTask(api: ApiTask): Task {
     const assigneeName =
@@ -259,6 +262,7 @@ export default function TasksPage() {
               <Kanban size={15} />
               View Kanban
             </button>
+            {canCreate && (
             <button
               className="btn-add"
               onClick={() => router.push("/tasks/new")}
@@ -273,6 +277,7 @@ export default function TasksPage() {
               </svg>
               New Task
             </button>
+            )}
           </div>
         </div>
 

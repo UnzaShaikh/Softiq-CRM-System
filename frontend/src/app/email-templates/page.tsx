@@ -13,6 +13,7 @@ import {
 import ThemeLoader from "@/components/ui/ThemeLoader";
 import { Plus, Search, Eye, Pencil, Trash2, Mail, ChevronDown } from "lucide-react";
 import { HiPlus, HiSearch, HiEye, HiPencil, HiTrash, HiMail, HiChevronDown } from "react-icons/hi";
+import { usePermission } from "@/hooks/usePermissions";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -56,6 +57,8 @@ export default function EmailTemplatesPage() {
   const [deleteModal, setDeleteModal] = useState<EmailTemplate | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const canCreate = usePermission("email_templates", "create");
+  const canDelete = usePermission("email_templates", "delete");
 
   const fetchTemplates = useCallback(async () => {
     setLoading(true);
@@ -116,9 +119,11 @@ export default function EmailTemplatesPage() {
             <h1 className="page-title">Email Templates</h1>
             <p className="page-subtitle">Create and manage email templates for consistent communication.</p>
           </div>
+          {canCreate && (
           <button className="btn-add" onClick={() => router.push("/email-templates/new")}>
             <HiPlus size={16} /> Add Template
           </button>
+          )}
         </div>
 
         {/* Loading / error states — while loading, only the loader shows

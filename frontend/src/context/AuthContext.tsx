@@ -1,13 +1,20 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import { API_URL, getAccessToken } from "@/lib/api";
 
 // ---------- Types ----------
+export type PermissionMatrix = Record<string, { view: boolean; create: boolean; edit: boolean; delete: boolean }>;
+
 export interface AuthUser {
+  id?: number;
   firstName: string;
   lastName: string;
   email: string;
   username: string;
+  isStaff?: boolean;
+  role?: string | null;
+  roleId?: number | null;
 }
 
 interface AuthContextType {
@@ -15,8 +22,12 @@ interface AuthContextType {
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
+  permissions: PermissionMatrix;
+  isAdmin: boolean;
+  hasPermission: (module: string, action: string) => boolean;
   login: (user: AuthUser, access: string, refresh: string) => void;
   logout: () => void;
+  refreshPermissions: () => Promise<void>;
 }
 
 // ---------- Helper to read cookies ----------
@@ -34,10 +45,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState<PermissionMatrix>({});
+
+  // Fetch permissions from API
+  const fetchPermissions = useCallback(async (token?: string | null) => {
+    const t = token || getAccessToken();
+    if (!t) return;
+    try {
+      const res = await fetch(`${API_URL}/api/auth/permissions/`, {
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPermissions(data.permissions || {});
+        // Update user with latest role info
+        setUser((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            isStaff: data.is_staff ?? prev.isStaff,
+            role: data.role ?? prev.role,
+          };
+        });
+      }
+    } catch {
+      // silently fail — permissions stay as-is
+    }
+  }, []);
 
   // On mount, read from cookies (or localStorage as fallback)
   useEffect(() => {
-    // Try cookies first (used by middleware)
     const cookieAccess = getCookie("access_token");
     const cookieRefresh = getCookie("refresh_token");
 
@@ -45,15 +82,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAccessToken(cookieAccess);
       setRefreshToken(cookieRefresh);
 
-      // Optionally read user from localStorage if stored
       try {
         const storedUser = localStorage.getItem("crm_user");
         if (storedUser) setUser(JSON.parse(storedUser));
       } catch {
         // ignore
       }
+
+      // Fetch permissions on mount
+      fetchPermissions(cookieAccess);
     } else {
-      // Fallback to localStorage
       try {
         const storedUser = localStorage.getItem("crm_user");
         const storedAccess = localStorage.getItem("access_token");
@@ -63,18 +101,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (storedAccess) setAccessToken(storedAccess);
         if (storedRefresh) setRefreshToken(storedRefresh);
 
-        // Also sync cookies for middleware
         if (storedAccess) {
           document.cookie = `access_token=${storedAccess}; path=/; max-age=86400`;
         }
         if (storedRefresh) {
           document.cookie = `refresh_token=${storedRefresh}; path=/; max-age=86400`;
         }
+
+        // Fetch permissions
+        if (storedAccess) fetchPermissions(storedAccess);
       } catch {
         // ignore
       }
     }
-  }, []);
+  }, [fetchPermissions]);
 
   // ---------- Login ----------
   function login(userData: AuthUser, access: string, refresh: string) {
@@ -82,14 +122,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(access);
     setRefreshToken(refresh);
 
-    // Store in localStorage for persistence
     localStorage.setItem("crm_user", JSON.stringify(userData));
     localStorage.setItem("access_token", access);
     localStorage.setItem("refresh_token", refresh);
 
-    // Store in cookies for middleware
     document.cookie = `access_token=${access}; path=/; max-age=86400`;
     document.cookie = `refresh_token=${refresh}; path=/; max-age=86400`;
+
+    // Fetch permissions after login
+    fetchPermissions(access);
   }
 
   // ---------- Logout ----------
@@ -97,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setAccessToken(null);
     setRefreshToken(null);
+    setPermissions({});
 
     localStorage.removeItem("crm_user");
     localStorage.removeItem("access_token");
@@ -105,6 +147,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     document.cookie = "access_token=; path=/; max-age=0";
     document.cookie = "refresh_token=; path=/; max-age=0";
   }
+
+  // ---------- Permission check ----------
+  const hasPermission = useCallback(
+    (module: string, action: string): boolean => {
+      const mod = permissions[module];
+      if (!mod) return false;
+      return Boolean(mod[action as keyof typeof mod]);
+    },
+    [permissions]
+  );
+
+  const isAdmin = user?.role === "Administrator";
 
   const isAuthenticated = !!accessToken;
 
@@ -115,8 +169,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         accessToken,
         refreshToken,
         isAuthenticated,
+        permissions,
+        isAdmin,
+        hasPermission,
         login,
         logout,
+        refreshPermissions: fetchPermissions,
       }}
     >
       {children}

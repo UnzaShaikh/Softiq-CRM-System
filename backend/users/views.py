@@ -8,9 +8,40 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import viewsets, permissions
 
-from .serializers import RegisterSerializer, UserSerializer, UserUpdateSerializer,AdminUserSerializer
+from .serializers import RegisterSerializer, UserSerializer, UserUpdateSerializer, AdminUserSerializer
 
 User = get_user_model()
+
+
+# ---------- Permissions endpoint ----------
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def user_permissions_view(request):
+    """
+    Return the logged-in user's resolved permission matrix.
+    """
+    user = request.user
+    role_name = None
+    permissions_data = {}
+    is_staff = getattr(user, "is_staff", False)
+
+    try:
+        profile = user.profile
+        role_id = getattr(profile, "role", None)
+        if role_id:
+            from project_settings.models import Role
+
+            role = Role.objects.get(pk=int(role_id))
+            role_name = role.name
+            permissions_data = role.permissions
+    except Exception:
+        pass
+
+    return Response({
+        "role": role_name,
+        "permissions": permissions_data,
+        "is_staff": is_staff,
+    })
 
 
 # ---------- Registration ----------
@@ -69,7 +100,20 @@ def me_view(request):
     user = request.user
 
     if request.method == "GET":
-        return Response(UserSerializer(user).data)
+        data = UserSerializer(user).data
+        # Enrich with role and staff status
+        data["is_staff"] = getattr(user, "is_staff", False)
+        try:
+            profile = user.profile
+            role_id = getattr(profile, "role", None)
+            if role_id:
+                from project_settings.models import Role
+                role = Role.objects.get(pk=int(role_id))
+                data["role"] = role.name
+                data["role_id"] = role.id
+        except Exception:
+            pass
+        return Response(data)
 
     if request.method == "DELETE":
         user.delete()
