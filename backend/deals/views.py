@@ -5,13 +5,15 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
+from core.permissions import HasRolePermission
 from .models import Deal
 from .serializers import DealSerializer
 
 
 class DealViewSet(viewsets.ModelViewSet):
     serializer_class = DealSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasRolePermission]
+    permission_module = "deals"
 
     queryset = Deal.objects.select_related(
         "customer",

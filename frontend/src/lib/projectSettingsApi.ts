@@ -277,6 +277,10 @@ export const CRM_MODULES = [
   "deals",
   "activities",
   "companies",
+  "notes",
+  "followups",
+  "tasks",
+  "email_templates",
   "reports",
   "settings",
 ] as const;
@@ -360,4 +364,80 @@ export function updateRole(id: number, payload: UpdateRolePayload): Promise<Role
 
 export function deleteRole(id: number): Promise<void> {
   return request<void>(`/api/settings/roles/${id}/`, { method: "DELETE" });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// User Management (admin-only, backend: /api/admin/)
+// ═══════════════════════════════════════════════════════════════════════
+
+export interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  is_active: boolean;
+  date_joined: string;
+  role: string;
+}
+
+export interface AdminUserListResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: AdminUser[];
+}
+
+export interface CreateUserPayload {
+  username: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  password: string;
+  is_active?: boolean;
+  role_id?: number | null;
+}
+
+export interface UpdateUserPayload {
+  username?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  password?: string;
+  is_active?: boolean;
+  role_id?: number | null;
+}
+
+export async function listAdminUsers(params?: { search?: string; is_active?: string }): Promise<AdminUser[]> {
+  const qs = new URLSearchParams();
+  if (params?.search) qs.append("search", params.search);
+  if (params?.is_active) qs.append("is_active", params.is_active);
+  const query = qs.toString();
+  const first = await request<AdminUserListResponse>(`/api/users/admin/${query ? `?${query}` : ""}`);
+  let results = first.results;
+  let url: string | null = first.next;
+  while (url) {
+    const page: AdminUserListResponse = await request<AdminUserListResponse>(
+      url.replace(`${API_URL}`, "")
+    );
+    results = [...results, ...page.results];
+    url = page.next;
+  }
+  return results;
+}
+
+export function createAdminUser(payload: CreateUserPayload): Promise<AdminUser> {
+  return jsonRequest<AdminUser>(`/api/users/admin/`, "POST", payload);
+}
+
+export function updateAdminUser(id: number, payload: UpdateUserPayload): Promise<AdminUser> {
+  return jsonRequest<AdminUser>(`/api/users/admin/${id}/`, "PATCH", payload);
+}
+
+export function deleteAdminUser(id: number): Promise<void> {
+  return request<void>(`/api/users/admin/${id}/`, { method: "DELETE" });
+}
+
+export function retrieveAdminUser(id: number): Promise<AdminUser> {
+  return request<AdminUser>(`/api/users/admin/${id}/`);
 }

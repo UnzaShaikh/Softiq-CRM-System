@@ -8,6 +8,7 @@ import ActivityTable from "@/components/activities/ActivityTable";
 import SearchBar from "@/components/customers/SearchBar";
 import Pagination from "@/components/customers/Pagination";
 import ThemeLoader from "@/components/ui/ThemeLoader";
+import { usePermission } from "@/hooks/usePermissions";
 import {
   Activity,
   ActivityStatus,
@@ -56,6 +57,8 @@ export default function ActivitiesPage() {
   const [assignedToFilter, setAssignedToFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const canCreate = usePermission("activities", "create");
+  const canDelete = usePermission("activities", "delete");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -230,10 +233,12 @@ export default function ActivitiesPage() {
             <h1 className="page-title">Activities</h1>
             <p className="page-subtitle">Schedule and manage all your CRM activities.</p>
           </div>
+          {canCreate && (
           <button className="btn-add" onClick={() => router.push("/activities/new")}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
             Schedule Activity
           </button>
+          )}
         </div>
 
         {/* Error banner */}

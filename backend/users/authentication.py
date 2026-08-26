@@ -40,6 +40,20 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         refresh = self.get_token(authenticated_user)
 
+        # Resolve role name from UserProfile
+        role_name = None
+        role_id = None
+        try:
+            profile = authenticated_user.profile
+            raw_role = getattr(profile, "role", None)
+            if raw_role:
+                from project_settings.models import Role
+                role = Role.objects.get(pk=int(raw_role))
+                role_name = role.name
+                role_id = role.id
+        except Exception:
+            pass
+
         return {
             "refresh": str(refresh),
             "access": str(refresh.access_token),
@@ -49,6 +63,9 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
                 "email": authenticated_user.email,
                 "first_name": authenticated_user.first_name,
                 "last_name": authenticated_user.last_name,
+                "is_staff": authenticated_user.is_staff,
+                "role": role_name,
+                "role_id": role_id,
             },
         }
 

@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.permissions import HasRolePermission
 from .models import ProjectSettings, Role
 from .serializers import (
     CompanyInfoSerializer,
@@ -260,7 +261,8 @@ class RoleViewSet(viewsets.ModelViewSet):
 
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasRolePermission]
+    permission_module = "settings"
 
     def get_queryset(self):
         # Seed the standard system roles once so a fresh install has defaults.

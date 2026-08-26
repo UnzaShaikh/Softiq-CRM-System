@@ -15,6 +15,7 @@ from rest_framework_simplejwt.views import (
 from users.views import (
     me_view,
     register_view,
+    user_permissions_view,
 )
 
 from users.authentication import (
@@ -54,6 +55,12 @@ urlpatterns = [
         "api/auth/register/",
         register_view,
         name="register",
+    ),
+
+    path(
+        "api/auth/permissions/",
+        user_permissions_view,
+        name="user-permissions",
     ),
 
     # =========================================================

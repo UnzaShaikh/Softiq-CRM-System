@@ -9,6 +9,7 @@ import Pagination from "@/components/customers/Pagination";
 import { Note, NoteCategory, ALL_CATEGORIES, CATEGORY_COLORS, PRIORITY_COLORS } from "@/data/notes";
 import { listNotes, deleteNote, mapApiNoteToUi, toggleLocalStar, ApiNoteCategory, listCategories } from "@/lib/notesApi";
 import { FileText, Pin, Archive, Star, MoreHorizontal, Edit, Eye, Trash2, Plus, Tag } from "lucide-react";
+import { usePermission } from "@/hooks/usePermissions";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -118,6 +119,8 @@ export default function NotesPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"All" | NoteCategory>("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const canCreate = usePermission("notes", "create");
+  const canDelete = usePermission("notes", "delete");
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -185,10 +188,12 @@ export default function NotesPage() {
             <h1 className="page-title">Notes</h1>
             <p className="page-subtitle">Capture, organize and find your important notes</p>
           </div>
+          {canCreate && (
           <button className="btn-add" onClick={() => router.push("/notes/new")}>
             <Plus size={16} />
             New Note
           </button>
+          )}
         </div>
 
         {error && <div className="msg-error" style={{ marginBottom: "16px" }}>{error}</div>}

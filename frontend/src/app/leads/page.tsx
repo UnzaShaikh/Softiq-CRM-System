@@ -8,6 +8,7 @@ import SearchBar from "@/components/customers/SearchBar";
 import Pagination from "@/components/customers/Pagination";
 import { ApiLeadList, toLead, Lead, LeadStatus } from "@/data/leads";
 import { apiRequest, getAccessToken } from "@/lib/api";
+import { usePermission } from "@/hooks/usePermissions";
 import { Target, Phone, Trophy, Sparkles } from "lucide-react";
 import ThemeLoader from "@/components/ui/ThemeLoader";
 
@@ -26,6 +27,8 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const canCreate = usePermission("leads", "create");
+  const canDelete = usePermission("leads", "delete");
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, new: 0, qualified: 0, contacted: 0 });
   const [search, setSearch] = useState("");
@@ -125,12 +128,14 @@ export default function LeadsPage() {
             <h1 className="page-title">Leads</h1>
             <p className="page-subtitle">Track and manage all your sales leads.</p>
           </div>
+          {canCreate && (
           <button className="btn-add" onClick={() => router.push("/leads/new")}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
             Add Lead
           </button>
+          )}
         </div>
 
         {/* Stats */}

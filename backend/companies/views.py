@@ -8,6 +8,7 @@ from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 
+from core.permissions import HasRolePermission
 from .models import Company
 from .serializers import CompanySerializer
 from contacts.models import Contact
@@ -16,7 +17,8 @@ from deals.models import Deal  # adjust to your actual app
 
 class CompanyViewSet(viewsets.ModelViewSet):
     serializer_class = CompanySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasRolePermission]
+    permission_module = "companies"
     filter_backends = [
     DjangoFilterBackend,
     filters.SearchFilter,

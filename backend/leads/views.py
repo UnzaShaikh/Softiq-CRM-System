@@ -1,6 +1,7 @@
 from rest_framework import generics, filters
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
+from core.permissions import HasRolePermission
 from notifications.services import create_notification
 
 from .models import Lead
@@ -10,7 +11,8 @@ from .serializers import LeadSerializer
 class LeadListCreateView(generics.ListCreateAPIView):
     queryset = Lead.objects.all().order_by("-created_at")
     serializer_class = LeadSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasRolePermission]
+    permission_module = "leads"
 
     filter_backends = [
         DjangoFilterBackend,
@@ -50,4 +52,5 @@ class LeadListCreateView(generics.ListCreateAPIView):
 class LeadDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Lead.objects.all()
     serializer_class = LeadSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasRolePermission]
+    permission_module = "leads"

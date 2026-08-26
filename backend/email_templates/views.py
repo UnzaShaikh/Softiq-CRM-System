@@ -10,6 +10,7 @@ from rest_framework.exceptions import (
     ValidationError,
 )
 
+from core.permissions import HasRolePermission
 from .models import (
     EmailTemplate,
     TemplateActivity,
@@ -28,7 +29,8 @@ from .pagination import EmailTemplatePagination
 
 
 class EmailTemplateViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [HasRolePermission]
+    permission_module = "email_templates"
 
     pagination_class = EmailTemplatePagination
 

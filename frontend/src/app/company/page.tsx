@@ -26,9 +26,12 @@ import {
   toCompany,
 } from "@/data/company";
 import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
+import { usePermission } from "@/hooks/usePermissions";
 
 export default function CompanyPage() {
   const router = useRouter();
+  const canCreate = usePermission("companies", "create");
+  const canDelete = usePermission("companies", "delete");
 
   const [companies, setCompanies] = useState<Company[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -247,10 +250,12 @@ export default function CompanyPage() {
             <p className="page-subtitle">Manage all companies in one place.</p>
           </div>
 
+          {canCreate && (
           <Link href="/company/new" className="btn-add add-company-btn">
             <Plus size={16} />
             Add Company
           </Link>
+          )}
         </div>
 
         {/* Summary Cards */}

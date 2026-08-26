@@ -8,6 +8,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ContactTable from "@/components/contacts/ContactTable";
 import ThemeLoader from "@/components/ui/ThemeLoader";
 import Pagination from "@/components/customers/Pagination";
+import { usePermission } from "@/hooks/usePermissions";
 
 import {
   Users,
@@ -36,6 +37,8 @@ export default function ContactsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const canCreate = usePermission("contacts", "create");
+  const canDelete = usePermission("contacts", "delete");
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -167,6 +170,7 @@ export default function ContactsPage() {
             <p className="page-subtitle">Manage your customer contacts.</p>
           </div>
 
+          {canCreate && (
           <Link
             href="/contacts/add"
             className="btn-add"
@@ -175,6 +179,7 @@ export default function ContactsPage() {
             <Plus size={16} strokeWidth={2.5} />
             <span>Add Contact</span>
           </Link>
+          )}
         </div>
 
         {/* =========================================

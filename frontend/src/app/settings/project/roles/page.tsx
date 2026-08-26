@@ -5,6 +5,7 @@ import {
   listRoles,
   createRole,
   updateRole,
+  deleteRole,
   type Role as ApiRole,
 } from "@/lib/projectSettingsApi";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -13,6 +14,7 @@ import SettingsNav from "@/components/project-settings/SettingsNav";
 import Link from "next/link";
 import {
   HiShieldCheck, HiUserGroup, HiEye, HiSave, HiX, HiDotsVertical, HiPlus,
+  HiPencil, HiTrash,
 } from "react-icons/hi";
 import {
   MdDashboard, MdPeople, MdContacts, MdLeaderboard,
@@ -128,6 +130,21 @@ export default function RolesPermissionsPage() {
   const [dirtyRoleIds, setDirtyRoleIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<"roles" | "matrix">("roles");
 
+  // Delete role
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingRole, setDeletingRole] = useState<Role | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Edit role
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editError, setEditError] = useState("");
+
+  // Role context menu
+  const [openMenuRoleId, setOpenMenuRoleId] = useState<string | null>(null);
+
   const fetchRoles = useCallback(async () => {
     setLoading(true);
     setLoadError("");
@@ -218,6 +235,72 @@ export default function RolesPermissionsPage() {
       setShowAddModal(false); setNewRoleName(""); setNewRoleDesc(""); setRoleNameError("");
     } catch (err) {
       setRoleNameError(err instanceof Error ? err.message : "Failed to create role.");
+    }
+  }
+
+  // ── Delete Role ────────────────────────────────────────────────────
+  function confirmDeleteRole(role: Role) {
+    setDeletingRole(role);
+    setShowDeleteModal(true);
+    setOpenMenuRoleId(null);
+  }
+
+  async function handleDeleteRole() {
+    if (!deletingRole) return;
+    setDeleting(true);
+    try {
+      await deleteRole(Number(deletingRole.id));
+      setRoles(prev => prev.filter(r => r.id !== deletingRole.id));
+      if (selectedRoleId === deletingRole.id) {
+        const remaining = roles.filter(r => r.id !== deletingRole.id);
+        setSelectedRoleId(remaining[0]?.id ?? "");
+      }
+      setShowDeleteModal(false);
+      setDeletingRole(null);
+      setSaveSuccess(`"${deletingRole.name}" deleted.`);
+      setTimeout(() => setSaveSuccess(""), 4000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to delete role.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  // ── Edit Role ──────────────────────────────────────────────────────
+  function openEditRole(role: Role) {
+    setEditingRole(role);
+    setEditName(role.name);
+    setEditDesc(role.description);
+    setEditError("");
+    setShowEditModal(true);
+    setOpenMenuRoleId(null);
+  }
+
+  async function handleEditRole() {
+    if (!editingRole) return;
+    const trimmed = editName.trim();
+    if (!trimmed) { setEditError("Role name is required."); return; }
+    if (trimmed.length > 50) { setEditError("Max 50 characters."); return; }
+    if (roles.some(r => r.id !== editingRole.id && r.name.toLowerCase() === trimmed.toLowerCase())) {
+      setEditError("Role name already exists."); return;
+    }
+    try {
+      const updated = await updateRole(Number(editingRole.id), {
+        name: trimmed,
+        description: editDesc.trim(),
+      });
+      const mapped = mapApiRole(updated);
+      setRoles(prev => prev.map(r => r.id === editingRole.id ? mapped : r));
+      setPermissions(prev => ({
+        ...prev,
+        [mapped.id]: JSON.parse(JSON.stringify(mapped.permissions)),
+      }));
+      setShowEditModal(false);
+      setEditingRole(null);
+      setSaveSuccess(`"${trimmed}" updated.`);
+      setTimeout(() => setSaveSuccess(""), 4000);
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Failed to update role.");
     }
   }
 
@@ -363,9 +446,25 @@ export default function RolesPermissionsPage() {
                             <p style={{ margin: 0, fontSize: "0.78rem", fontWeight: 600, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{role.name}</p>
                             <p style={{ margin: 0, fontSize: "0.67rem", color: "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{role.description}</p>
                           </div>
-                          <button onClick={e => e.stopPropagation()} style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1", padding: "2px", flexShrink: 0 }}>
-                            <HiDotsVertical size={13} />
-                          </button>
+                          <div style={{ position: "relative" }}>
+                            <button onClick={e => { e.stopPropagation(); setOpenMenuRoleId(openMenuRoleId === role.id ? null : role.id); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1", padding: "2px", flexShrink: 0 }}>
+                              <HiDotsVertical size={13} />
+                            </button>
+                            {openMenuRoleId === role.id && (
+                              <div style={{ position: "absolute", right: 0, top: "100%", marginTop: "4px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "10px", boxShadow: "0 8px 24px rgba(0,0,0,0.1)", zIndex: 100, minWidth: "140px" }}>
+                                <button onClick={e => { e.stopPropagation(); openEditRole(role); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: "8px", padding: "8px 14px", border: "none", background: "transparent", cursor: "pointer", fontSize: "0.8rem", color: "#374151", fontFamily: "inherit", borderTopLeftRadius: "10px", borderTopRightRadius: "10px" }}
+                                  onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")}
+                                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                                  <HiPencil size={13} color="#4f46e5" /> Edit Role
+                                </button>
+                                <button onClick={e => { e.stopPropagation(); confirmDeleteRole(role); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: "8px", padding: "8px 14px", border: "none", background: "transparent", cursor: "pointer", fontSize: "0.8rem", color: "#dc2626", fontFamily: "inherit", borderBottomLeftRadius: "10px", borderBottomRightRadius: "10px" }}
+                                  onMouseEnter={e => (e.currentTarget.style.background = "#fef2f2")}
+                                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                                  <HiTrash size={13} /> Delete Role
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
@@ -584,6 +683,74 @@ export default function RolesPermissionsPage() {
               <button className="btn-secondary" onClick={() => { setShowAddModal(false); setNewRoleName(""); setNewRoleDesc(""); setRoleNameError(""); }}>Cancel</button>
               <button className="btn-add" onClick={handleAddRole} style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                 <HiPlus size={14} /> Create Role
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Role Modal ── */}
+      {showEditModal && editingRole && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowEditModal(false); setEditingRole(null); } }}>
+          <div className="modal-box" style={{ maxWidth: "400px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
+              <div>
+                <h2 style={{ margin: "0 0 2px", fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>Edit Role</h2>
+                <p style={{ margin: 0, fontSize: "0.75rem", color: "#94a3b8" }}>Update role name and description.</p>
+              </div>
+              <button onClick={() => { setShowEditModal(false); setEditingRole(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: "4px" }}>
+                <HiX size={17} />
+              </button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div className="form-group">
+                <label className="form-label">Role Name <span style={{ color: "var(--error)" }}>*</span></label>
+                <input value={editName} onChange={e => { setEditName(e.target.value); setEditError(""); }}
+                  placeholder="e.g. Support Agent" maxLength={50}
+                  onKeyDown={e => { if (e.key === "Enter") handleEditRole(); }}
+                  style={{ width: "100%", padding: "9px 12px", border: `1.5px solid ${editError ? "#fca5a5" : "#e2e8f0"}`, borderRadius: "8px", background: "#fff", color: "#0f172a", fontSize: "0.875rem", fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+                {editError && <p className="form-error">{editError}</p>}
+              </div>
+              <div className="form-group">
+                <label className="form-label">Role Description</label>
+                <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)}
+                  placeholder="Describe the responsibilities..." rows={3} maxLength={200}
+                  style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#0f172a", fontSize: "0.875rem", fontFamily: "inherit", outline: "none", resize: "vertical", boxSizing: "border-box" }} />
+              </div>
+            </div>
+            <div className="modal-actions" style={{ marginTop: "18px" }}>
+              <button className="btn-secondary" onClick={() => { setShowEditModal(false); setEditingRole(null); }}>Cancel</button>
+              <button className="btn-add" onClick={handleEditRole} style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <HiSave size={14} /> Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Role Confirmation Modal ── */}
+      {showDeleteModal && deletingRole && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowDeleteModal(false); setDeletingRole(null); } }}>
+          <div className="modal-box" style={{ maxWidth: "400px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
+              <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>Delete Role</h2>
+              <button onClick={() => { setShowDeleteModal(false); setDeletingRole(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: "4px" }}>
+                <HiX size={17} />
+              </button>
+            </div>
+            <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "10px", padding: "14px", marginBottom: "16px" }}>
+              <p style={{ margin: 0, fontSize: "0.875rem", color: "#991b1b", fontWeight: 500 }}>
+                Are you sure you want to delete <strong>&quot;{deletingRole.name}&quot;</strong>?
+              </p>
+              <p style={{ margin: "8px 0 0", fontSize: "0.8125rem", color: "#b91c1c" }}>
+                This action cannot be undone. Users assigned to this role will lose their permissions.
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => { setShowDeleteModal(false); setDeletingRole(null); }}>Cancel</button>
+              <button onClick={handleDeleteRole} disabled={deleting}
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 18px", borderRadius: "8px", background: "#dc2626", color: "#fff", border: "none", fontWeight: 600, fontSize: "0.875rem", cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1, fontFamily: "inherit" }}>
+                {deleting ? "Deleting..." : <><HiTrash size={14} /> Delete Role</>}
               </button>
             </div>
           </div>

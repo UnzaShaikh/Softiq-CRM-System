@@ -1,673 +1,345 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-  UserCheck,
-  UserX,
-  X,
-} from "lucide-react";
-
+import Link from "next/link";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import ThemeLoader from "@/components/ui/ThemeLoader";
+import {
+  listAdminUsers,
+  deleteAdminUser,
+  updateAdminUser,
+  listRoles,
+  type AdminUser,
+  type Role,
+} from "@/lib/projectSettingsApi";
+import {
+  HiPlus, HiTrash, HiX, HiSearch, HiCheckCircle, HiXCircle,
+  HiPencil, HiArrowLeft,
+} from "react-icons/hi";
 
-type User = {
-  id: number;
-  username: string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  is_active: boolean;
-  date_joined: string;
-};
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 
-type ApiResponse = {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: User[];
-};
-
-type StatusFilter = "all" | "active" | "inactive";
+function initials(u: AdminUser): string {
+  const f = u.first_name?.[0] ?? "";
+  const l = u.last_name?.[0] ?? "";
+  return (f + l).toUpperCase() || (u.username[0]?.toUpperCase() ?? "?");
+}
 
 export default function AdminUsersPage() {
   const router = useRouter();
-
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
+  const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] =
-    useState<StatusFilter>("all");
+  const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
+  const [success, setSuccess] = useState("");
 
-  const [nextPage, setNextPage] =
-    useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<AdminUser | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const [previousPage, setPreviousPage] =
-    useState<string | null>(null);
+  const [assignModalUser, setAssignModalUser] = useState<AdminUser | null>(null);
+  const [assignRoleId, setAssignRoleId] = useState<number | null>(null);
+  const [assigning, setAssigning] = useState(false);
 
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const fetchUsers = async (
-    url = "/api/users/admin/"
-  ) => {
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
     try {
-      setLoading(true);
-      setError("");
-
-      const token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("access_token")
-          : null;
-
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_URL ||
-        "http://127.0.0.1:8000";
-
-      const response = await fetch(
-        `${baseUrl}${url}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token
-              ? {
-                  Authorization: `Bearer ${token}`,
-                }
-              : {}),
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `Request failed with status ${response.status}`
-        );
-      }
-
-      const data: ApiResponse =
-        await response.json();
-
-      setUsers(data.results || []);
-      setNextPage(data.next);
-      setPreviousPage(data.previous);
+      const params: { search?: string; is_active?: string } = {};
+      if (search) params.search = search;
+      if (filter === "active") params.is_active = "true";
+      if (filter === "inactive") params.is_active = "false";
+      const [userData, roleData] = await Promise.all([
+        listAdminUsers(params),
+        listRoles(),
+      ]);
+      setUsers(userData);
+      setRoles(roleData);
     } catch (err) {
-      console.error(
-        "Failed to load users:",
-        err
-      );
-
-      setUsers([]);
-      setNextPage(null);
-      setPreviousPage(null);
-
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to load users."
-      );
+      setLoadError(err instanceof Error ? err.message : "Failed to load users.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, filter]);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-  const filteredUsers = useMemo(() => {
-    const query = search
-      .trim()
-      .toLowerCase();
+  async function handleDelete() {
+    if (!deletingUser) return;
+    setDeleting(true);
+    try {
+      await deleteAdminUser(deletingUser.id);
+      setUsers(prev => prev.filter(u => u.id !== deletingUser.id));
+      setShowDeleteModal(false);
+      setSuccess(`User "${deletingUser.username}" deleted.`);
+      setDeletingUser(null);
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to delete user.");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
-    return users.filter((user) => {
-      const fullName =
-        `${user.first_name || ""} ${
-          user.last_name || ""
-        }`.trim();
+  async function toggleActive(user: AdminUser) {
+    try {
+      const updated = await updateAdminUser(user.id, { is_active: !user.is_active });
+      setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to update user.");
+    }
+  }
 
-      const matchesSearch =
-        !query ||
-        user.username
-          .toLowerCase()
-          .includes(query) ||
-        user.email
-          .toLowerCase()
-          .includes(query) ||
-        fullName
-          .toLowerCase()
-          .includes(query);
+  function openAssignRole(user: AdminUser) {
+    setAssignModalUser(user);
+    const currentRoleId = user.role ? Number(user.role) : null;
+    setAssignRoleId(currentRoleId);
+    setAssignModalUser(user);
+  }
 
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "active" &&
-          user.is_active) ||
-        (statusFilter === "inactive" &&
-          !user.is_active);
+  async function handleAssignRole() {
+    if (!assignModalUser) return;
+    setAssigning(true);
+    try {
+      const updated = await updateAdminUser(assignModalUser.id, { role_id: assignRoleId });
+      setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
+      setAssignModalUser(null);
+      setSuccess(`Role assigned to "${updated.username}".`);
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to assign role.");
+    } finally {
+      setAssigning(false);
+    }
+  }
 
-      return (
-        matchesSearch &&
-        matchesStatus
-      );
-    });
-  }, [users, search, statusFilter]);
+  function getRoleName(roleId: string): string {
+    if (!roleId) return "No Role";
+    const role = roles.find(r => r.id === Number(roleId));
+    return role?.name ?? `Role #${roleId}`;
+  }
 
-  const getUserName = (user: User) => {
-    const fullName =
-      `${user.first_name || ""} ${
-        user.last_name || ""
-      }`.trim();
+  function getRoleColor(roleId: string): string {
+    if (!roleId) return "#94a3b8";
+    const role = roles.find(r => r.id === Number(roleId));
+    return role?.color ?? "#94a3b8";
+  }
 
-    return fullName || user.username;
-  };
+  function getRoleBgColor(roleId: string): string {
+    if (!roleId) return "#f1f5f9";
+    const role = roles.find(r => r.id === Number(roleId));
+    return role?.bg_color ?? "#f1f5f9";
+  }
 
-  const getInitials = (user: User) => {
-    const name = getUserName(user);
-
-    return name
-      .split(" ")
-      .slice(0, 2)
-      .map((part) =>
-        part.charAt(0).toUpperCase()
-      )
-      .join("");
-  };
-
-  const formatDate = (date: string) => {
-    if (!date) return "—";
-
-    return new Date(date).toLocaleDateString(
-      "en-US",
-      {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }
-    );
-  };
-
-  const handleNext = () => {
-    if (!nextPage) return;
-
-    setCurrentPage(
-      (page) => page + 1
-    );
-
-    fetchUsers(nextPage);
-  };
-
-  const handlePrevious = () => {
-    if (!previousPage) return;
-
-    setCurrentPage((page) =>
-      Math.max(1, page - 1)
-    );
-
-    fetchUsers(previousPage);
-  };
+  const activeCount = users.filter(u => u.is_active).length;
+  const inactiveCount = users.length - activeCount;
 
   return (
     <DashboardLayout>
-      <div className="page-wrapper">
-
-        {/* =========================================
-            PAGE HEADER
-        ========================================= */}
-        <div className="page-header">
-          <div>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() =>
-                router.push("/admin")
-              }
-              style={{
-                marginBottom: "12px",
-              }}
-            >
-              <ArrowLeft size={15} />
-              Administration
-            </button>
-
-            <h1 className="page-title">
-              User Management
-            </h1>
-
-            <p className="page-subtitle">
-              Manage CRM users, account status
-              and access.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            className="add-company-btn"
-            onClick={() =>
-              console.log("Add user")
-            }
-          >
-            <Plus size={16} />
-            Add User
+      <div style={{ minWidth: 0, overflowX: "hidden" }}>
+        {/* Breadcrumb */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16, fontSize: "0.8125rem", color: "#94a3b8" }}>
+          <button type="button" onClick={() => router.push("/admin")} style={{ background: "none", border: "none", color: "#4f46e5", cursor: "pointer", fontWeight: 500, fontSize: "0.8125rem", fontFamily: "inherit", padding: 0 }}>
+            Admin Panel
           </button>
+          <span style={{ color: "#cbd5e1" }}>&rsaquo;</span>
+          <span style={{ color: "#374151" }}>User Management</span>
         </div>
 
-        {/* =========================================
-            ERROR
-        ========================================= */}
-        {error && (
-          <div
-            className="msg-error"
-            style={{
-              marginBottom: 0,
-            }}
-          >
-            <span>{error}</span>
+        {/* Page Header */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+          <div>
+            <button type="button" className="btn-secondary" onClick={() => router.push("/admin")} style={{ marginBottom: "12px" }}>
+              <HiArrowLeft size={15} /> Administration
+            </button>
+            <h1 className="page-title">User Management</h1>
+            <p className="page-subtitle">Create, edit, and manage user accounts and role assignments.</p>
+          </div>
+          <Link href="/admin/users/new" className="add-company-btn" style={{ display: "inline-flex", alignItems: "center", gap: "6px", textDecoration: "none" }}>
+            <HiPlus size={16} /> Add User
+          </Link>
+        </div>
 
-            <button
-              type="button"
-              onClick={() =>
-                setError("")
-              }
-              aria-label="Close error"
-              style={{
-                border: 0,
-                background: "transparent",
-                cursor: "pointer",
-                color: "inherit",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <X size={16} />
+        {/* Banners */}
+        {loadError && (
+          <div className="msg-error" style={{ marginBottom: 0 }}>
+            <span>{loadError}</span>
+            <button type="button" onClick={fetchUsers} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontWeight: 600, textDecoration: "underline", fontFamily: "inherit", fontSize: "0.8125rem" }}>
+              Retry
             </button>
           </div>
         )}
+        {success && <div className="msg-success" style={{ marginBottom: "16px" }}>{success}</div>}
 
-        {/* =========================================
-            USERS TABLE
-        ========================================= */}
+        {/* Users Table Card */}
         <div className="company-table-card">
-
-          {/* Toolbar */}
           <div className="contacts-table-toolbar">
-
             <div className="contacts-search-wrap">
-              <Search
-                className="contacts-search-icon"
-                size={17}
-              />
-
-              <input
-                type="text"
-                className="contacts-search-input"
-                value={search}
-                onChange={(event) =>
-                  setSearch(
-                    event.target.value
-                  )
-                }
-                placeholder="Search users..."
-              />
-
+              <HiSearch className="contacts-search-icon" size={17} />
+              <input type="text" className="contacts-search-input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search users..." />
               {search && (
-                <button
-                  type="button"
-                  className="input-action"
-                  onClick={() =>
-                    setSearch("")
-                  }
-                  aria-label="Clear search"
-                >
-                  <X size={15} />
+                <button type="button" className="input-action" onClick={() => setSearch("")} aria-label="Clear search">
+                  <HiX size={15} />
                 </button>
               )}
             </div>
-
             <div className="contacts-toolbar-right">
-
-              <span className="contacts-results-count">
-                {filteredUsers.length}{" "}
-                {filteredUsers.length === 1
-                  ? "user"
-                  : "users"}
-              </span>
-
+              <span className="contacts-results-count">{users.length} {users.length === 1 ? "user" : "users"}</span>
               <div className="contacts-filter-tabs">
-
-                <button
-                  type="button"
-                  className={`contacts-filter-tab ${
-                    statusFilter === "all"
-                      ? "active"
-                      : ""
-                  }`}
-                  onClick={() =>
-                    setStatusFilter("all")
-                  }
-                >
-                  All
-                </button>
-
-                <button
-                  type="button"
-                  className={`contacts-filter-tab ${
-                    statusFilter === "active"
-                      ? "active"
-                      : ""
-                  }`}
-                  onClick={() =>
-                    setStatusFilter("active")
-                  }
-                >
-                  Active
-                </button>
-
-                <button
-                  type="button"
-                  className={`contacts-filter-tab ${
-                    statusFilter === "inactive"
-                      ? "active"
-                      : ""
-                  }`}
-                  onClick={() =>
-                    setStatusFilter("inactive")
-                  }
-                >
-                  Inactive
-                </button>
-
+                <button type="button" className={`contacts-filter-tab ${filter === "all" ? "active" : ""}`} onClick={() => setFilter("all")}>All</button>
+                <button type="button" className={`contacts-filter-tab ${filter === "active" ? "active" : ""}`} onClick={() => setFilter("active")}>Active ({activeCount})</button>
+                <button type="button" className={`contacts-filter-tab ${filter === "inactive" ? "active" : ""}`} onClick={() => setFilter("inactive")}>Inactive ({inactiveCount})</button>
               </div>
             </div>
           </div>
 
-          {/* Table */}
-          <div className="contacts-table-wrapper">
-            <table className="contacts-table">
-
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Email</th>
-                  <th>Status</th>
-                  <th>Joined</th>
-                  <th
-                    style={{
-                      textAlign: "right",
-                    }}
-                  >
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-
-                {loading ? (
+          {loading ? (
+            <ThemeLoader label="Loading users..." minHeight={260} />
+          ) : (
+            <div className="contacts-table-wrapper">
+              <table className="contacts-table">
+                <thead>
                   <tr>
-                    <td
-                      colSpan={5}
-                      style={{
-                        textAlign: "center",
-                        height: "180px",
-                        color:
-                          "var(--muted)",
-                      }}
-                    >
-                      Loading users...
-                    </td>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                    <th style={{ textAlign: "right" }}>Actions</th>
                   </tr>
-                ) : filteredUsers.length ===
-                  0 ? (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      style={{
-                        textAlign: "center",
-                        height: "220px",
-                        color:
-                          "var(--muted)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection:
-                            "column",
-                          alignItems:
-                            "center",
-                          justifyContent:
-                            "center",
-                          gap: "6px",
-                        }}
-                      >
-                        <p
-                          style={{
-                            margin: 0,
-                            fontSize: "14px",
-                            fontWeight: 600,
-                            color:
-                              "#64748b",
-                          }}
-                        >
-                          No users found
-                        </p>
-
-                        <p
-                          style={{
-                            margin: 0,
-                            fontSize: "13px",
-                            color:
-                              "#94a3b8",
-                          }}
-                        >
-                          Try changing your
-                          search or filter.
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredUsers.map(
-                    (user) => (
-                      <tr key={user.id}>
-
-                        {/* User */}
+                </thead>
+                <tbody>
+                  {users.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: "center", height: "220px", color: "var(--muted)" }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                          <p style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "#64748b" }}>No users found</p>
+                          <p style={{ margin: 0, fontSize: "13px", color: "#94a3b8" }}>Try changing your search or filter.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    users.map((u) => (
+                      <tr key={u.id}>
                         <td>
                           <div className="contacts-name-cell">
-
-                            <div className="contacts-avatar">
-                              {getInitials(user)}
+                            <div className="contacts-avatar" style={{ background: u.is_active ? "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)" : "#e2e8f0", color: u.is_active ? "#fff" : "#94a3b8" }}>
+                              {initials(u)}
                             </div>
-
                             <div>
-                              <p className="contacts-name">
-                                {getUserName(
-                                  user
-                                )}
-                              </p>
-
-                              <p className="contacts-job-title">
-                                @{user.username}
-                              </p>
+                              <p className="contacts-name">{u.first_name || u.last_name ? `${u.first_name} ${u.last_name}`.trim() : u.username}</p>
+                              <p className="contacts-job-title">@{u.username}</p>
                             </div>
-
                           </div>
                         </td>
-
-                        {/* Email */}
+                        <td><span className="contacts-email">{u.email || "\u2014"}</span></td>
                         <td>
-                          <span className="contacts-email">
-                            {user.email ||
-                              "—"}
-                          </span>
-                        </td>
-
-                        {/* Status */}
-                        <td>
-                          <span
-                            className={`contacts-status ${
-                              user.is_active
-                                ? "contacts-status-active"
-                                : "contacts-status-inactive"
-                            }`}
+                          <button
+                            onClick={() => openAssignRole(u)}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: "5px",
+                              padding: "4px 10px", borderRadius: "9999px", border: "none",
+                              cursor: "pointer", fontSize: "0.72rem", fontWeight: 600,
+                              fontFamily: "inherit", background: getRoleBgColor(u.role), color: getRoleColor(u.role),
+                            }}
                           >
-                            <span className="contacts-status-dot" />
-
-                            {user.is_active
-                              ? "Active"
-                              : "Inactive"}
-                          </span>
+                            {getRoleName(u.role)}
+                          </button>
                         </td>
-
-                        {/* Joined */}
                         <td>
-                          <span className="contacts-cell-primary">
-                            {formatDate(
-                              user.date_joined
-                            )}
-                          </span>
+                          <button onClick={() => toggleActive(u)} className={`contacts-status ${u.is_active ? "contacts-status-active" : "contacts-status-inactive"}`} style={{ border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: "inherit" }}>
+                            <span className="contacts-status-dot" />
+                            {u.is_active ? "Active" : "Inactive"}
+                          </button>
                         </td>
-
-                        {/* Actions */}
+                        <td><span className="contacts-cell-primary">{formatDate(u.date_joined)}</span></td>
                         <td>
                           <div className="contacts-actions">
-
-                            <button
-                              type="button"
-                              className="contacts-action-button contacts-action-view"
-                              title="View User"
-                              onClick={() =>
-                                console.log(
-                                  "View user",
-                                  user.id
-                                )
-                              }
-                            >
-                              <Eye
-                                size={14}
-                              />
+                            <Link href={`/admin/users/${u.id}`} className="contacts-action-button contacts-action-edit" title="Edit User" style={{ textDecoration: "none" }}>
+                              <HiPencil size={14} />
+                            </Link>
+                            <button type="button" className="contacts-action-button contacts-action-delete" title="Delete User" onClick={() => { setDeletingUser(u); setShowDeleteModal(true); }}>
+                              <HiTrash size={14} />
                             </button>
-
-                            <button
-                              type="button"
-                              className="contacts-action-button contacts-action-edit"
-                              title="Edit User"
-                              onClick={() =>
-                                console.log(
-                                  "Edit user",
-                                  user.id
-                                )
-                              }
-                            >
-                              <Pencil
-                                size={14}
-                              />
-                            </button>
-
-                            <button
-                              type="button"
-                              className="contacts-action-button contacts-action-delete"
-                              title={
-                                user.is_active
-                                  ? "Deactivate User"
-                                  : "Activate User"
-                              }
-                              onClick={() =>
-                                console.log(
-                                  user.is_active
-                                    ? "Deactivate user"
-                                    : "Activate user",
-                                  user.id
-                                )
-                              }
-                            >
-                              {user.is_active ? (
-                                <UserX
-                                  size={14}
-                                />
-                              ) : (
-                                <UserCheck
-                                  size={14}
-                                />
-                              )}
-                            </button>
-
                           </div>
                         </td>
-
                       </tr>
-                    )
-                  )
-                )}
-
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          {!loading &&
-            users.length > 0 &&
-            (nextPage ||
-              previousPage) && (
-              <div className="company-pagination">
-
-                <span
-                  style={{
-                    color:
-                      "var(--muted)",
-                    fontSize: "13px",
-                  }}
-                >
-                  Page {currentPage}
-                </span>
-
-                <div className="pagination-pages">
-
-                  <button
-                    type="button"
-                    className="pagination-btn"
-                    disabled={!previousPage}
-                    onClick={
-                      handlePrevious
-                    }
-                  >
-                    <ChevronLeft
-                      size={16}
-                    />
-                  </button>
-
-                  <button
-                    type="button"
-                    className="pagination-page active"
-                  >
-                    {currentPage}
-                  </button>
-
-                  <button
-                    type="button"
-                    className="pagination-btn"
-                    disabled={!nextPage}
-                    onClick={handleNext}
-                  >
-                    <ChevronRight
-                      size={16}
-                    />
-                  </button>
-
-                </div>
-              </div>
-            )}
-
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Delete User Confirmation */}
+      {showDeleteModal && deletingUser && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowDeleteModal(false); setDeletingUser(null); } }}>
+          <div className="modal-box" style={{ maxWidth: "400px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
+              <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>Delete User</h2>
+              <button onClick={() => { setShowDeleteModal(false); setDeletingUser(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: "4px" }}><HiX size={17} /></button>
+            </div>
+            <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "10px", padding: "14px", marginBottom: "16px" }}>
+              <p style={{ margin: 0, fontSize: "0.875rem", color: "#991b1b", fontWeight: 500 }}>
+                Are you sure you want to delete <strong>&quot;{deletingUser.username}&quot;</strong>?
+              </p>
+              <p style={{ margin: "8px 0 0", fontSize: "0.8125rem", color: "#b91c1c" }}>
+                This action cannot be undone. All their data will be permanently removed.
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => { setShowDeleteModal(false); setDeletingUser(null); }}>Cancel</button>
+              <button onClick={handleDelete} disabled={deleting}
+                style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 18px", borderRadius: "8px", background: "#dc2626", color: "#fff", border: "none", fontWeight: 600, fontSize: "0.875rem", cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1, fontFamily: "inherit" }}>
+                {deleting ? "Deleting..." : <><HiTrash size={14} /> Delete User</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Role Modal */}
+      {assignModalUser && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setAssignModalUser(null); }}>
+          <div className="modal-box" style={{ maxWidth: "400px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
+              <div>
+                <h2 style={{ margin: "0 0 2px", fontSize: "1rem", fontWeight: 700, color: "#0f172a" }}>Assign Role</h2>
+                <p style={{ margin: 0, fontSize: "0.75rem", color: "#94a3b8" }}>Assign a role to {assignModalUser.username}.</p>
+              </div>
+              <button onClick={() => setAssignModalUser(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: "4px" }}><HiX size={17} /></button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div className="form-group">
+                <label className="form-label">Role</label>
+                <select
+                  value={assignRoleId ?? ""}
+                  onChange={(e) => setAssignRoleId(e.target.value ? Number(e.target.value) : null)}
+                  style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#0f172a", fontSize: "0.875rem", fontFamily: "inherit", outline: "none", cursor: "pointer", boxSizing: "border-box" }}
+                >
+                  <option value="">No Role</option>
+                  {roles.map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="modal-actions" style={{ marginTop: "18px" }}>
+              <button className="btn-secondary" onClick={() => setAssignModalUser(null)}>Cancel</button>
+              <button className="btn-add" onClick={handleAssignRole} disabled={assigning} style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                {assigning ? "Saving..." : "Save Role"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
