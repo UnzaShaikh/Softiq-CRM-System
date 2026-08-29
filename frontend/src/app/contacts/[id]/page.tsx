@@ -6,7 +6,9 @@ import { useParams, useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { ApiContact, Contact, toContact } from "@/data/contact";
 import { apiRequest, getAccessToken } from "@/lib/api";
+import { getCachedContact, setCachedContact } from "@/data/contactCache";
 import ThemeLoader from "@/components/ui/ThemeLoader";
+import { usePermission } from "@/hooks/usePermissions";
 import { Mail, Phone, Briefcase, Building2, Clock, ArrowLeft, Pencil } from "lucide-react";
 
 function getInitials(name: string) {
@@ -27,18 +29,45 @@ export default function ContactDetailPage() {
   const params = useParams();
   const id = params?.id as string;
 
+  // Do not read the in-memory cache during render.
+  // The server cannot see the client cache, so doing that here can
+  // produce a server/client hydration mismatch.
   const [contact, setContact] = useState<Contact | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [hydrated, setHydrated] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const canEdit = usePermission("contacts", "edit");
 
   useEffect(() => {
+    if (!id) {
+      setHydrated(true);
+      setLoading(false);
+      setNotFound(true);
+      return;
+    }
+
     let cancelled = false;
+
+    // Restore cached contact after hydration. This gives instant UI
+    // on client-side navigation without causing SSR/client mismatch.
+    const cached = getCachedContact(id);
+    if (cached) {
+      setContact(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
+    setHydrated(true);
+
     const run = async () => {
       try {
         const data = await apiRequest<ApiContact>(`/api/contacts/${id}/`);
         if (cancelled) return;
-        setContact(toContact(data));
+        const nextContact = toContact(data);
+        setCachedContact(nextContact);
+        setContact(nextContact);
       } catch (err) {
         if (cancelled) return;
         setError((err as Error).message);
@@ -52,7 +81,13 @@ export default function ContactDetailPage() {
     return () => { cancelled = true; };
   }, [id, router]);
 
-  if (loading) return (
+  if (!hydrated) return (
+    <DashboardLayout>
+      <div style={{ minHeight: "220px" }} aria-hidden="true" />
+    </DashboardLayout>
+  );
+
+  if (loading && !contact) return (
     <DashboardLayout><ThemeLoader label="Loading contact..." /></DashboardLayout>
   );
 
@@ -83,6 +118,7 @@ export default function ContactDetailPage() {
             <h1 className="page-title">Contact Details</h1>
             <p className="page-subtitle">View and manage contact information.</p>
           </div>
+          {canEdit && (
           <Link
             href={`/contacts/edit?id=${id}`}
             className="btn-add"
@@ -90,6 +126,7 @@ export default function ContactDetailPage() {
           >
             <Pencil size={14} /> Edit Contact
           </Link>
+          )}
         </div>
 
         {/* Profile card */}

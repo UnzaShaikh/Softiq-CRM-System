@@ -1,7 +1,8 @@
 from django.core.mail import get_connection, send_mail
-from rest_framework import status, viewsets
+from rest_framework import status, viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -268,7 +269,18 @@ class RoleViewSet(viewsets.ModelViewSet):
         # Seed the standard system roles once so a fresh install has defaults.
         if not Role.objects.exists():
             Role.objects.bulk_create([Role(**r) for r in DEFAULT_ROLES])
-        return super().get_queryset()
+        return Role.objects.all().order_by("created_at")
+
+    def list(self, request, *args, **kwargs):
+        """Return all roles in one response to avoid client-side pagination waterfalls."""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            "count": queryset.count(),
+            "next": None,
+            "previous": None,
+            "results": serializer.data,
+        })
 
     def destroy(self, request, *args, **kwargs):
         role = self.get_object()
@@ -278,3 +290,194 @@ class RoleViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
         return super().destroy(request, *args, **kwargs)
+from django.contrib.auth import get_user_model
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework import viewsets, permissions
+
+from .serializers import RegisterSerializer, UserSerializer, UserUpdateSerializer, AdminUserSerializer
+
+User = get_user_model()
+
+
+# ---------- Permissions endpoint ----------
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def user_permissions_view(request):
+    """
+    Return the logged-in user's resolved permission matrix.
+    """
+    user = request.user
+    role_name = None
+    permissions_data = {}
+    is_staff = getattr(user, "is_staff", False)
+
+    try:
+        profile = user.profile
+        role_id = getattr(profile, "role", None)
+        if role_id:
+            from project_settings.models import Role
+
+            role = Role.objects.get(pk=int(role_id))
+            role_name = role.name
+            permissions_data = role.permissions
+    except Exception:
+        pass
+
+    return Response({
+        "role": role_name,
+        "permissions": permissions_data,
+        "is_staff": is_staff,
+    })
+
+
+# ---------- Registration ----------
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def register_view(request):
+    """
+    Register a new user.
+    Expects: username, email, password, password2 (and optional first_name, last_name)
+    Returns: user data + JWT tokens (access & refresh)
+    """
+    serializer = RegisterSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    user = serializer.save()
+
+    refresh = RefreshToken.for_user(user)
+
+    return Response(
+        {
+            "user": UserSerializer(user).data,
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+        },
+        status=status.HTTP_201_CREATED,
+    )
+
+
+# ---------- Email‑based login (instead of username) ----------
+class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    Custom serializer that looks up the user by email instead of username.
+    The frontend sends the email in the 'username' field.
+    """
+    def validate(self, attrs):
+        email = attrs.get("username")  # frontend sends email as "username"
+        try:
+            user = User.objects.get(email=email)
+            attrs["username"] = user.username   # replace with the actual username
+        except User.DoesNotExist:
+            pass   # let default validation fail with "No active account found"
+        return super().validate(attrs)
+
+
+class EmailTokenObtainPairView(TokenObtainPairView):
+    """
+    Custom login view that accepts an email in the 'username' field.
+    Use this instead of the default TokenObtainPairView.
+    """
+    serializer_class = EmailTokenObtainPairSerializer
+
+
+# ---------- User self‑management (from upstream) ----------
+@api_view(["GET", "PATCH", "DELETE"])
+@permission_classes([IsAuthenticated])
+def me_view(request):
+    user = request.user
+
+    if request.method == "GET":
+        data = UserSerializer(user).data
+        # Enrich with role and staff status
+        data["is_staff"] = getattr(user, "is_staff", False)
+        try:
+            profile = user.profile
+            role_id = getattr(profile, "role", None)
+            if role_id:
+                from project_settings.models import Role
+                role = Role.objects.get(pk=int(role_id))
+                data["role"] = role.name
+                data["role_id"] = role.id
+        except Exception:
+            pass
+        return Response(data)
+
+    if request.method == "DELETE":
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    serializer = UserUpdateSerializer(
+        user,
+        data=request.data,
+        partial=True,
+        context={"request": request},
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+
+    return Response(UserSerializer(user).data)
+class AdminUserPagination(PageNumberPagination):
+    """Small, predictable pages for the Admin Users table."""
+
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 50
+
+
+class AdminUserViewSet(viewsets.ModelViewSet):
+    """
+    Admin-only user management API.
+
+    The list endpoint is paginated so the frontend never has to download
+    every user before rendering the first page.
+    """
+
+    queryset = User.objects.select_related("profile").all().order_by("-date_joined")
+    serializer_class = AdminUserSerializer
+    pagination_class = AdminUserPagination
+    filter_backends = [filters.SearchFilter]
+
+    permission_classes = [
+        permissions.IsAuthenticated,
+        permissions.IsAdminUser,
+    ]
+
+    search_fields = [
+        "username",
+        "email",
+        "first_name",
+        "last_name",
+    ]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        is_active = self.request.query_params.get("is_active")
+
+        if is_active in ["true", "false"]:
+            queryset = queryset.filter(is_active=is_active == "true")
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Global counts are returned once so the frontend does not need
+        # separate requests or all user records just to calculate them.
+        total_users = User.objects.count()
+        active_users = User.objects.filter(is_active=True).count()
+        inactive_users = User.objects.filter(is_active=False).count()
+
+        page = self.paginate_queryset(queryset)
+        serializer = self.get_serializer(page, many=True)
+
+        response = self.get_paginated_response(serializer.data)
+        response.data["total_users"] = total_users
+        response.data["active_users"] = active_users
+        response.data["inactive_users"] = inactive_users
+        return response

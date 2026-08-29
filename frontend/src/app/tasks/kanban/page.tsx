@@ -16,6 +16,7 @@ import {
   getKanbanTasks,
 } from "@/lib/tasksApi";
 import { ArrowLeft, SlidersHorizontal, Plus } from "lucide-react";
+import { usePermission } from "@/hooks/usePermissions";
 
 /* ── Kanban columns in display order ── */
 const KANBAN_COLUMNS: {
@@ -89,6 +90,10 @@ export default function KanbanPage() {
   const [toastMsg,       setToastMsg]       = useState<string | null>(null);
   const [loading,        setLoading]        = useState(true);
   const [error,          setError]          = useState<string | null>(null);
+
+  const canCreate = usePermission("tasks", "create");
+  const canEdit = usePermission("tasks", "edit");
+  const canDelete = usePermission("tasks", "delete");
 
   function mapApiTask(api: ApiTask): Task {
     const assigneeName =
@@ -230,13 +235,15 @@ export default function KanbanPage() {
               <SlidersHorizontal size={15} />
               Filters
             </button>
-            <button
-              className="btn-add"
-              onClick={() => router.push("/tasks/new")}
-            >
-              <Plus size={15} />
-              New Task
-            </button>
+            {canCreate && (
+              <button
+                className="btn-add"
+                onClick={() => router.push("/tasks/new")}
+              >
+                <Plus size={15} />
+                New Task
+              </button>
+            )}
           </div>
         </div>
 
@@ -365,6 +372,8 @@ export default function KanbanPage() {
                       <KanbanCard
                         key={task.id}
                         task={task}
+                        canEdit={canEdit}
+                        canDelete={canDelete}
                         onEdit={() => router.push(`/tasks/${task.id}/edit`)}
                         onDelete={() => {
                           showToast(`"${task.title}" removed.`);
@@ -375,14 +384,16 @@ export default function KanbanPage() {
                 </div>
 
                 {/* Add Task footer */}
-                <button
-                  className="tasks-kanban-add-btn"
-                  style={{ color: col.addBtnColor, borderColor: col.addBtnColor + "33" }}
-                  onClick={() => router.push(`/tasks/new?status=${encodeURIComponent(col.status)}`)}
-                >
-                  <Plus size={14} />
-                  Add Task
-                </button>
+                {canCreate && (
+                  <button
+                    className="tasks-kanban-add-btn"
+                    style={{ color: col.addBtnColor, borderColor: col.addBtnColor + "33" }}
+                    onClick={() => router.push(`/tasks/new?status=${encodeURIComponent(col.status)}`)}
+                  >
+                    <Plus size={14} />
+                    Add Task
+                  </button>
+                )}
               </div>
             );
           })}
@@ -414,10 +425,14 @@ export default function KanbanPage() {
 
 function KanbanCard({
   task,
+  canEdit,
+  canDelete,
   onEdit,
   onDelete,
 }: {
   task: Task;
+  canEdit: boolean;
+  canDelete: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -431,29 +446,33 @@ function KanbanCard({
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
         <p className="tasks-kanban-card-title">{task.title}</p>
         <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-          <button
-            className="tasks-kanban-card-action"
-            onClick={onEdit}
-            title="Edit task"
-            aria-label="Edit task"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-          </button>
-          <button
-            className="tasks-kanban-card-action tasks-kanban-card-action-delete"
-            onClick={onDelete}
-            title="Delete task"
-            aria-label="Delete task"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-              <path d="M10 11v6" /><path d="M14 11v6" />
-            </svg>
-          </button>
+          {canEdit && (
+            <button
+              className="tasks-kanban-card-action"
+              onClick={onEdit}
+              title="Edit task"
+              aria-label="Edit task"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-6 4 1-4 9.5-9.5z" />
+              </svg>
+            </button>
+          )}
+          {canDelete && (
+            <button
+              className="tasks-kanban-card-action tasks-kanban-card-action-delete"
+              onClick={onDelete}
+              title="Delete task"
+              aria-label="Delete task"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6" /><path d="M14 11v6" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 

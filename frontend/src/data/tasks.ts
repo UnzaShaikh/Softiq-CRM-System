@@ -1,7 +1,23 @@
-// ─── Task Data Types & Mock Data ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Tasks data types
+// Backend source of truth:
+// Task model supports:
+// status: todo | in_progress | completed | on_hold | cancelled
+// priority: low | medium | high
+// ─────────────────────────────────────────────────────────────
 
-export type TaskStatus = "To Do" | "In Progress" | "Completed" | "On Hold" | "Cancelled";
-export type TaskPriority = "Low" | "Medium" | "High" | "Urgent";
+export type TaskStatus =
+  | "To Do"
+  | "In Progress"
+  | "Completed"
+  | "On Hold"
+  | "Cancelled";
+
+export type TaskPriority =
+  | "Low"
+  | "Medium"
+  | "High";
+
 export type RelatedModule =
   | "Customers"
   | "Contacts"
@@ -12,52 +28,129 @@ export type RelatedModule =
   | "Activities"
   | "";
 
-// ─── API shape (matches backend) ─────────────────────────────────────────────
+export type ApiTaskStatus =
+  | "todo"
+  | "in_progress"
+  | "completed"
+  | "on_hold"
+  | "cancelled";
+
+export type ApiTaskPriority =
+  | "low"
+  | "medium"
+  | "high";
+
+// ─────────────────────────────────────────────────────────────
+// API types
+// ─────────────────────────────────────────────────────────────
+
+export interface ApiTaskUser {
+  id: number;
+  username: string;
+  email: string;
+  full_name: string;
+}
+
+export interface ApiTaskRelatedObject {
+  id: number;
+  str: string;
+  model: string | null;
+}
+
+export interface ApiTaskTag {
+  id: number;
+  name: string;
+}
+
+export interface ApiChecklistItem {
+  id: number;
+  task: number;
+  text: string;
+  is_completed: boolean;
+  created_at: string;
+}
+
+export interface ApiTaskAttachment {
+  id: number;
+  task: number;
+  file: string;
+  uploaded_at: string;
+  uploaded_by: number | null;
+  uploaded_by_name: string | null;
+}
 
 export interface ApiTask {
   id: number;
   title: string;
-  description: string;
-  assignee: string;
-  assignee_initials: string;
-  priority: "low" | "medium" | "high" | "urgent";
-  status: "todo" | "in_progress" | "completed" | "on_hold" | "cancelled";
-  due_date: string;          // ISO date  "2026-05-20"
-  reminder?: string | null;
-  related_module?: string;
-  related_record?: string;
-  estimated_time?: string;
-  tags?: string[];
-  is_recurring?: boolean;
-  has_checklist?: boolean;
-  created_at: string;        // ISO datetime
+  description: string | null;
+
+  assignee: number | null;
+  assignee_details: ApiTaskUser | null;
+
+  priority: ApiTaskPriority;
+  status: ApiTaskStatus;
+
+  due_date: string | null;
+  created_at: string;
   updated_at: string;
+  is_overdue: boolean;
+
+  reminder: string | null;
+
+  related_content_type: number | null;
+  related_object_id: number | null;
+  related_object_details: ApiTaskRelatedObject | null;
+
+  tags: ApiTaskTag[];
+  checklist_items: ApiChecklistItem[];
+  attachments: ApiTaskAttachment[];
+
+  estimated_time: number | null;
+  time_tracked: number;
+  tracking_enabled: boolean;
+
+  repeat_config: Record<string, unknown> | null;
+
+  created_by: number | null;
+  updated_by: number | null;
 }
 
-// ─── Front-end shape ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Frontend type
+// ─────────────────────────────────────────────────────────────
 
 export interface Task {
   id: string;
   title: string;
   description: string;
+
   assignee: string;
+  assigneeId: number | null;
   assigneeInitials: string;
+
   priority: TaskPriority;
   status: TaskStatus;
-  dueDate: string;           // "YYYY-MM-DD"
+
+  dueDate: string;
   reminder?: string;
+
   relatedModule?: RelatedModule;
   relatedRecord?: string;
+
   estimatedTime?: string;
-  tags?: string[];
-  isRecurring?: boolean;
-  hasChecklist?: boolean;
-  createdDate: string;       // "YYYY-MM-DD"
+  tags: string[];
+
+  isRecurring: boolean;
+  hasChecklist: boolean;
+
+  createdDate: string;
 }
 
-// ─── Status mappings ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// API mappings
+// ─────────────────────────────────────────────────────────────
 
-export const STATUS_FROM_API: Record<ApiTask["status"], TaskStatus> = {
+export const STATUS_FROM_API: Record<ApiTaskStatus, TaskStatus> = {
   todo: "To Do",
   in_progress: "In Progress",
   completed: "Completed",
@@ -65,54 +158,127 @@ export const STATUS_FROM_API: Record<ApiTask["status"], TaskStatus> = {
   cancelled: "Cancelled",
 };
 
-export const STATUS_TO_API: Record<TaskStatus, ApiTask["status"]> = {
+export const STATUS_TO_API: Record<TaskStatus, ApiTaskStatus> = {
   "To Do": "todo",
   "In Progress": "in_progress",
-  "Completed": "completed",
+  Completed: "completed",
   "On Hold": "on_hold",
-  "Cancelled": "cancelled",
+  Cancelled: "cancelled",
 };
 
-// ─── Priority mappings ───────────────────────────────────────────────────────
-
-export const PRIORITY_FROM_API: Record<ApiTask["priority"], TaskPriority> = {
+export const PRIORITY_FROM_API: Record<
+  ApiTaskPriority,
+  TaskPriority
+> = {
   low: "Low",
   medium: "Medium",
   high: "High",
-  urgent: "Urgent",
 };
 
-export const PRIORITY_TO_API: Record<TaskPriority, ApiTask["priority"]> = {
+export const PRIORITY_TO_API: Record<
+  TaskPriority,
+  ApiTaskPriority
+> = {
   Low: "low",
   Medium: "medium",
   High: "high",
-  Urgent: "urgent",
 };
 
-// ─── Mapper ──────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Mapper
+// ─────────────────────────────────────────────────────────────
+
+function getAssigneeName(api: ApiTask): string {
+  return (
+    api.assignee_details?.full_name ||
+    api.assignee_details?.username ||
+    "Unassigned"
+  );
+}
+
+function getInitials(name: string): string {
+  if (!name || name === "Unassigned") return "U";
+
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((part) => part.charAt(0))
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function getRelatedModule(api: ApiTask): RelatedModule {
+  const model =
+    api.related_object_details?.model?.toLowerCase() || "";
+
+  if (model.includes("customer")) return "Customers";
+  if (model.includes("contact")) return "Contacts";
+  if (model.includes("lead")) return "Leads";
+  if (model.includes("deal")) return "Deals";
+  if (model.includes("opportunit")) return "Opportunities";
+  if (model.includes("compan")) return "Companies";
+  if (model.includes("activit")) return "Activities";
+
+  return "";
+}
 
 export function toTask(api: ApiTask): Task {
+  const assigneeName = getAssigneeName(api);
+
   return {
     id: String(api.id),
-    title: api.title,
-    description: api.description,
-    assignee: api.assignee,
-    assigneeInitials: api.assignee_initials || api.assignee.substring(0, 2).toUpperCase(),
-    priority: PRIORITY_FROM_API[api.priority],
-    status: STATUS_FROM_API[api.status],
-    dueDate: api.due_date?.slice(0, 10) ?? "",
-    reminder: api.reminder ?? undefined,
-    relatedModule: (api.related_module as RelatedModule) ?? "",
-    relatedRecord: api.related_record ?? undefined,
-    estimatedTime: api.estimated_time ?? undefined,
-    tags: api.tags ?? [],
-    isRecurring: api.is_recurring ?? false,
-    hasChecklist: api.has_checklist ?? false,
-    createdDate: api.created_at?.slice(0, 10) ?? "",
+
+    title: api.title || "",
+
+    description: api.description || "",
+
+    assignee: assigneeName,
+
+    assigneeId: api.assignee,
+
+    assigneeInitials: getInitials(assigneeName),
+
+    priority:
+      PRIORITY_FROM_API[api.priority] || "Medium",
+
+    status:
+      STATUS_FROM_API[api.status] || "To Do",
+
+    dueDate:
+      api.due_date?.slice(0, 10) || "",
+
+    reminder:
+      api.reminder || undefined,
+
+    relatedModule:
+      getRelatedModule(api),
+
+    relatedRecord:
+      api.related_object_details?.str || undefined,
+
+    estimatedTime:
+      api.estimated_time !== null
+        ? String(api.estimated_time)
+        : undefined,
+
+    tags:
+      api.tags?.map((tag) => tag.name) || [],
+
+    isRecurring:
+      Boolean(api.repeat_config),
+
+    hasChecklist:
+      Boolean(api.checklist_items?.length),
+
+    createdDate:
+      api.created_at?.slice(0, 10) || "",
   };
 }
 
-// ─── API list wrapper ────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// API list
+// ─────────────────────────────────────────────────────────────
 
 export interface ApiTaskList {
   count: number;
@@ -121,20 +287,30 @@ export interface ApiTaskList {
   results: ApiTask[];
 }
 
-// ─── Form values (for New/Edit form) ─────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Form
+// ─────────────────────────────────────────────────────────────
 
 export interface TaskFormValues {
   title: string;
   description: string;
+
   assignee: string;
+  assigneeId: number | null;
+
   priority: TaskPriority;
   status: TaskStatus;
+
   dueDate: string;
   reminder: string;
+
   relatedModule: RelatedModule;
-  relatedRecord: string;
+  relatedRecordId: string;
+
   estimatedTime: string;
+
   tags: string[];
+
   isRecurring: boolean;
   hasChecklist: boolean;
   trackTime: boolean;
@@ -143,217 +319,87 @@ export interface TaskFormValues {
 export const DEFAULT_TASK_FORM: TaskFormValues = {
   title: "",
   description: "",
+
   assignee: "",
+  assigneeId: null,
+
   priority: "High",
   status: "To Do",
+
   dueDate: "",
   reminder: "",
+
   relatedModule: "",
-  relatedRecord: "",
+  relatedRecordId: "",
+
   estimatedTime: "",
+
   tags: [],
+
   isRecurring: false,
   hasChecklist: false,
   trackTime: false,
 };
 
-// ─── Mock data (used when API not available) ──────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────
 
-export const MOCK_ASSIGNEES = [
-  { name: "Test User",  initials: "TU" },
-  { name: "Sara Khan",  initials: "SK" },
-  { name: "Abdullah",   initials: "AB" },
-  { name: "Junaid",     initials: "JN" },
-  { name: "Unza",       initials: "UN" },
-  { name: "Enzela",     initials: "EN" },
-];
+export function getDaysRemaining(
+  dueDate: string
+): {
+  days: number;
+  label: string;
+  isOverdue: boolean;
+  isToday: boolean;
+} {
+  if (!dueDate) {
+    return {
+      days: 0,
+      label: "No due date",
+      isOverdue: false,
+      isToday: false,
+    };
+  }
 
-export const MOCK_TASKS: Task[] = [
-  {
-    id: "T001",
-    title: "Follow up with Acme Corp",
-    description: "Contact Acme Corp regarding new proposal and schedule a demo.",
-    assignee: "Test User",
-    assigneeInitials: "TU",
-    priority: "High",
-    status: "To Do",
-    dueDate: "2026-05-20",
-    createdDate: "2026-05-15",
-    tags: ["follow-up", "sales"],
-  },
-  {
-    id: "T002",
-    title: "Prepare Q2 Sales Report",
-    description: "Compile and prepare the Q2 sales performance report.",
-    assignee: "Sara Khan",
-    assigneeInitials: "SK",
-    priority: "Medium",
-    status: "In Progress",
-    dueDate: "2026-05-22",
-    createdDate: "2026-05-14",
-    tags: ["report"],
-  },
-  {
-    id: "T003",
-    title: "Client Onboarding - Beta Ltd.",
-    description: "Complete onboarding process for Beta Ltd. and provide access.",
-    assignee: "Abdullah",
-    assigneeInitials: "AB",
-    priority: "High",
-    status: "In Progress",
-    dueDate: "2026-05-18",
-    createdDate: "2026-05-12",
-    tags: ["onboarding"],
-  },
-  {
-    id: "T004",
-    title: "Update Product Documentation",
-    description: "Update documentation for the new CRM features.",
-    assignee: "Junaid",
-    assigneeInitials: "JN",
-    priority: "Low",
-    status: "To Do",
-    dueDate: "2026-05-25",
-    createdDate: "2026-05-10",
-    tags: ["docs"],
-  },
-  {
-    id: "T005",
-    title: "Fix Report Export Issue",
-    description: "Resolve the issue with exporting reports in PDF format.",
-    assignee: "Enzela",
-    assigneeInitials: "EN",
-    priority: "High",
-    status: "Completed",
-    dueDate: "2026-05-12",
-    createdDate: "2026-05-08",
-    tags: ["bug", "reports"],
-  },
-  {
-    id: "T006",
-    title: "Integrate Email Template API",
-    description: "Integrate the new email template API with CRM.",
-    assignee: "Unza",
-    assigneeInitials: "UN",
-    priority: "Medium",
-    status: "Completed",
-    dueDate: "2026-05-09",
-    createdDate: "2026-05-07",
-    tags: ["integration"],
-  },
-  {
-    id: "T007",
-    title: "Design New Landing Page",
-    description: "Create a new landing page design for the upcoming product launch.",
-    assignee: "Sara Khan",
-    assigneeInitials: "SK",
-    priority: "Medium",
-    status: "To Do",
-    dueDate: "2026-05-27",
-    createdDate: "2026-05-13",
-    tags: ["design"],
-  },
-  {
-    id: "T008",
-    title: "API Security Testing",
-    description: "Perform comprehensive security testing on all API endpoints.",
-    assignee: "Enzela",
-    assigneeInitials: "EN",
-    priority: "Low",
-    status: "In Progress",
-    dueDate: "2026-05-21",
-    createdDate: "2026-05-11",
-    tags: ["security", "testing"],
-  },
-  {
-    id: "T009",
-    title: "Review Customer Feedback",
-    description: "Analyze and categorize customer feedback for Q2.",
-    assignee: "Abdullah",
-    assigneeInitials: "AB",
-    priority: "Medium",
-    status: "To Do",
-    dueDate: "2026-05-28",
-    createdDate: "2026-05-14",
-    tags: ["feedback"],
-  },
-  {
-    id: "T010",
-    title: "Setup Google Analytics",
-    description: "Configure and set up Google Analytics for the CRM platform.",
-    assignee: "Junaid",
-    assigneeInitials: "JN",
-    priority: "Low",
-    status: "Completed",
-    dueDate: "2026-05-11",
-    createdDate: "2026-05-06",
-    tags: ["analytics"],
-  },
-  {
-    id: "T011",
-    title: "Create Email Templates",
-    description: "Design and create email templates for onboarding campaigns.",
-    assignee: "Unza",
-    assigneeInitials: "UN",
-    priority: "Medium",
-    status: "Completed",
-    dueDate: "2026-05-07",
-    createdDate: "2026-05-03",
-    tags: ["email", "templates"],
-  },
-  {
-    id: "T012",
-    title: "Database Backup Setup",
-    description: "Configure automated daily database backups.",
-    assignee: "Test User",
-    assigneeInitials: "TU",
-    priority: "Low",
-    status: "Completed",
-    dueDate: "2026-05-06",
-    createdDate: "2026-05-01",
-    tags: ["infrastructure"],
-  },
-  {
-    id: "T013",
-    title: "Third-party Integration",
-    description: "Integrate third-party payment gateway into the CRM system.",
-    assignee: "Abdullah",
-    assigneeInitials: "AB",
-    priority: "Medium",
-    status: "On Hold",
-    dueDate: "2026-05-30",
-    createdDate: "2026-05-12",
-    tags: ["integration"],
-  },
-  {
-    id: "T014",
-    title: "Mobile App UI Review",
-    description: "Conduct a thorough UI/UX review of the mobile application.",
-    assignee: "Sara Khan",
-    assigneeInitials: "SK",
-    priority: "Medium",
-    status: "On Hold",
-    dueDate: "2026-05-29",
-    createdDate: "2026-05-10",
-    tags: ["mobile", "ui"],
-  },
-];
-
-// ─── Helper: days remaining ───────────────────────────────────────────────────
-
-export function getDaysRemaining(dueDate: string): { days: number; label: string; isOverdue: boolean; isToday: boolean } {
-  const due = new Date(dueDate);
+  const due = new Date(`${dueDate}T00:00:00`);
   const today = new Date();
+
   today.setHours(0, 0, 0, 0);
   due.setHours(0, 0, 0, 0);
-  const diff = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-  if (diff === 0) return { days: 0, label: "Today", isOverdue: false, isToday: true };
-  if (diff < 0) return { days: Math.abs(diff), label: `${Math.abs(diff)} day${Math.abs(diff) !== 1 ? "s" : ""} overdue`, isOverdue: true, isToday: false };
-  return { days: diff, label: `${diff} day${diff !== 1 ? "s" : ""} left`, isOverdue: false, isToday: false };
+  const diff = Math.round(
+    (due.getTime() - today.getTime()) /
+      (1000 * 60 * 60 * 24)
+  );
+
+  if (diff === 0) {
+    return {
+      days: 0,
+      label: "Today",
+      isOverdue: false,
+      isToday: true,
+    };
+  }
+
+  if (diff < 0) {
+    const days = Math.abs(diff);
+
+    return {
+      days,
+      label: `${days} day${days !== 1 ? "s" : ""} overdue`,
+      isOverdue: true,
+      isToday: false,
+    };
+  }
+
+  return {
+    days: diff,
+    label: `${diff} day${diff !== 1 ? "s" : ""} left`,
+    isOverdue: false,
+    isToday: false,
+  };
 }
-
-// ─── Avatar color palette ─────────────────────────────────────────────────────
 
 export const AVATAR_COLORS: [string, string][] = [
   ["#4f46e5", "#7c3aed"],
@@ -365,7 +411,15 @@ export const AVATAR_COLORS: [string, string][] = [
   ["#0d9488", "#0f766e"],
 ];
 
-export function getAvatarColor(name: string): [string, string] {
-  const idx = ((name.charCodeAt(0) || 0) + (name.charCodeAt(1) || 0)) % AVATAR_COLORS.length;
+export function getAvatarColor(
+  name: string
+): [string, string] {
+  if (!name) return AVATAR_COLORS[0];
+
+  const idx =
+    ((name.charCodeAt(0) || 0) +
+      (name.charCodeAt(1) || 0)) %
+    AVATAR_COLORS.length;
+
   return AVATAR_COLORS[idx];
 }

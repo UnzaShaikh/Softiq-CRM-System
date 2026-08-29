@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Task, getAvatarColor, getDaysRemaining } from "@/data/tasks";
+import { usePermission } from "@/hooks/usePermissions";
 import TaskStatusBadge from "./TaskStatusBadge";
 import TaskPriorityBadge from "./TaskPriorityBadge";
 
@@ -15,7 +16,11 @@ interface TaskTableProps {
 type SortKey = "title" | "assignee" | "priority" | "status" | "dueDate" | "createdDate";
 type SortDir = "asc" | "desc";
 
-const PRIORITY_ORDER: Record<string, number> = { Urgent: 4, High: 3, Medium: 2, Low: 1 };
+const PRIORITY_ORDER: Record<string, number> = {
+  High: 3,
+  Medium: 2,
+  Low: 1,
+};
 const STATUS_ORDER: Record<string, number> = {
   "In Progress": 5, "To Do": 4, "On Hold": 3, Completed: 2, Cancelled: 1,
 };
@@ -53,6 +58,8 @@ function SortIcon({
 }
 
 export default function TaskTable({ tasks, onView, onEdit, onDelete }: TaskTableProps) {
+  const canEdit = usePermission("tasks", "edit");
+  const canDelete = usePermission("tasks", "delete");
   const [sortKey, setSortKey] = useState<SortKey>("createdDate");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -386,9 +393,8 @@ export default function TaskTable({ tasks, onView, onEdit, onDelete }: TaskTable
                       justifyContent: "flex-end",
                     }}
                   >
-                    {[
-                      {
-                        title: "View",
+                    {[{
+                      title: "View",
                         color: "#4f46e5",
                         hoverBg: "#eef2ff",
                         hoverBorder: "#a5b4fc",
@@ -400,7 +406,7 @@ export default function TaskTable({ tasks, onView, onEdit, onDelete }: TaskTable
                           </svg>
                         ),
                       },
-                      {
+                      ...(canEdit ? [{
                         title: "Edit",
                         color: "#0891b2",
                         hoverBg: "#ecfeff",
@@ -412,8 +418,8 @@ export default function TaskTable({ tasks, onView, onEdit, onDelete }: TaskTable
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                           </svg>
                         ),
-                      },
-                      {
+                      }] : []),
+                      ...(canDelete ? [{
                         title: "Delete",
                         color: "#ef4444",
                         hoverBg: "#fef2f2",
@@ -427,7 +433,7 @@ export default function TaskTable({ tasks, onView, onEdit, onDelete }: TaskTable
                             <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
                           </svg>
                         ),
-                      },
+                      }] : []),
                     ].map((btn) => (
                       <button
                         key={btn.title}

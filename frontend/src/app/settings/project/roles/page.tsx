@@ -11,6 +11,7 @@ import {
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ThemeLoader from "@/components/ui/ThemeLoader";
 import SettingsNav from "@/components/project-settings/SettingsNav";
+import { getCachedRoles, setCachedRoles } from "@/data/rolesCache";
 import Link from "next/link";
 import {
   HiShieldCheck, HiUserGroup, HiEye, HiSave, HiX, HiDotsVertical, HiPlus,
@@ -145,26 +146,46 @@ export default function RolesPermissionsPage() {
   // Role context menu
   const [openMenuRoleId, setOpenMenuRoleId] = useState<string | null>(null);
 
-  const fetchRoles = useCallback(async () => {
-    setLoading(true);
+  const applyRoles = useCallback((data: ApiRole[], preserveSelection = true) => {
+    const mapped = data.map(mapApiRole);
+    setRoles(mapped);
+    setPermissions(
+      Object.fromEntries(mapped.map(r => [r.id, JSON.parse(JSON.stringify(r.permissions))]))
+    );
+    setSelectedRoleId(prev =>
+      preserveSelection && prev && mapped.some(r => r.id === prev)
+        ? prev
+        : mapped[0]?.id ?? ""
+    );
+  }, []);
+
+  const fetchRoles = useCallback(async (background = false) => {
+    if (!background) setLoading(true);
     setLoadError("");
     try {
       const data = await listRoles();
-      const mapped = data.map(mapApiRole);
-      setRoles(mapped);
-      setPermissions(
-        Object.fromEntries(mapped.map(r => [r.id, JSON.parse(JSON.stringify(r.permissions))]))
-      );
-      setSelectedRoleId(prev => (prev && mapped.some(r => r.id === prev) ? prev : mapped[0]?.id ?? ""));
+      setCachedRoles(data);
+      applyRoles(data, true);
       setDirtyRoleIds(new Set());
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load roles.");
+      if (!background) {
+        setLoadError(err instanceof Error ? err.message : "Failed to load roles.");
+      }
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
-  }, []);
+  }, [applyRoles]);
 
-  useEffect(() => { fetchRoles(); }, [fetchRoles]);
+  useEffect(() => {
+    const cached = getCachedRoles();
+    if (cached?.length) {
+      applyRoles(cached, false);
+      setLoading(false);
+      void fetchRoles(true);
+      return;
+    }
+    void fetchRoles(false);
+  }, [applyRoles, fetchRoles]);
 
   // Add Role Modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -201,7 +222,9 @@ export default function RolesPermissionsPage() {
       setHasChanges(false);
       setDirtyRoleIds(new Set());
       setSaveSuccess("Roles & Permissions saved successfully.");
-      await fetchRoles();
+      const refreshed = await listRoles();
+      setCachedRoles(refreshed);
+      applyRoles(refreshed, true);
       setTimeout(() => setSaveSuccess(""), 4000);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Failed to save roles.");
@@ -227,6 +250,8 @@ export default function RolesPermissionsPage() {
       });
       const mapped = mapApiRole(created);
       setRoles(prev => [...prev, mapped]);
+      const cachedAfterCreate = getCachedRoles();
+      if (cachedAfterCreate) setCachedRoles([...cachedAfterCreate, created]);
       setPermissions(prev => ({
         ...prev,
         [mapped.id]: JSON.parse(JSON.stringify(mapped.permissions)),
@@ -251,6 +276,8 @@ export default function RolesPermissionsPage() {
     try {
       await deleteRole(Number(deletingRole.id));
       setRoles(prev => prev.filter(r => r.id !== deletingRole.id));
+      const cachedAfterDelete = getCachedRoles()?.filter(r => String(r.id) !== deletingRole.id);
+      if (cachedAfterDelete) setCachedRoles(cachedAfterDelete);
       if (selectedRoleId === deletingRole.id) {
         const remaining = roles.filter(r => r.id !== deletingRole.id);
         setSelectedRoleId(remaining[0]?.id ?? "");
@@ -291,6 +318,8 @@ export default function RolesPermissionsPage() {
       });
       const mapped = mapApiRole(updated);
       setRoles(prev => prev.map(r => r.id === editingRole.id ? mapped : r));
+      const cachedAfterEdit = getCachedRoles();
+      if (cachedAfterEdit) setCachedRoles(cachedAfterEdit.map(r => r.id === Number(editingRole.id) ? updated : r));
       setPermissions(prev => ({
         ...prev,
         [mapped.id]: JSON.parse(JSON.stringify(mapped.permissions)),
@@ -347,7 +376,7 @@ export default function RolesPermissionsPage() {
         {loadError && (
           <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", fontSize: "0.8125rem", color: "#b91c1c" }}>
             ❌ {loadError}{" "}
-            <button onClick={fetchRoles} style={{ background: "none", border: "none", color: "#4f46e5", cursor: "pointer", fontWeight: 600, textDecoration: "underline", fontFamily: "inherit", fontSize: "0.8125rem" }}>
+            <button onClick={() => fetchRoles()} style={{ background: "none", border: "none", color: "#4f46e5", cursor: "pointer", fontWeight: 600, textDecoration: "underline", fontFamily: "inherit", fontSize: "0.8125rem" }}>
               Retry
             </button>
           </div>
@@ -392,10 +421,10 @@ export default function RolesPermissionsPage() {
             </div>
 
             {/* ── ROLES TAB ── */}
-            {activeTab === "roles" && (loading || !selectedRole || !selectedPerms) && (
+            {activeTab === "roles" && loading && roles.length === 0 && (
               <ThemeLoader label="Loading roles..." minHeight={260} />
             )}
-            {activeTab === "roles" && !loading && selectedRole && selectedPerms && (
+            {activeTab === "roles" && selectedRole && selectedPerms && (
               <div style={{ display: "grid", gridTemplateColumns: "185px minmax(0,1fr)", gap: "0" }}>
 
                 {/* Roles List column */}

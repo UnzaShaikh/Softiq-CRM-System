@@ -1,9 +1,14 @@
 import { apiRequest } from "@/lib/api";
-import type { EmailTemplate, TemplateCategory, TemplateType, TemplateStatus } from "@/data/emailTemplates";
+import type {
+  EmailTemplate,
+  TemplateCategory,
+  TemplateType,
+  TemplateStatus,
+} from "@/data/emailTemplates";
 
-// ─────────────────────────────────────────────
-// Backend types
-// ─────────────────────────────────────────────
+// ============================================================
+// Backend Types
+// ============================================================
 
 export type ApiTemplateCategory =
   | "onboarding"
@@ -15,7 +20,12 @@ export type ApiTemplateCategory =
   | "support";
 
 export type ApiTemplateType = "public" | "private";
+
 export type ApiTemplateStatus = "active" | "inactive";
+
+// ============================================================
+// API Response Types
+// ============================================================
 
 export interface ApiEmailTemplateListItem {
   id: number;
@@ -51,11 +61,17 @@ export interface CreateEmailTemplatePayload {
   variables_used?: string[];
 }
 
-export type UpdateEmailTemplatePayload = Partial<CreateEmailTemplatePayload>;
+export type UpdateEmailTemplatePayload =
+  Partial<CreateEmailTemplatePayload>;
 
 export interface TemplateActivityItem {
   id: number;
-  action: "created" | "updated" | "duplicated" | "status_changed" | "deleted";
+  action:
+    | "created"
+    | "updated"
+    | "duplicated"
+    | "status_changed"
+    | "deleted";
   action_display: string;
   user: number | null;
   user_name: string | null;
@@ -69,18 +85,25 @@ export interface TemplatePreview {
   variables_used: string[];
 }
 
-interface Paginated<T> {
+// ============================================================
+// Pagination
+// ============================================================
+
+export interface PaginatedResponse<T> {
   count: number;
   next: string | null;
   previous: string | null;
   results: T[];
 }
 
-// ─────────────────────────────────────────────
-// Label maps (API value <-> UI label)
-// ─────────────────────────────────────────────
+// ============================================================
+// Label Maps
+// ============================================================
 
-export const CATEGORY_LABELS: Record<ApiTemplateCategory, string> = {
+export const CATEGORY_LABELS: Record<
+  ApiTemplateCategory,
+  TemplateCategory
+> = {
   onboarding: "Onboarding",
   follow_up: "Follow-up",
   proposal: "Proposal",
@@ -90,7 +113,10 @@ export const CATEGORY_LABELS: Record<ApiTemplateCategory, string> = {
   support: "Support",
 };
 
-export const CATEGORY_VALUES: Record<string, ApiTemplateCategory> = {
+export const CATEGORY_VALUES: Record<
+  string,
+  ApiTemplateCategory
+> = {
   Onboarding: "onboarding",
   "Follow-up": "follow_up",
   Proposal: "proposal",
@@ -100,25 +126,41 @@ export const CATEGORY_VALUES: Record<string, ApiTemplateCategory> = {
   Support: "support",
 };
 
-export const TYPE_LABELS: Record<ApiTemplateType, string> = {
+export const TYPE_LABELS: Record<
+  ApiTemplateType,
+  TemplateType
+> = {
   public: "Public",
   private: "Private",
 };
 
-export const TYPE_VALUES: Record<string, ApiTemplateType> = {
+export const TYPE_VALUES: Record<
+  string,
+  ApiTemplateType
+> = {
   Public: "public",
   Private: "private",
 };
 
-export const STATUS_LABELS: Record<ApiTemplateStatus, string> = {
+export const STATUS_LABELS: Record<
+  ApiTemplateStatus,
+  TemplateStatus
+> = {
   active: "Active",
   inactive: "Inactive",
 };
 
-export const STATUS_VALUES: Record<string, ApiTemplateStatus> = {
+export const STATUS_VALUES: Record<
+  string,
+  ApiTemplateStatus
+> = {
   Active: "active",
   Inactive: "inactive",
 };
+
+// ============================================================
+// Language
+// ============================================================
 
 const LANGUAGE_LABELS: Record<string, string> = {
   en: "English",
@@ -128,112 +170,231 @@ export function languageLabel(value: string): string {
   return LANGUAGE_LABELS[value] ?? value ?? "";
 }
 
-/** ["first_name", ...] -> ["{{first_name}}", ...] */
-export function variablesToPlaceholders(vars: string[]): string[] {
-  return vars.map(v => `{{${v}}}`);
+// ============================================================
+// Variables
+// ============================================================
+
+export function variablesToPlaceholders(
+  variables: string[]
+): string[] {
+  return variables.map(
+    (variable) => `{{${variable}}}`
+  );
 }
 
-/** Maps an API detail payload onto the UI EmailTemplate shape. */
-export function mapEmailTemplateDetail(t: ApiEmailTemplate): EmailTemplate {
+// ============================================================
+// API -> UI Mapping
+// ============================================================
+
+export function mapEmailTemplateDetail(
+  template: ApiEmailTemplate
+): EmailTemplate {
   return {
-    id: String(t.id),
-    name: t.name,
-    subject: t.subject,
-    content: t.content ?? "",
-    category: CATEGORY_LABELS[t.category] as TemplateCategory,
-    type: TYPE_LABELS[t.template_type] as TemplateType,
-    status: STATUS_LABELS[t.status] as TemplateStatus,
-    description: t.description || "",
-    createdBy: t.created_by_name || "—",
-    createdAt: t.created_at,
-    updatedAt: t.updated_at,
-    variables: variablesToPlaceholders(t.variables_used ?? []),
-    language: languageLabel(t.language),
+    id: String(template.id),
+    name: template.name,
+    subject: template.subject,
+    content: template.content ?? "",
+    category: CATEGORY_LABELS[template.category],
+    type: TYPE_LABELS[template.template_type],
+    status: STATUS_LABELS[template.status],
+    description: template.description || "",
+    createdBy:
+      template.created_by_name || "—",
+    createdAt: template.created_at,
+    updatedAt: template.updated_at,
+    variables: variablesToPlaceholders(
+      template.variables_used ?? []
+    ),
+    language: languageLabel(template.language),
   };
 }
 
-// ─────────────────────────────────────────────
-// Endpoints
-// ─────────────────────────────────────────────
+// ============================================================
+// Pagination Helper
+// ============================================================
+
+function getNextPageUrl(
+  next: string | null
+): string | null {
+  if (!next) {
+    return null;
+  }
+
+  return next.replace(
+    /^https?:\/\/[^/]+/,
+    ""
+  );
+}
+
+// ============================================================
+// List All Templates
+// ============================================================
 
 async function listAll(
   params: Record<string, string> = {}
 ): Promise<ApiEmailTemplateListItem[]> {
-  const query = new URLSearchParams({ page_size: "100", ...params });
-  let url: string | null = `/api/email-templates/?${query.toString()}`;
-  let results: ApiEmailTemplateListItem[] = [];
+  const query = new URLSearchParams({
+    page_size: "100",
+    ...params,
+  });
+
+  let url: string | null =
+    `/api/email-templates/?${query.toString()}`;
+
+  const results: ApiEmailTemplateListItem[] = [];
 
   while (url) {
-    const page: Paginated<ApiEmailTemplateListItem> = await apiRequest<Paginated<ApiEmailTemplateListItem>>(url);
-    results = [...results, ...page.results];
-    url = page.next ? page.next.replace(/^https?:\/\/[^/]+/, "") : null;
+    const response = await apiRequest<
+      | PaginatedResponse<ApiEmailTemplateListItem>
+      | ApiEmailTemplateListItem[]
+    >(url);
+
+    if (Array.isArray(response)) {
+      results.push(...response);
+      break;
+    }
+
+    if (Array.isArray(response.results)) {
+      results.push(...response.results);
+    }
+
+    url = getNextPageUrl(response.next);
   }
+
   return results;
 }
 
-/** All visible templates (public + own private). */
-export async function listEmailTemplates(): Promise<ApiEmailTemplateListItem[]> {
+// ============================================================
+// List
+// ============================================================
+
+export async function listEmailTemplates(): Promise<
+  ApiEmailTemplateListItem[]
+> {
   return listAll();
 }
 
-export async function getEmailTemplate(id: number | string): Promise<ApiEmailTemplate> {
-  return apiRequest<ApiEmailTemplate>(`/api/email-templates/${id}/`);
+// ============================================================
+// Get Single Template
+// ============================================================
+
+export async function getEmailTemplate(
+  id: number | string
+): Promise<ApiEmailTemplate> {
+  return apiRequest<ApiEmailTemplate>(
+    `/api/email-templates/${id}/`
+  );
 }
+
+// ============================================================
+// Create
+// ============================================================
 
 export async function createEmailTemplate(
   payload: CreateEmailTemplatePayload
 ): Promise<ApiEmailTemplate> {
-  return apiRequest<ApiEmailTemplate>("/api/email-templates/", {
-    method: "POST",
-    body: payload,
-  });
+  return apiRequest<ApiEmailTemplate>(
+    "/api/email-templates/",
+    {
+      method: "POST",
+      body: payload,
+    }
+  );
 }
+
+// ============================================================
+// Update
+// ============================================================
 
 export async function updateEmailTemplate(
   id: number | string,
   payload: UpdateEmailTemplatePayload
 ): Promise<ApiEmailTemplate> {
-  return apiRequest<ApiEmailTemplate>(`/api/email-templates/${id}/`, {
-    method: "PATCH",
-    body: payload,
-  });
+  return apiRequest<ApiEmailTemplate>(
+    `/api/email-templates/${id}/`,
+    {
+      method: "PATCH",
+      body: payload,
+    }
+  );
 }
 
-/** Soft-deletes the template (owner only). */
-export async function deleteEmailTemplate(id: number | string): Promise<void> {
-  return apiRequest<void>(`/api/email-templates/${id}/`, { method: "DELETE" });
+// ============================================================
+// Delete
+// ============================================================
+
+export async function deleteEmailTemplate(
+  id: number | string
+): Promise<void> {
+  await apiRequest<void>(
+    `/api/email-templates/${id}/`,
+    {
+      method: "DELETE",
+    }
+  );
 }
 
-/** Creates a copy named "<name> (Copy)" and returns it. */
-export async function duplicateEmailTemplate(id: number | string): Promise<ApiEmailTemplate> {
-  return apiRequest<ApiEmailTemplate>(`/api/email-templates/${id}/duplicate/`, {
-    method: "POST",
-  });
+// ============================================================
+// Duplicate
+// ============================================================
+
+export async function duplicateEmailTemplate(
+  id: number | string
+): Promise<ApiEmailTemplate> {
+  return apiRequest<ApiEmailTemplate>(
+    `/api/email-templates/${id}/duplicate/`,
+    {
+      method: "POST",
+    }
+  );
 }
+
+// ============================================================
+// Status
+// ============================================================
 
 export async function updateEmailTemplateStatus(
   id: number | string,
   status: ApiTemplateStatus
 ): Promise<ApiEmailTemplate> {
-  return apiRequest<ApiEmailTemplate>(`/api/email-templates/${id}/status/`, {
-    method: "PATCH",
-    body: { status },
-  });
+  return apiRequest<ApiEmailTemplate>(
+    `/api/email-templates/${id}/status/`,
+    {
+      method: "PATCH",
+      body: {
+        status,
+      },
+    }
+  );
 }
 
-/** Rendered preview with sample values substituted for the variables. */
+// ============================================================
+// Preview
+// ============================================================
+
 export async function previewEmailTemplate(
   id: number | string,
   sampleValues: Record<string, string> = {}
 ): Promise<TemplatePreview> {
-  return apiRequest<TemplatePreview>(`/api/email-templates/${id}/preview/`, {
-    method: "POST",
-    body: { sample_values: sampleValues },
-  });
+  return apiRequest<TemplatePreview>(
+    `/api/email-templates/${id}/preview/`,
+    {
+      method: "POST",
+      body: {
+        sample_values: sampleValues,
+      },
+    }
+  );
 }
+
+// ============================================================
+// Activity
+// ============================================================
 
 export async function getEmailTemplateActivity(
   id: number | string
 ): Promise<TemplateActivityItem[]> {
-  return apiRequest<TemplateActivityItem[]>(`/api/email-templates/${id}/activity/`);
+  return apiRequest<TemplateActivityItem[]>(
+    `/api/email-templates/${id}/activity/`
+  );
 }
