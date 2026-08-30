@@ -95,49 +95,72 @@ export default function KanbanPage() {
   const canEdit = usePermission("tasks", "edit");
   const canDelete = usePermission("tasks", "delete");
 
-  function mapApiTask(api: ApiTask): Task {
-    const assigneeName =
-      api.assignee_details?.full_name ||
-      api.assignee_details?.username ||
-      "Unassigned";
+function mapApiTask(api: ApiTask): Task {
+  const assigneeName =
+    api.assignee_details?.full_name ||
+    api.assignee_details?.username ||
+    "Unassigned";
 
-    return {
-      id: String(api.id),
-      title: api.title,
-      description: api.description || "",
-      assignee: assigneeName,
-      assigneeInitials:
-        assigneeName === "Unassigned"
-          ? "U"
-          : assigneeName
-              .split(/\\s+/)
-              .map((part) => part[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase(),
-      priority:
-        api.priority === "low"
-          ? "Low"
-          : api.priority === "high"
-            ? "High"
-            : "Medium",
-      status:
-        api.status === "todo"
-          ? "To Do"
-          : api.status === "in_progress"
-            ? "In Progress"
-            : api.status === "completed"
-              ? "Completed"
-              : api.status === "on_hold"
-                ? "On Hold"
-                : "Cancelled",
-      dueDate: api.due_date ? api.due_date.slice(0, 10) : "",
-      reminder: api.reminder || undefined,
-      tags: api.tags?.map((tag) => tag.name) || [],
-      createdDate: api.created_at ? api.created_at.slice(0, 10) : "",
-    };
-  }
+  return {
+    id: String(api.id),
 
+    title: api.title,
+
+    description:
+      api.description || "",
+
+    assignee: assigneeName,
+
+    assigneeInitials:
+      assigneeName === "Unassigned"
+        ? "U"
+        : assigneeName
+            .split(/\s+/)
+            .map((part) => part[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase(),
+
+    priority:
+      api.priority === "low"
+        ? "Low"
+        : api.priority === "high"
+          ? "High"
+          : "Medium",
+
+    status:
+      api.status === "todo"
+        ? "To Do"
+        : api.status === "in_progress"
+          ? "In Progress"
+          : api.status === "completed"
+            ? "Completed"
+            : api.status === "on_hold"
+              ? "On Hold"
+              : "Cancelled",
+
+    dueDate:
+      api.due_date
+        ? api.due_date.slice(0, 10)
+        : "",
+
+    reminder:
+      api.reminder || undefined,
+
+    tags:
+      api.tags?.map((tag) => tag.name) || [],
+
+    createdDate:
+      api.created_at
+        ? api.created_at.slice(0, 10)
+        : "",
+
+    // Required by Task interface
+assigneeId: 0,
+isRecurring: false,
+hasChecklist: false,
+  };
+}
   async function loadKanban() {
     try {
       setLoading(true);

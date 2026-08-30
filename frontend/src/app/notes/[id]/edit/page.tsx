@@ -78,14 +78,12 @@ function noteToForm(
       note.relatedTo || "",
   };
 }
-
 export default function EditNotePage() {
-  const router = useRouter();
-  const params = useParams();
-
   const { user } = useAuth();
   const userId = user?.id;
 
+  const router = useRouter();
+  const params = useParams();
   const id =
     params?.id as string;
 
@@ -245,8 +243,8 @@ export default function EditNotePage() {
         );
 
         /*
-         * Save the latest note
-         * using user-specific cache.
+         * Cache note using the
+         * authenticated user's ID.
          */
         setCachedNote(
           userId!,
@@ -255,28 +253,35 @@ export default function EditNotePage() {
 
         setNotFound(false);
         setApiError(null);
-        setLoading(false);
-      } catch (error) {
+      } catch (error: any) {
         if (cancelled) {
           return;
         }
 
         console.error(
-          "Failed to fetch note:",
+          "Failed to load note:",
           error
         );
 
         /*
          * If cached data exists,
-         * keep displaying it.
+         * keep showing it.
          */
         if (!cached) {
+          setNotFound(
+            error?.response?.status === 404 ||
+            error?.status === 404
+          );
+
           setApiError(
-            "Failed to load note."
+            error?.message ||
+              "Failed to load note."
           );
         }
-
-        setLoading(false);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
@@ -292,35 +297,500 @@ export default function EditNotePage() {
   ]);
 
   /*
-   * The remainder of your existing form,
-   * validation, save, tag handling and JSX
-   * should remain exactly as it was.
+   * The remainder of your existing component
+   * should remain unchanged below this point.
    */
 
-  // KEEP YOUR EXISTING CODE BELOW THIS POINT
-  // INCLUDING:
-  // - validation
-  // - handleChange
-  // - tag handling
-  // - handleSubmit
-  // - loading UI
-  // - error UI
-  // - edit form JSX
+  const handleChange = (
+    field: keyof FormValues,
+    value: string
+  ) => {
+    setForm(
+      (previous) => ({
+        ...previous,
+        [field]: value,
+      })
+    );
+
+    setErrors(
+      (previous) => ({
+        ...previous,
+        [field]: undefined,
+      })
+    );
+  };
+
+  const handleAddTag = () => {
+    const tag =
+      tagInput.trim();
+
+    if (!tag) {
+      return;
+    }
+
+    if (
+      !form.tags.includes(tag)
+    ) {
+      setForm(
+        (previous) => ({
+          ...previous,
+          tags: [
+            ...previous.tags,
+            tag,
+          ],
+        })
+      );
+    }
+
+    setTagInput("");
+  };
+
+  const handleRemoveTag = (
+    tag: string
+  ) => {
+    setForm(
+      (previous) => ({
+        ...previous,
+        tags: previous.tags.filter(
+          (item) =>
+            item !== tag
+        ),
+      })
+    );
+  };
+
+  const validate = () => {
+    const newErrors: FormErrors =
+      {};
+
+    if (!form.title.trim()) {
+      newErrors.title =
+        "Title is required.";
+    }
+
+    if (!form.category) {
+      newErrors.category =
+        "Category is required.";
+    }
+
+    if (!form.priority) {
+      newErrors.priority =
+        "Priority is required.";
+    }
+
+    if (!form.content.trim()) {
+      newErrors.content =
+        "Content is required.";
+    }
+
+    setErrors(newErrors);
+
+    return (
+      Object.keys(
+        newErrors
+      ).length === 0
+    );
+  };
+
+  const handleSubmit = async (
+    event: React.FormEvent
+  ) => {
+    event.preventDefault();
+
+    if (!validate()) {
+      return;
+    }
+
+    if (!id) {
+      return;
+    }
+
+    setSaving(true);
+    setApiError(null);
+    setSuccess(false);
+
+    try {
+      const updatedNote =
+        await updateNote(
+          id,
+          {
+            title:
+              form.title.trim(),
+            category:
+              form.category,
+            priority:
+              form.priority
+                ? PRIORITY_TO_API[
+                    form.priority
+                  ]
+                : undefined,
+            tags: form.tags,
+            content:
+              form.content,
+            related_to:
+              form.relatedTo || null,
+          } as any
+        );
+
+      /*
+       * Update local cache after
+       * successful save.
+       */
+      if (userId) {
+        const categories =
+          apiCategories;
+
+        const uiNote =
+          mapApiNoteToUi(
+            updatedNote,
+            categories
+          );
+
+        setCachedNote(
+          userId,
+          uiNote
+        );
+
+        setForm(
+          noteToForm(uiNote)
+        );
+      }
+
+      setSuccess(true);
+    } catch (error: any) {
+      console.error(
+        "Failed to update note:",
+        error
+      );
+
+      setApiError(
+        error?.message ||
+          "Failed to update note."
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading && !form.title) {
+    return (
+      <DashboardLayout>
+        <ThemeLoader />
+      </DashboardLayout>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <DashboardLayout>
+        <div className="p-6">
+          <h1 className="text-xl font-semibold">
+            Note not found
+          </h1>
+
+          <p className="mt-2 text-sm text-gray-500">
+            {apiError ||
+              "The requested note could not be found."}
+          </p>
+
+          <button
+            type="button"
+            onClick={() =>
+              router.push(
+                "/notes"
+              )
+            }
+            className="mt-4 rounded-lg px-4 py-2 text-sm font-medium border"
+          >
+            Back to Notes
+          </button>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="p-6">
-        {loading ? (
-          <ThemeLoader />
-        ) : notFound ? (
+        <div className="mb-6 flex items-center justify-between">
           <div>
-            Note not found.
+            <h1 className="text-2xl font-semibold">
+              Edit Note
+            </h1>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Update your note details.
+            </p>
           </div>
-        ) : (
-          <div>
-            {/* Keep your existing Edit Note form JSX here */}
+
+          <button
+            type="button"
+            onClick={() =>
+              router.push(
+                `/notes/${id}`
+              )
+            }
+            className="rounded-lg border px-4 py-2 text-sm"
+          >
+            Cancel
+          </button>
+        </div>
+
+        {apiError && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {apiError}
           </div>
         )}
+
+        {success && (
+          <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+            Note updated successfully.
+          </div>
+        )}
+
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6"
+        >
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Title
+            </label>
+
+            <input
+              type="text"
+              value={form.title}
+              onChange={(event) =>
+                handleChange(
+                  "title",
+                  event.target.value
+                )
+              }
+              className="w-full rounded-lg border px-3 py-2"
+            />
+
+            {errors.title && (
+              <p className="mt-1 text-sm text-red-500">
+                {errors.title}
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Category
+              </label>
+
+              <select
+                value={form.category}
+                onChange={(event) =>
+                  handleChange(
+                    "category",
+                    event.target.value
+                  )
+                }
+                className="w-full rounded-lg border px-3 py-2"
+              >
+                <option value="">
+                  Select category
+                </option>
+
+                {ALL_CATEGORIES.map(
+                  (category) => (
+                    <option
+                      key={category}
+                      value={category}
+                    >
+                      {category}
+                    </option>
+                  )
+                )}
+              </select>
+
+              {errors.category && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.category}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Priority
+              </label>
+
+              <select
+                value={form.priority}
+                onChange={(event) =>
+                  handleChange(
+                    "priority",
+                    event.target.value
+                  )
+                }
+                className="w-full rounded-lg border px-3 py-2"
+              >
+                <option value="">
+                  Select priority
+                </option>
+
+                <option value="low">
+                  Low
+                </option>
+
+                <option value="medium">
+                  Medium
+                </option>
+
+                <option value="high">
+                  High
+                </option>
+              </select>
+
+              {errors.priority && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.priority}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Tags
+            </label>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(event) =>
+                  setTagInput(
+                    event.target.value
+                  )
+                }
+                onKeyDown={(event) => {
+                  if (
+                    event.key ===
+                    "Enter"
+                  ) {
+                    event.preventDefault();
+                    handleAddTag();
+                  }
+                }}
+                className="flex-1 rounded-lg border px-3 py-2"
+                placeholder="Add tag"
+              />
+
+              <button
+                type="button"
+                onClick={
+                  handleAddTag
+                }
+                className="rounded-lg border px-4 py-2"
+              >
+                Add
+              </button>
+            </div>
+
+            {form.tags.length >
+              0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {form.tags.map(
+                  (tag) => (
+                    <span
+                      key={tag}
+                      className="flex items-center gap-1 rounded-full border px-3 py-1 text-sm"
+                    >
+                      {tag}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleRemoveTag(
+                            tag
+                          )
+                        }
+                        className="ml-1"
+                      >
+                        <X
+                          size={14}
+                        />
+                      </button>
+                    </span>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Content
+            </label>
+
+            <textarea
+              value={form.content}
+              onChange={(event) =>
+                handleChange(
+                  "content",
+                  event.target.value
+                )
+              }
+              rows={10}
+              className="w-full rounded-lg border px-3 py-2"
+            />
+
+            {errors.content && (
+              <p className="mt-1 text-sm text-red-500">
+                {errors.content}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Related To
+            </label>
+
+            <input
+              type="text"
+              value={form.relatedTo}
+              onChange={(event) =>
+                handleChange(
+                  "relatedTo",
+                  event.target.value
+                )
+              }
+              className="w-full rounded-lg border px-3 py-2"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() =>
+                router.push(
+                  `/notes/${id}`
+                )
+              }
+              className="rounded-lg border px-5 py-2"
+              disabled={saving}
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-lg px-5 py-2 font-medium border"
+            >
+              {saving
+                ? "Saving..."
+                : "Save Changes"}
+            </button>
+          </div>
+        </form>
       </div>
     </DashboardLayout>
   );
