@@ -31,9 +31,12 @@ SECRET_KEY = config(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=False, cast=bool)
 
-ALLOWED_HOSTS = config(
-    "ALLOWED_HOSTS", default="localhost,"
-).split(",")
+ALLOWED_HOSTS = list(
+    dict.fromkeys(
+        config("ALLOWED_HOSTS", default=".vercel.app,localhost,127.0.0.1").split(",")
+        + [".vercel.app", "localhost", "127.0.0.1"]
+    )
+)
 
 
 # Application definition
@@ -194,7 +197,9 @@ SIMPLE_JWT = {
 }
 
 # CORS settings (allow Next.js frontend to talk to backend)
-CORS_ALLOWED_ORIGINS = ["http://localhost:3000"] 
+CORS_ALLOWED_ORIGINS = ["http://localhost:3000"] + [
+    o for o in config("CORS_ALLOWED_ORIGINS", default="").split(",") if o
+]
 
 # Max upload size for project assets (2MB)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
