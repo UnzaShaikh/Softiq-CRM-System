@@ -1,6 +1,5 @@
 "use client";
-
-import { KeyboardEvent, useEffect, useState } from "react";
+import { KeyboardEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import {
@@ -100,7 +99,7 @@ interface FormErrors {
   dueDate?: string;
 }
 
-export default function NewTaskPage() {
+function NewTaskForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -1502,5 +1501,29 @@ export default function NewTaskPage() {
         }
       `}</style>
     </DashboardLayout>
+  );
+}
+
+export default function NewTaskPage() {
+  return (
+    <Suspense
+      fallback={
+        <DashboardLayout>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "240px",
+              padding: "24px",
+            }}
+          >
+            Loading…
+          </div>
+        </DashboardLayout>
+      }
+    >
+      <NewTaskForm />
+    </Suspense>
   );
 }

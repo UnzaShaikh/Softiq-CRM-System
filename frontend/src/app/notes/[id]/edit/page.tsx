@@ -12,6 +12,7 @@ import {
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ThemeLoader from "@/components/ui/ThemeLoader";
+import { useAuth } from "@/context/AuthContext";
 
 import {
   NoteCategory,
@@ -77,11 +78,12 @@ function noteToForm(
       note.relatedTo || "",
   };
 }
-
 export default function EditNotePage() {
+  const { user } = useAuth();
+  const userId = user?.id;
+
   const router = useRouter();
   const params = useParams();
-
   const id =
     params?.id as string;
 
@@ -161,8 +163,15 @@ export default function EditNotePage() {
       return;
     }
 
+    if (!userId) {
+      return;
+    }
+
     const cached =
-      getCachedNote(id);
+      getCachedNote(
+        userId,
+        id
+      );
 
     if (cached) {
       setForm(
@@ -173,13 +182,17 @@ export default function EditNotePage() {
     }
 
     setHydrated(true);
-  }, [id]);
+  }, [id, userId]);
 
   /*
    * Refresh API after hydration.
    */
   useEffect(() => {
-    if (!hydrated || !id) {
+    if (
+      !hydrated ||
+      !id ||
+      !userId
+    ) {
       return;
     }
 
@@ -187,7 +200,10 @@ export default function EditNotePage() {
 
     async function fetchNote() {
       const cached =
-        getCachedNote(id);
+        getCachedNote(
+          userId!,
+          id
+        );
 
       if (!cached) {
         setLoading(true);
@@ -208,7 +224,9 @@ export default function EditNotePage() {
           getNote(id),
         ]);
 
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
         setApiCategories(
           cats
@@ -224,26 +242,40 @@ export default function EditNotePage() {
           noteToForm(uiNote)
         );
 
+        /*
+         * Cache note using the
+         * authenticated user's ID.
+         */
         setCachedNote(
+          userId!,
           uiNote
         );
 
         setNotFound(false);
         setApiError(null);
-      } catch (err) {
-        if (cancelled) return;
+      } catch (error: any) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error(
+          "Failed to load note:",
+          error
+        );
 
         /*
-         * Keep cached form visible
-         * if refresh fails.
+         * If cached data exists,
+         * keep showing it.
          */
         if (!cached) {
-          setNotFound(true);
+          setNotFound(
+            error?.response?.status === 404 ||
+            error?.status === 404
+          );
 
           setApiError(
-            err instanceof Error
-              ? err.message
-              : "Failed to load note."
+            error?.message ||
+              "Failed to load note."
           );
         }
       } finally {
@@ -253,232 +285,197 @@ export default function EditNotePage() {
       }
     }
 
-    void fetchNote();
+    fetchNote();
 
     return () => {
       cancelled = true;
     };
-  }, [hydrated, id]);
+  }, [
+    hydrated,
+    id,
+    userId,
+  ]);
 
-  function handleChange(
-    e: React.ChangeEvent<
-      HTMLInputElement |
-        HTMLSelectElement |
-        HTMLTextAreaElement
-    >
-  ) {
-    const {
-      name,
-      value,
-    } = e.target;
+  /*
+   * The remainder of your existing component
+   * should remain unchanged below this point.
+   */
 
+  const handleChange = (
+    field: keyof FormValues,
+    value: string
+  ) => {
     setForm(
       (previous) => ({
         ...previous,
-        [name]: value,
+        [field]: value,
       })
     );
 
+    setErrors(
+      (previous) => ({
+        ...previous,
+        [field]: undefined,
+      })
+    );
+  };
+
+  const handleAddTag = () => {
+    const tag =
+      tagInput.trim();
+
+    if (!tag) {
+      return;
+    }
+
     if (
-      errors[
-        name as keyof FormErrors
-      ]
+      !form.tags.includes(tag)
     ) {
-      setErrors(
+      setForm(
         (previous) => ({
           ...previous,
-          [name]:
-            undefined,
+          tags: [
+            ...previous.tags,
+            tag,
+          ],
         })
       );
     }
-  }
 
-  function addTag(
-    e: React.KeyboardEvent<HTMLInputElement>
-  ) {
-    if (
-      e.key ===
-        "Enter" &&
-      tagInput.trim()
-    ) {
-      e.preventDefault();
+    setTagInput("");
+  };
 
-      const tag =
-        tagInput.trim();
-
-      if (
-        !form.tags.includes(
-          tag
-        )
-      ) {
-        setForm(
-          (previous) => ({
-            ...previous,
-            tags: [
-              ...previous.tags,
-              tag,
-            ],
-          })
-        );
-      }
-
-      setTagInput("");
-    }
-  }
-
-  function removeTag(
+  const handleRemoveTag = (
     tag: string
-  ) {
+  ) => {
     setForm(
       (previous) => ({
         ...previous,
-        tags:
-          previous.tags.filter(
-            (item) =>
-              item !== tag
-          ),
+        tags: previous.tags.filter(
+          (item) =>
+            item !== tag
+        ),
       })
     );
-  }
+  };
 
-  function validate(): boolean {
-    const nextErrors: FormErrors =
+  const validate = () => {
+    const newErrors: FormErrors =
       {};
 
-    if (
-      !form.title.trim()
-    ) {
-      nextErrors.title =
-        "Title is required";
+    if (!form.title.trim()) {
+      newErrors.title =
+        "Title is required.";
     }
 
     if (!form.category) {
-      nextErrors.category =
-        "Please select a category";
+      newErrors.category =
+        "Category is required.";
     }
 
     if (!form.priority) {
-      nextErrors.priority =
-        "Please select a priority";
+      newErrors.priority =
+        "Priority is required.";
     }
 
-    if (
-      !form.content.trim()
-    ) {
-      nextErrors.content =
-        "Content is required";
+    if (!form.content.trim()) {
+      newErrors.content =
+        "Content is required.";
     }
 
-    setErrors(
-      nextErrors
-    );
+    setErrors(newErrors);
 
     return (
       Object.keys(
-        nextErrors
+        newErrors
       ).length === 0
     );
-  }
+  };
 
-  async function handleSubmit(
-    e: React.FormEvent
-  ) {
-    e.preventDefault();
+  const handleSubmit = async (
+    event: React.FormEvent
+  ) => {
+    event.preventDefault();
 
     if (!validate()) {
       return;
     }
 
+    if (!id) {
+      return;
+    }
+
     setSaving(true);
     setApiError(null);
+    setSuccess(false);
 
     try {
-      const matchedCategory =
-        apiCategories.find(
-          (category) =>
-            category.name ===
-            form.category
-        );
-
-      const updated =
+      const updatedNote =
         await updateNote(
           id,
           {
             title:
-              form.title,
+              form.title.trim(),
+            category:
+              form.category,
+            priority:
+              form.priority
+                ? PRIORITY_TO_API[
+                    form.priority
+                  ]
+                : undefined,
+            tags: form.tags,
             content:
               form.content,
-            category:
-              matchedCategory
-                ? matchedCategory.id
-                : null,
-            priority:
-              PRIORITY_TO_API[
-                form.priority as NotePriority
-              ],
-            tags:
-              form.tags,
-          }
+            related_to:
+              form.relatedTo || null,
+          } as any
         );
 
       /*
-       * If updateNote returns
-       * the API object, refresh the
-       * detail cache from it.
-       *
-       * Otherwise the next detail
-       * visit will refresh from API.
+       * Update local cache after
+       * successful save.
        */
-      if (updated) {
-        try {
-          const refreshed =
-            await getNote(id);
+      if (userId) {
+        const categories =
+          apiCategories;
 
-          const uiNote =
-            mapApiNoteToUi(
-              refreshed,
-              apiCategories
-            );
-
-          setCachedNote(
-            uiNote
+        const uiNote =
+          mapApiNoteToUi(
+            updatedNote,
+            categories
           );
-        } catch {
-          // The update itself succeeded.
-        }
+
+        setCachedNote(
+          userId,
+          uiNote
+        );
+
+        setForm(
+          noteToForm(uiNote)
+        );
       }
 
-      setSaving(false);
       setSuccess(true);
-
-      setTimeout(
-        () =>
-          router.push(
-            `/notes/${id}`
-          ),
-        1000
+    } catch (error: any) {
+      console.error(
+        "Failed to update note:",
+        error
       );
-    } catch (err) {
-      setSaving(false);
 
       setApiError(
-        err instanceof Error
-          ? err.message
-          : "Failed to save note."
+        error?.message ||
+          "Failed to update note."
       );
+    } finally {
+      setSaving(false);
     }
-  }
+  };
 
-  if (
-    loading &&
-    !form.title
-  ) {
+  if (loading && !form.title) {
     return (
       <DashboardLayout>
-        <ThemeLoader
-          label="Loading note..."
-        />
+        <ThemeLoader />
       </DashboardLayout>
     );
   }
@@ -486,41 +483,24 @@ export default function EditNotePage() {
   if (notFound) {
     return (
       <DashboardLayout>
-        <div className="not-found-state">
-          <p
-            style={{
-              fontSize: "3rem",
-              margin:
-                "0 0 12px",
-            }}
-          >
-            📝
+        <div className="p-6">
+          <h1 className="text-xl font-semibold">
+            Note not found
+          </h1>
+
+          <p className="mt-2 text-sm text-gray-500">
+            {apiError ||
+              "The requested note could not be found."}
           </p>
 
-          <h2>
-            Note Not Found
-          </h2>
-
-          {apiError && (
-            <p
-              style={{
-                color:
-                  "#ef4444",
-                fontSize:
-                  "0.8rem",
-              }}
-            >
-              {apiError}
-            </p>
-          )}
-
           <button
-            className="btn-add"
+            type="button"
             onClick={() =>
               router.push(
                 "/notes"
               )
             }
+            className="mt-4 rounded-lg px-4 py-2 text-sm font-medium border"
           >
             Back to Notes
           </button>
@@ -531,553 +511,270 @@ export default function EditNotePage() {
 
   return (
     <DashboardLayout>
-      <div
-        style={{
-          display:
-            "flex",
-          flexDirection:
-            "column",
-          gap: "20px",
-        }}
-      >
-        <div>
+      <div className="p-6">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">
+              Edit Note
+            </h1>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Update your note details.
+            </p>
+          </div>
+
           <button
-            className="back-btn"
+            type="button"
             onClick={() =>
               router.push(
                 `/notes/${id}`
               )
             }
-            style={{
-              marginBottom:
-                "8px",
-            }}
+            className="rounded-lg border px-4 py-2 text-sm"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-
-            Back to Note
+            Cancel
           </button>
-
-          <h1 className="page-title">
-            Edit Note
-          </h1>
-
-          <p className="page-subtitle">
-            Update the note
-            details below.
-          </p>
         </div>
 
-        {success && (
-          <div className="msg-success">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#16a34a"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-
-            Note updated
-            successfully!
-            Redirecting...
-          </div>
-        )}
-
         {apiError && (
-          <div className="msg-error">
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {apiError}
           </div>
         )}
 
-        <form
-          onSubmit={
-            handleSubmit
-          }
-          noValidate
-          className="company-form-card"
-        >
-          <div className="form-section">
-            <div className="form-section-header">
-              <h2>
-                Note Details
-              </h2>
+        {success && (
+          <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+            Note updated successfully.
+          </div>
+        )}
 
-              <p>
-                Update all the
-                required fields
-                below.
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6"
+        >
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Title
+            </label>
+
+            <input
+              type="text"
+              value={form.title}
+              onChange={(event) =>
+                handleChange(
+                  "title",
+                  event.target.value
+                )
+              }
+              className="w-full rounded-lg border px-3 py-2"
+            />
+
+            {errors.title && (
+              <p className="mt-1 text-sm text-red-500">
+                {errors.title}
               </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Category
+              </label>
+
+              <select
+                value={form.category}
+                onChange={(event) =>
+                  handleChange(
+                    "category",
+                    event.target.value
+                  )
+                }
+                className="w-full rounded-lg border px-3 py-2"
+              >
+                <option value="">
+                  Select category
+                </option>
+
+                {ALL_CATEGORIES.map(
+                  (category) => (
+                    <option
+                      key={category}
+                      value={category}
+                    >
+                      {category}
+                    </option>
+                  )
+                )}
+              </select>
+
+              {errors.category && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.category}
+                </p>
+              )}
             </div>
 
-            <div
-              style={{
-                display:
-                  "flex",
-                flexDirection:
-                  "column",
-                gap: "20px",
-              }}
-            >
-              <div className="form-group">
-                <label className="form-label">
-                  Title{" "}
-                  <span
-                    style={{
-                      color:
-                        "var(--error)",
-                    }}
-                  >
-                    *
-                  </span>
-                </label>
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Priority
+              </label>
 
-                <div
-                  style={{
-                    position:
-                      "relative",
-                  }}
-                >
-                  <input
-                    name="title"
-                    value={
-                      form.title
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    maxLength={
-                      200
-                    }
-                    className={`form-input${
-                      errors.title
-                        ? " error"
-                        : ""
-                    }`}
-                    placeholder="Enter note title..."
-                  />
+              <select
+                value={form.priority}
+                onChange={(event) =>
+                  handleChange(
+                    "priority",
+                    event.target.value
+                  )
+                }
+                className="w-full rounded-lg border px-3 py-2"
+              >
+                <option value="">
+                  Select priority
+                </option>
 
-                  <span
-                    style={{
-                      position:
-                        "absolute",
-                      right:
-                        "12px",
-                      top: "50%",
-                      transform:
-                        "translateY(-50%)",
-                      fontSize:
-                        "0.75rem",
-                      color:
-                        "#94a3b8",
-                    }}
-                  >
-                    {
-                      form.title
-                        .length
-                    }
-                    /200
-                  </span>
-                </div>
+                <option value="low">
+                  Low
+                </option>
 
-                {errors.title && (
-                  <p className="form-error">
-                    {errors.title}
-                  </p>
-                )}
-              </div>
+                <option value="medium">
+                  Medium
+                </option>
 
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label className="form-label">
-                    Category
-                  </label>
+                <option value="high">
+                  High
+                </option>
+              </select>
 
-                  <div
-                    style={{
-                      position:
-                        "relative",
-                    }}
-                  >
-                    <select
-                      name="category"
-                      value={
-                        form.category
-                      }
-                      onChange={
-                        handleChange
-                      }
-                      className={`form-input${
-                        errors.category
-                          ? " error"
-                          : ""
-                      }`}
-                    >
-                      <option value="">
-                        Select category
-                      </option>
-
-                      {ALL_CATEGORIES.map(
-                        (
-                          category
-                        ) => (
-                          <option
-                            key={
-                              category
-                            }
-                            value={
-                              category
-                            }
-                          >
-                            {
-                              category
-                            }
-                          </option>
-                        )
-                      )}
-                    </select>
-
-                    {form.category && (
-                      <span
-                        style={{
-                          position:
-                            "absolute",
-                          left:
-                            "12px",
-                          top: "50%",
-                          transform:
-                            "translateY(-50%)",
-                          padding:
-                            "2px 8px",
-                          borderRadius:
-                            "5px",
-                          fontSize:
-                            "0.72rem",
-                          fontWeight:
-                            600,
-                          background:
-                            CATEGORY_COLORS[
-                              form.category as NoteCategory
-                            ]?.bg,
-                          color:
-                            CATEGORY_COLORS[
-                              form.category as NoteCategory
-                            ]?.color,
-                          pointerEvents:
-                            "none",
-                        }}
-                      >
-                        {
-                          form.category
-                        }
-                      </span>
-                    )}
-                  </div>
-
-                  {errors.category && (
-                    <p className="form-error">
-                      {
-                        errors.category
-                      }
-                    </p>
-                  )}
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">
-                    Priority
-                  </label>
-
-                  <select
-                    name="priority"
-                    value={
-                      form.priority
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    className={`form-input${
-                      errors.priority
-                        ? " error"
-                        : ""
-                    }`}
-                  >
-                    <option value="">
-                      Select priority
-                    </option>
-
-                    <option value="High Priority">
-                      High Priority
-                    </option>
-
-                    <option value="Medium Priority">
-                      Medium Priority
-                    </option>
-
-                    <option value="Low Priority">
-                      Low Priority
-                    </option>
-                  </select>
-
-                  {errors.priority && (
-                    <p className="form-error">
-                      {
-                        errors.priority
-                      }
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
-                  Tags
-                </label>
-
-                <div
-                  style={{
-                    border:
-                      "1.5px solid #e2e8f0",
-                    borderRadius:
-                      "8px",
-                    padding:
-                      "8px 12px",
-                    display:
-                      "flex",
-                    flexWrap:
-                      "wrap",
-                    gap: "6px",
-                    background:
-                      "#fff",
-                    minHeight:
-                      "44px",
-                  }}
-                  onClick={() =>
-                    document
-                      .getElementById(
-                        "tag-input"
-                      )
-                      ?.focus()
-                  }
-                >
-                  {form.tags.map(
-                    (tag) => (
-                      <span
-                        key={tag}
-                        style={{
-                          display:
-                            "inline-flex",
-                          alignItems:
-                            "center",
-                          gap: "4px",
-                          padding:
-                            "3px 8px",
-                          borderRadius:
-                            "9999px",
-                          fontSize:
-                            "0.78rem",
-                          fontWeight:
-                            500,
-                          background:
-                            "#eef2ff",
-                          color:
-                            "#4f46e5",
-                        }}
-                      >
-                        {tag}
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            removeTag(
-                              tag
-                            )
-                          }
-                          style={{
-                            border:
-                              "none",
-                            background:
-                              "none",
-                            cursor:
-                              "pointer",
-                            padding: 0,
-                            color:
-                              "#4f46e5",
-                            display:
-                              "flex",
-                            alignItems:
-                              "center",
-                          }}
-                        >
-                          <X
-                            size={
-                              12
-                            }
-                          />
-                        </button>
-                      </span>
-                    )
-                  )}
-
-                  <input
-                    id="tag-input"
-                    value={
-                      tagInput
-                    }
-                    onChange={(e) =>
-                      setTagInput(
-                        e.target
-                          .value
-                      )
-                    }
-                    onKeyDown={
-                      addTag
-                    }
-                    placeholder={
-                      form.tags
-                        .length ===
-                      0
-                        ? "Add a tag..."
-                        : ""
-                    }
-                    style={{
-                      border:
-                        "none",
-                      outline:
-                        "none",
-                      fontSize:
-                        "0.875rem",
-                      flex: 1,
-                      minWidth:
-                        "100px",
-                      fontFamily:
-                        "inherit",
-                      background:
-                        "transparent",
-                    }}
-                  />
-                </div>
-
-                <p
-                  style={{
-                    margin:
-                      "4px 0 0",
-                    fontSize:
-                      "0.75rem",
-                    color:
-                      "#94a3b8",
-                  }}
-                >
-                  Press Enter to
-                  add a tag
+              {errors.priority && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.priority}
                 </p>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
-                  Note Content{" "}
-                  <span
-                    style={{
-                      color:
-                        "var(--error)",
-                    }}
-                  >
-                    *
-                  </span>
-                </label>
-
-                <textarea
-                  name="content"
-                  value={
-                    form.content
-                  }
-                  onChange={
-                    handleChange
-                  }
-                  rows={12}
-                  className={`form-input${
-                    errors.content
-                      ? " error"
-                      : ""
-                  }`}
-                  style={{
-                    resize:
-                      "vertical",
-                    minHeight:
-                      "240px",
-                  }}
-                  placeholder="Write your note content here..."
-                />
-
-                <div
-                  style={{
-                    display:
-                      "flex",
-                    justifyContent:
-                      "space-between",
-                    marginTop:
-                      "4px",
-                  }}
-                >
-                  {errors.content && (
-                    <p className="form-error">
-                      {
-                        errors.content
-                      }
-                    </p>
-                  )}
-
-                  <p
-                    style={{
-                      margin:
-                        "0 0 0 auto",
-                      fontSize:
-                        "0.75rem",
-                      color:
-                        "#94a3b8",
-                    }}
-                  >
-                    {
-                      form.content
-                        .split(
-                          /\s+/
-                        )
-                        .filter(
-                          Boolean
-                        ).length
-                    }{" "}
-                    words
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
-          <div className="form-actions">
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Tags
+            </label>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(event) =>
+                  setTagInput(
+                    event.target.value
+                  )
+                }
+                onKeyDown={(event) => {
+                  if (
+                    event.key ===
+                    "Enter"
+                  ) {
+                    event.preventDefault();
+                    handleAddTag();
+                  }
+                }}
+                className="flex-1 rounded-lg border px-3 py-2"
+                placeholder="Add tag"
+              />
+
+              <button
+                type="button"
+                onClick={
+                  handleAddTag
+                }
+                className="rounded-lg border px-4 py-2"
+              >
+                Add
+              </button>
+            </div>
+
+            {form.tags.length >
+              0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {form.tags.map(
+                  (tag) => (
+                    <span
+                      key={tag}
+                      className="flex items-center gap-1 rounded-full border px-3 py-1 text-sm"
+                    >
+                      {tag}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleRemoveTag(
+                            tag
+                          )
+                        }
+                        className="ml-1"
+                      >
+                        <X
+                          size={14}
+                        />
+                      </button>
+                    </span>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Content
+            </label>
+
+            <textarea
+              value={form.content}
+              onChange={(event) =>
+                handleChange(
+                  "content",
+                  event.target.value
+                )
+              }
+              rows={10}
+              className="w-full rounded-lg border px-3 py-2"
+            />
+
+            {errors.content && (
+              <p className="mt-1 text-sm text-red-500">
+                {errors.content}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Related To
+            </label>
+
+            <input
+              type="text"
+              value={form.relatedTo}
+              onChange={(event) =>
+                handleChange(
+                  "relatedTo",
+                  event.target.value
+                )
+              }
+              className="w-full rounded-lg border px-3 py-2"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3">
             <button
               type="button"
-              className="btn-secondary"
               onClick={() =>
                 router.push(
                   `/notes/${id}`
                 )
               }
+              className="rounded-lg border px-5 py-2"
               disabled={saving}
             >
               Cancel
@@ -1085,54 +782,16 @@ export default function EditNotePage() {
 
             <button
               type="submit"
-              className="btn-add"
-              disabled={
-                saving ||
-                success
-              }
+              disabled={saving}
+              className="rounded-lg px-5 py-2 font-medium border"
             >
-              {saving ? (
-                <>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    style={{
-                      animation:
-                        "spin 0.8s linear infinite",
-                    }}
-                  >
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                  </svg>
-
-                  Saving...
-                </>
-              ) : success ? (
-                "Saved!"
-              ) : (
-                "Save Note"
-              )}
+              {saving
+                ? "Saving..."
+                : "Save Changes"}
             </button>
           </div>
         </form>
       </div>
-
-      <style>{`
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-
-          to {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
     </DashboardLayout>
   );
 }
