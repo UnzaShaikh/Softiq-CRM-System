@@ -1,4 +1,4 @@
-export const API_URL ="https://crmystem0.vercel.app";
+export const API_URL ="https://crmystem.vercel.app";
 
 const ACCESS_KEY = "access_token";
 const REFRESH_KEY = "refresh_token";
