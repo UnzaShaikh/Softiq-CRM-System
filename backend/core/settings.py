@@ -191,7 +191,8 @@ SIMPLE_JWT = {
 }
 
 # CORS settings (allow Next.js frontend to talk to backend)
-CSRF_TRUSTED_ORIGINS = [
+CORS_ALLOWED_ORIGINS = [
+    'https://softiq-crm-system-o04s0sd50-unzashaikhs-projects.vercel.app'
     'https://*.vercel.app',
     "http://localhost:3000",
 ]
