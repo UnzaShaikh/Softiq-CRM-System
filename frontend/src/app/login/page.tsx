@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { API_URL } from "@/lib/api";
 
 const S = {
   // Page wrapper
@@ -272,7 +273,7 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-  const response = await fetch("http://127.0.0.1:8000/api/auth/login/", {
+  const response = await fetch(`${API_URL}/api/auth/login/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

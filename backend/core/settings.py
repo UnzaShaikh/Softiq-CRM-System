@@ -29,9 +29,11 @@ SECRET_KEY = config(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config("DEBUG", default=True, cast=bool)
+DEBUG = config("DEBUG", default=False, cast=bool)
 
-ALLOWED_HOSTS = ['.vercel.app']
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS", default=".vercel.app,127.0.0.1,localhost"
+).split(",")
 
 
 # Application definition
@@ -158,6 +160,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Media files (project logo uploads)
 MEDIA_URL = "/media/"
@@ -190,11 +193,8 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": False,
 }
 
-
 # CORS settings (allow Next.js frontend to talk to backend)
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-]
+CORS_ALLOWED_ORIGINS = ["http://localhost:3000"] 
 
 # Max upload size for project assets (2MB)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
