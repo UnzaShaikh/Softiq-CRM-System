@@ -1,9 +1,5 @@
 import { apiRequest } from "@/lib/api";
 
-// ─────────────────────────────────────────────
-// Backend types
-// ─────────────────────────────────────────────
-
 export type ApiTaskStatus =
   | "todo"
   | "in_progress"
@@ -16,18 +12,20 @@ export type ApiTaskPriority =
   | "medium"
   | "high";
 
+export interface ApiTaskUser {
+  id: number;
+  username: string;
+  email: string;
+  full_name: string;
+}
+
 export interface ApiTask {
   id: number;
   title: string;
   description: string | null;
 
   assignee: number | null;
-  assignee_details: {
-    id: number;
-    username: string;
-    email: string;
-    full_name: string;
-  } | null;
+  assignee_details: ApiTaskUser | null;
 
   priority: ApiTaskPriority;
   status: ApiTaskStatus;
@@ -41,6 +39,7 @@ export interface ApiTask {
 
   related_content_type: number | null;
   related_object_id: number | null;
+
   related_object_details: {
     id: number;
     str: string;
@@ -79,16 +78,15 @@ export interface ApiTask {
   updated_by: number | null;
 }
 
-// ─────────────────────────────────────────────
-// Request types
-// ─────────────────────────────────────────────
-
 export interface CreateTaskPayload {
   title: string;
   description?: string;
+
   assignee?: number | null;
+
   priority?: ApiTaskPriority;
   status?: ApiTaskStatus;
+
   due_date?: string | null;
   reminder?: string | null;
 
@@ -103,16 +101,14 @@ export interface CreateTaskPayload {
   }[];
 
   estimated_time?: number | null;
+
   tracking_enabled?: boolean;
 
   repeat_config?: Record<string, unknown> | null;
 }
 
-export type UpdateTaskPayload = Partial<CreateTaskPayload>;
-
-// ─────────────────────────────────────────────
-// Pagination
-// ─────────────────────────────────────────────
+export type UpdateTaskPayload =
+  Partial<CreateTaskPayload>;
 
 export interface ApiTaskList {
   count: number;
@@ -122,72 +118,98 @@ export interface ApiTaskList {
 }
 
 // ─────────────────────────────────────────────
-// Task List
+// List
 // ─────────────────────────────────────────────
 
 export async function listTasks(
-  params: Record<string, string | number | undefined> = {}
+  params: Record<
+    string,
+    string | number | undefined
+  > = {}
 ): Promise<ApiTaskList> {
   const query = new URLSearchParams();
 
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== "") {
-      query.set(key, String(value));
+  Object.entries(params).forEach(
+    ([key, value]) => {
+      if (
+        value !== undefined &&
+        value !== ""
+      ) {
+        query.set(key, String(value));
+      }
     }
-  });
+  );
 
-  const queryString = query.toString();
+  const queryString =
+    query.toString();
 
   return apiRequest<ApiTaskList>(
-    `/api/tasks/${queryString ? `?${queryString}` : ""}`
+    `/api/tasks/${
+      queryString
+        ? `?${queryString}`
+        : ""
+    }`
   );
 }
 
 // ─────────────────────────────────────────────
-// Get single task
+// Single task
 // ─────────────────────────────────────────────
 
-export async function getTask(id: number | string): Promise<ApiTask> {
-  return apiRequest<ApiTask>(`/api/tasks/${id}/`);
+export async function getTask(
+  id: number | string
+): Promise<ApiTask> {
+  return apiRequest<ApiTask>(
+    `/api/tasks/${id}/`
+  );
 }
 
 // ─────────────────────────────────────────────
-// Create task
+// Create
 // ─────────────────────────────────────────────
 
 export async function createTask(
   payload: CreateTaskPayload
 ): Promise<ApiTask> {
-  return apiRequest<ApiTask>("/api/tasks/", {
-    method: "POST",
-    body: payload,
-  });
+  return apiRequest<ApiTask>(
+    "/api/tasks/",
+    {
+      method: "POST",
+      body: payload,
+    }
+  );
 }
 
 // ─────────────────────────────────────────────
-// Update task
+// Update
 // ─────────────────────────────────────────────
 
 export async function updateTask(
   id: number | string,
   payload: UpdateTaskPayload
 ): Promise<ApiTask> {
-  return apiRequest<ApiTask>(`/api/tasks/${id}/`, {
-    method: "PATCH",
-    body: payload,
-  });
+  return apiRequest<ApiTask>(
+    `/api/tasks/${id}/`,
+    {
+      method: "PATCH",
+      body: payload,
+    }
+  );
 }
 
 // ─────────────────────────────────────────────
-// Delete task
+// Delete
 // ─────────────────────────────────────────────
 
 export async function deleteTask(
   id: number | string
 ): Promise<void> {
-  return apiRequest<void>(`/api/tasks/${id}/`, {
-    method: "DELETE",
-  });
+  return apiRequest<void>(
+    `/api/tasks/${id}/`,
+    {
+      method: "DELETE",
+    }
+  );
 }
 
 // ─────────────────────────────────────────────
@@ -196,11 +218,16 @@ export async function deleteTask(
 
 export interface TaskSummary {
   total: number;
-  status_counts: Record<ApiTaskStatus, number>;
+  status_counts: Record<
+    ApiTaskStatus,
+    number
+  >;
 }
 
 export async function getTaskSummary(): Promise<TaskSummary> {
-  return apiRequest<TaskSummary>("/api/tasks/summary/");
+  return apiRequest<TaskSummary>(
+    "/api/tasks/summary/"
+  );
 }
 
 // ─────────────────────────────────────────────
@@ -216,21 +243,26 @@ export interface KanbanTasks {
 }
 
 export async function getKanbanTasks(): Promise<KanbanTasks> {
-  return apiRequest<KanbanTasks>("/api/tasks/kanban/");
+  return apiRequest<KanbanTasks>(
+    "/api/tasks/kanban/"
+  );
 }
 
 // ─────────────────────────────────────────────
-// Update status
+// Status
 // ─────────────────────────────────────────────
 
 export async function updateTaskStatus(
   id: number | string,
   status: ApiTaskStatus
 ): Promise<ApiTask> {
-  return apiRequest<ApiTask>(`/api/tasks/${id}/status/`, {
-    method: "PATCH",
-    body: { status },
-  });
+  return apiRequest<ApiTask>(
+    `/api/tasks/${id}/status/`,
+    {
+      method: "PATCH",
+      body: { status },
+    }
+  );
 }
 
 // ─────────────────────────────────────────────
@@ -241,13 +273,16 @@ export async function createChecklistItem(
   taskId: number | string,
   text: string
 ) {
-  return apiRequest(`/api/checklist-items/`, {
-    method: "POST",
-    body: {
-      task: Number(taskId),
-      text,
-    },
-  });
+  return apiRequest(
+    "/api/checklist-items/",
+    {
+      method: "POST",
+      body: {
+        task: Number(taskId),
+        text,
+      },
+    }
+  );
 }
 
 export async function updateChecklistItem(
@@ -257,24 +292,66 @@ export async function updateChecklistItem(
     is_completed?: boolean;
   }
 ) {
-  return apiRequest(`/api/checklist-items/${id}/`, {
-    method: "PATCH",
-    body: payload,
-  });
+  return apiRequest(
+    `/api/checklist-items/${id}/`,
+    {
+      method: "PATCH",
+      body: payload,
+    }
+  );
 }
 
 export async function deleteChecklistItem(
   id: number | string
 ): Promise<void> {
-  return apiRequest<void>(`/api/checklist-items/${id}/`, {
-    method: "DELETE",
-  });
+  return apiRequest<void>(
+    `/api/checklist-items/${id}/`,
+    {
+      method: "DELETE",
+    }
+  );
 }
 
 export async function toggleChecklistItem(
   id: number | string
 ) {
-  return apiRequest(`/api/checklist-items/${id}/toggle/`, {
-    method: "PATCH",
-  });
+  return apiRequest(
+    `/api/checklist-items/${id}/toggle/`,
+    {
+      method: "PATCH",
+    }
+  );
+}
+
+// ─────────────────────────────────────────────
+// Attachments
+// ─────────────────────────────────────────────
+
+export async function uploadTaskAttachment(
+  taskId: number | string,
+  file: File
+) {
+  const formData = new FormData();
+
+  formData.append("file", file);
+
+  return apiRequest(
+    `/api/tasks/${taskId}/upload_attachment/`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
+}
+
+export async function deleteTaskAttachment(
+  taskId: number | string,
+  attachmentId: number | string
+): Promise<void> {
+  return apiRequest<void>(
+    `/api/tasks/${taskId}/attachments/${attachmentId}/`,
+    {
+      method: "DELETE",
+    }
+  );
 }

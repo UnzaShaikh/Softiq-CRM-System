@@ -408,6 +408,78 @@ export interface UpdateUserPayload {
   role_id?: number | null;
 }
 
+export interface AdminUserPageResponse extends AdminUserListResponse {
+  total_users: number;
+  active_users: number;
+  inactive_users: number;
+}
+
+export async function listAdminUsersPage(params?: {
+  search?: string;
+  is_active?: string;
+  page?: number;
+  page_size?: number;
+}): Promise<AdminUserPageResponse> {
+  const qs = new URLSearchParams();
+
+  if (params?.search?.trim()) qs.append("search", params.search.trim());
+  if (params?.is_active) qs.append("is_active", params.is_active);
+  if (params?.page) qs.append("page", String(params.page));
+  if (params?.page_size) qs.append("page_size", String(params.page_size));
+
+  const query = qs.toString();
+  return request<AdminUserPageResponse>(
+    `/api/users/admin/${query ? `?${query}` : ""}`
+  );
+}
+
+let adminUsersCache: AdminUser[] | null = null;
+let adminUsersRequest: Promise<AdminUser[]> | null = null;
+
+/**
+ * Loads users for assignment without the old sequential pagination cost.
+ * The first page uses the backend maximum (50), then any remaining pages
+ * are requested in parallel. Results are cached for the current app session.
+ */
+export function listAdminUsersForAssignment(forceRefresh = false): Promise<AdminUser[]> {
+  if (!forceRefresh && adminUsersCache) {
+    return Promise.resolve(adminUsersCache);
+  }
+
+  if (!forceRefresh && adminUsersRequest) {
+    return adminUsersRequest;
+  }
+
+  adminUsersRequest = (async () => {
+    const first = await listAdminUsersPage({ page: 1, page_size: 50 });
+    let results = [...first.results];
+
+    if (first.next) {
+      const pageNumbers: number[] = [];
+      const totalPages = Math.ceil(first.count / 50);
+
+      for (let page = 2; page <= totalPages; page += 1) {
+        pageNumbers.push(page);
+      }
+
+      const pages = await Promise.all(
+        pageNumbers.map((page) => listAdminUsersPage({ page, page_size: 50 }))
+      );
+
+      for (const page of pages) {
+        results = results.concat(page.results);
+      }
+    }
+
+    adminUsersCache = results;
+    return results;
+  })().finally(() => {
+    adminUsersRequest = null;
+  });
+
+  return adminUsersRequest;
+}
+
 export async function listAdminUsers(params?: { search?: string; is_active?: string }): Promise<AdminUser[]> {
   const qs = new URLSearchParams();
   if (params?.search) qs.append("search", params.search);

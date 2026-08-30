@@ -1,46 +1,133 @@
-"use client";
 
-import { useEffect } from "react";
+
+import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { getAccessToken } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const PUBLIC_PATHS = ["/login", "/register"];
 const ADMIN_PATHS = ["/admin"];
 
+function isPathMatch(pathname: string, paths: string[]): boolean {
+  return paths.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`)
+  );
+}
+
 export function useAuthGuard(): void {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAdmin, isAuthenticated } = useAuth();
+
+  const {
+    authInitialized,
+    isAuthenticated,
+    isAdmin,
+  } = useAuth();
+
+  const redirectingRef = useRef(false);
 
   useEffect(() => {
-    const isPublic = PUBLIC_PATHS.some(
-      (p) => pathname === p || pathname.startsWith(`${p}/`)
-    );
+    if (!pathname) return;
 
-    const token = getAccessToken();
-
-    if (!token && !isPublic) {
-      const next = encodeURIComponent(pathname + window.location.search);
-      router.replace(`/login?next=${next}`);
+    /*
+     * IMPORTANT:
+     *
+     * AuthContext restores the token/user from cookies and
+     * localStorage asynchronously. Until that is complete,
+     * the guard MUST NOT redirect.
+     *
+     * This prevents the sequence:
+     *
+     * authenticated session
+     *       ↓
+     * accessToken initially null
+     *       ↓
+     * redirect to /login
+     *       ↓
+     * session restored
+     *       ↓
+     * dashboard
+     */
+    if (!authInitialized) {
+      redirectingRef.current = false;
       return;
     }
 
-    if (token && isPublic) {
-      router.replace("/dashboard");
+    if (redirectingRef.current) {
+      return;
     }
-  }, [pathname, router]);
 
-  // Admin route protection
-  useEffect(() => {
-    if (!isAuthenticated) return;
+    const isPublicPath = isPathMatch(pathname, PUBLIC_PATHS);
+    const isAdminPath = isPathMatch(pathname, ADMIN_PATHS);
 
-    const isAdminRoute = ADMIN_PATHS.some(
-      (p) => pathname === p || pathname.startsWith(`${p}/`)
-    );
+    /*
+     * ------------------------------------------------------------
+     * 1. User is not authenticated
+     * ------------------------------------------------------------
+     *
+     * Public pages remain accessible.
+     * Every other route requires authentication.
+     */
+    if (!isAuthenticated) {
+      if (isPublicPath) {
+        return;
+      }
 
-    if (isAdminRoute && !isAdmin) {
-      router.replace("/dashboard");
+      redirectingRef.current = true;
+
+      const search =
+        typeof window !== "undefined"
+          ? window.location.search
+          : "";
+
+      const nextPath = `${pathname}${search}`;
+
+      router.replace(
+        `/login?next=${encodeURIComponent(nextPath)}`
+      );
+
+      return;
     }
-  }, [pathname, router, isAdmin, isAuthenticated]);
+
+    /*
+     * ------------------------------------------------------------
+     * 2. Authenticated user visits login/register
+     * ------------------------------------------------------------
+     *
+     * Do not allow an already authenticated user to see the
+     * login/register screen.
+     */
+    if (isPublicPath) {
+      redirectingRef.current = true;
+
+      router.replace("/dashboard");
+
+      return;
+    }
+
+    /*
+     * ------------------------------------------------------------
+     * 3. Administrator-only routes
+     * ------------------------------------------------------------
+     *
+     * Only the Administrator role can access /admin.
+     */
+    if (isAdminPath && !isAdmin) {
+      redirectingRef.current = true;
+
+      router.replace("/dashboard");
+
+      return;
+    }
+
+    /*
+     * Current route is valid.
+     */
+    redirectingRef.current = false;
+  }, [
+    pathname,
+    router,
+    authInitialized,
+    isAuthenticated,
+    isAdmin,
+  ]);
 }

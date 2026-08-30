@@ -71,6 +71,8 @@ INSTALLED_APPS = [
     'task_management',
     # Project Settings
     "project_settings",
+    #reports
+    "reports",
 ]
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',

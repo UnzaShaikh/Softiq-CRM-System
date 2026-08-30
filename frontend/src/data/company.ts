@@ -35,12 +35,18 @@ export interface ApiCompany {
   updated_at: string;
 }
 
-export const STATUS_FROM_API: Record<ApiCompany["status"], CompanyStatus> = {
+export const STATUS_FROM_API: Record<
+  ApiCompany["status"],
+  CompanyStatus
+> = {
   active: "Active",
   inactive: "Inactive",
 };
 
-export const STATUS_TO_API: Record<CompanyStatus, ApiCompany["status"]> = {
+export const STATUS_TO_API: Record<
+  CompanyStatus,
+  ApiCompany["status"]
+> = {
   Active: "active",
   Inactive: "inactive",
 };
@@ -53,7 +59,9 @@ export function toCompany(api: ApiCompany): Company {
     contacts: api.contacts_count,
     deals: api.deals_count,
     status: STATUS_FROM_API[api.status],
-    createdOn: api.created_at ? api.created_at.slice(0, 10) : "",
+    createdOn: api.created_at
+      ? api.created_at.slice(0, 10)
+      : "",
     website: api.website,
     phone: api.phone,
     email: api.email,
@@ -75,17 +83,51 @@ export interface CompanyFormValues {
   description: string;
 }
 
-export function toCompanyFormValues(api: ApiCompany): CompanyFormValues {
+/**
+ * Converts either an API company or a cached/UI company
+ * into the form structure.
+ *
+ * API Company:
+ *   status        -> "active" | "inactive"
+ *   contacts_count
+ *   deals_count
+ *   created_at
+ *
+ * Cached Company:
+ *   status        -> "Active" | "Inactive"
+ *   contacts
+ *   deals
+ *   createdOn
+ */
+export function toCompanyFormValues(
+  company: ApiCompany | Company
+): CompanyFormValues {
+  // API response
+  if ("contacts_count" in company) {
+    return {
+      name: company.name,
+      industry: company.industry,
+      website: company.website,
+      phone: company.phone,
+      email: company.email,
+      address: company.address,
+      size: company.size,
+      status: STATUS_FROM_API[company.status],
+      description: company.description || "",
+    };
+  }
+
+  // Cached/UI company
   return {
-    name: api.name,
-    industry: api.industry,
-    website: api.website,
-    phone: api.phone,
-    email: api.email,
-    address: api.address,
-    size: api.size,
-    status: STATUS_FROM_API[api.status],
-    description: api.description || "",
+    name: company.name,
+    industry: company.industry,
+    website: company.website,
+    phone: company.phone,
+    email: company.email,
+    address: company.address,
+    size: company.size,
+    status: company.status,
+    description: company.description || "",
   };
 }
 
@@ -122,7 +164,10 @@ export interface ApiCompanyStats {
 export interface ApiFilterOptions {
   industries: string[];
   sizes: string[];
-  statuses: { value: string; label: string }[];
+  statuses: {
+    value: string;
+    label: string;
+  }[];
   total_records: number;
 }
 
@@ -130,17 +175,27 @@ export function apiErrorMessage(err: unknown): string {
   if (err instanceof Error) {
     try {
       const parsed = JSON.parse(err.message);
+
       if (parsed && typeof parsed === "object") {
         const firstValue = Object.values(parsed)[0];
-        if (Array.isArray(firstValue)) return String(firstValue[0]);
-        if (firstValue !== undefined && firstValue !== null) {
+
+        if (Array.isArray(firstValue)) {
+          return String(firstValue[0]);
+        }
+
+        if (
+          firstValue !== undefined &&
+          firstValue !== null
+        ) {
           return String(firstValue);
         }
       }
     } catch {
       // message is not JSON, fall through to raw message
     }
+
     return err.message;
   }
+
   return "Something went wrong.";
 }

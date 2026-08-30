@@ -3190,150 +3190,347 @@ html[data-theme="dark"] .dashboard-content iframe {
 /* ════════════════════════════════════════
    COMPANY DETAIL — refined info grid
 ════════════════════════════════════════ */
+
+/* ════════════════════════════════════════
+   COMPANY DETAIL — refined info grid
+════════════════════════════════════════ */
+
+.company-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .company-detail-card {
+  width: 100%;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  box-sizing: border-box;
 }
+
+/* ── Company Profile ── */
 
 .company-profile {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 20px;
+  width: 100%;
+  margin-bottom: 24px;
 }
+
+.company-avatar {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+  background: #eef2ff;
+  color: #4f46e5;
+
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.company-profile-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.company-profile-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.company-profile-title-row h2 {
+  margin: 0;
+
+  min-width: 0;
+
+  color: #111827;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.company-profile-meta {
+  margin: 4px 0 0;
+
+  color: #64748b;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+/* ── Detail Sections ── */
+
+.company-detail-section {
+  width: 100%;
+  padding: 24px 0;
+
+  border-top: 1px solid #e5e7eb;
+}
+
+.company-detail-section:first-of-type {
+  border-top: none;
+}
+
+.company-detail-section-title {
+  margin: 0 0 18px;
+
+  color: #111827;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 700;
+}
+
+/* ── Information Grid ── */
 
 .company-info-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-.company-info-item {
-  padding: 14px 16px;
-  border-radius: 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  gap: 16px 20px;
+  width: 100%;
 }
 
-.company-info-item-full {
-  grid-column: 1 / -1;
+.company-info-item {
+  min-width: 0;
+
+  padding: 15px 16px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+
+  background: #f8fafc;
 }
-/* ════════════════════════════════════════
-   COMPANY DETAIL — icon + label alignment fix
-════════════════════════════════════════ */
+
+.company-info-item-full,
+.company-info-full {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+/* ── Labels ── */
+
 .company-info-item label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 0 6px;
-  color: #6b7280;
+
+  width: 100%;
+  min-height: 20px;
+
+  margin: 0 0 7px;
+
+  color: #64748b;
   font-size: 12px;
+  line-height: 20px;
   font-weight: 600;
+
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  line-height: 1;
 }
 
 .company-info-icon {
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  font-size: 13px;
+
+  margin-right: 7px;
+
+  font-size: 14px;
   line-height: 1;
+
   flex-shrink: 0;
-  transform: translateY(-0.5px);
 }
+
+/* ── Values ── */
 
 .company-info-item p {
   margin: 0;
+
   color: #1f2937;
-  font-size: 15px;
-  line-height: 1.4;
-}
-
-@media (max-width: 640px) {
-  .company-info-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ════════════════════════════════════════
-   FILTER / BACK BUTTON
-════════════════════════════════════════ */
-.filter-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  height: 44px;
-  padding: 0 18px;
-  border-radius: 10px;
-  border: 1.5px solid #e2e8f0;
-  background: #ffffff;
-  color: #334155;
   font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.2s ease, border-color 0.2s ease;
-}
-
-.filter-btn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
-
-/* ════════════════════════════════════════
-   STATUS BADGE (Company Detail page)
-════════════════════════════════════════ */
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 14px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.status-badge::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: currentColor;
-}
-
-.status-active {
-  background: #dcfce7;
-  color: #16a34a;
-  border: 1px solid #bbf7d0;
-}
-
-.status-inactive {
-  background: #f1f5f9;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-}
-/* ════════════════════════════════════════
-   COMPANY DETAIL — link color + edit button fix
-════════════════════════════════════════ */
-
-/* Links & email inside info cards → brand purple */
-.company-info-item p a,
-.company-info-item p a:visited {
-  color: #6d3df5;
-  text-decoration: none;
+  line-height: 21px;
   font-weight: 500;
+
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.company-info-item p a {
+  color: #4f46e5;
+  text-decoration: none;
+
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .company-info-item p a:hover {
   text-decoration: underline;
 }
 
+/* ── Address ── */
+
+.company-info-full p {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* ── Description ── */
+
+.company-description {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 14px 16px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+
+  background: #f8fafc;
+
+  color: #374151;
+  font-size: 14px;
+  line-height: 22px;
+
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* ── Status Badge ── */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  min-height: 24px;
+  padding: 4px 10px;
+
+  border-radius: 999px;
+
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.status-badge::before {
+  content: "";
+
+  width: 6px;
+  height: 6px;
+
+  flex-shrink: 0;
+
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.status-active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-inactive {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* ── Company Detail Responsive ── */
+
+@media (max-width: 768px) {
+  .company-detail-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .company-detail-card {
+    padding: 20px;
+  }
+
+  .company-profile {
+    align-items: flex-start;
+  }
+
+  .company-profile-title-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .company-profile-title-row h2 {
+    white-space: normal;
+  }
+
+  .company-info-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .company-info-item-full,
+  .company-info-full {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .company-detail-card {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .company-profile {
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .company-avatar {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 10px;
+    font-size: 16px;
+  }
+
+  .company-detail-section {
+    padding: 20px 0;
+  }
+
+  .company-detail-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .company-detail-actions > * {
+    width: 100%;
+  }
+
+  .company-detail-actions .filter-btn,
+  .company-detail-actions .add-company-btn {
+    width: 100%;
+  }
+}
 /* =========================================================
    EDIT COMPANY PAGE
    ========================================================= */

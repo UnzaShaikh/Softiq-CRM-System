@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Company } from "@/data/company";
+import { usePermission } from "@/hooks/usePermissions";
 
 interface CompanyTableProps {
   companies: Company[];
@@ -107,6 +108,8 @@ export default function CompanyTable({
   sortDir,
   onSort,
 }: CompanyTableProps) {
+  const canEdit = usePermission("companies", "edit");
+  const canDelete = usePermission("companies", "delete");
   const handleSort = (field: "name" | "created_at") => {
     if (onSort) {
       onSort(field);
@@ -485,6 +488,7 @@ export default function CompanyTable({
                     </Link>
 
                     {/* Edit */}
+                    {canEdit && (
                     <Link
                       href={`/company/${company.id}/edit`}
                       title="Edit company"
@@ -533,8 +537,10 @@ export default function CompanyTable({
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                       </svg>
                     </Link>
+                    )}
 
                     {/* Delete */}
+                    {canDelete && (
                     <button
                       type="button"
                       title="Delete company"
@@ -586,6 +592,7 @@ export default function CompanyTable({
                         <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
                       </svg>
                     </button>
+                    )}
                   </div>
                 </td>
               </tr>

@@ -8,6 +8,8 @@ import { ApiCustomer, Customer, toCustomer } from "@/data/customers";
 import { apiRequest, getAccessToken } from "@/lib/api";
 import { Mail, Phone, MapPin, Building2, Tag, Calendar } from "lucide-react";
 import ThemeLoader from "@/components/ui/ThemeLoader";
+import { usePermission } from "@/hooks/usePermissions";
+import { cacheCustomer, getCachedCustomer } from "@/data/customerCache";
 
 const AVATAR_COLORS: [string, string][] = [
   ["#4f46e5", "#7c3aed"], ["#0891b2", "#0e7490"], ["#059669", "#047857"],
@@ -25,52 +27,109 @@ export default function CustomerDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const canEdit = usePermission("customers", "edit");
 
   useEffect(() => {
+    if (!id) return;
+
     let cancelled = false;
-    const run = async () => {
+
+    // If the user came from the Customers table, the customer is already
+    // cached. Render it immediately instead of showing a loading screen.
+    const cachedCustomer = getCachedCustomer(id);
+
+    if (cachedCustomer) {
+      setCustomer(cachedCustomer);
+      setLoading(false);
+      setError(null);
+      setNotFound(false);
+    }
+
+    const refreshCustomer = async () => {
       try {
-        const data = await apiRequest<ApiCustomer>(`/api/customers/${id}/`);
+        const data = await apiRequest<ApiCustomer>(
+          `/api/customers/${id}/`
+        );
+
         if (cancelled) return;
-        setCustomer(toCustomer(data));
+
+        const freshCustomer = toCustomer(data);
+
+        setCustomer(freshCustomer);
+        cacheCustomer(freshCustomer);
+        setError(null);
+        setNotFound(false);
       } catch (err) {
         if (cancelled) return;
-        setError((err as Error).message);
-        setNotFound(true);
-        if (!getAccessToken()) router.push("/login");
+
+        // If cached data is available, keep it visible. Do not flash
+        // an error just because the background refresh was slow/failed.
+        if (!cachedCustomer) {
+          setError((err as Error).message);
+          setNotFound(true);
+
+          if (!getAccessToken()) {
+            router.push("/login");
+          }
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
-    void run();
+
+    void refreshCustomer();
+
     return () => {
       cancelled = true;
     };
   }, [id, router]);
 
-  if (loading) return (
-    <DashboardLayout>
-      <ThemeLoader label="Loading customer..." />
-    </DashboardLayout>
-  );
-
-  if (notFound) return (
-    <DashboardLayout>
-      <div className="not-found-state">
-        <p style={{ fontSize: "3rem", margin: "0 0 12px" }}>🔍</p>
-        <h2>Customer Not Found</h2>
-        <p>{error || `No customer found with ID: ${id}`}</p>
-        <button className="btn-add" onClick={() => router.push("/customers")}>Back to Customers</button>
-      </div>
-    </DashboardLayout>
-  );
-
-  const [c1, c2] = getAvatarColor(customer!.name);
-
   return (
     <DashboardLayout>
+      {loading && !customer ? (
+        <ThemeLoader label="Loading customer..." />
+      ) : notFound || !customer ? (
+        <div className="not-found-state">
+          <p style={{ fontSize: "3rem", margin: "0 0 12px" }}>🔍</p>
+          <h2>Customer Not Found</h2>
+          <p>{error || `No customer found with ID: ${id}`}</p>
+          <button
+            className="btn-add"
+            onClick={() => router.push("/customers")}
+          >
+            Back to Customers
+          </button>
+        </div>
+      ) : (
+        <CustomerDetailContent
+          customer={customer}
+          canEdit={canEdit}
+          onBack={() => router.push("/customers")}
+          onEdit={() => router.push(`/customers/${id}/edit`)}
+        />
+      )}
+    </DashboardLayout>
+  );
+}
+
+function CustomerDetailContent({
+  customer,
+  canEdit,
+  onBack,
+  onEdit,
+}: {
+  customer: Customer;
+  canEdit: boolean;
+  onBack: () => void;
+  onEdit: () => void;
+}) {
+  const [c1, c2] = getAvatarColor(customer.name);
+
+  return (
       <div className="detail-wrapper">
-        <button className="back-btn" onClick={() => router.push("/customers")}>
+        <button className="back-btn" onClick={onBack}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
           Back to Customers
         </button>
@@ -91,10 +150,15 @@ export default function CustomerDetailPage() {
                 </div>
               </div>
             </div>
-            <button className="btn-add" onClick={() => router.push(`/customers/${id}/edit`)}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-              Edit Customer
-            </button>
+            {canEdit && (
+              <button className="btn-add" onClick={onEdit}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                Edit Customer
+              </button>
+            )}
           </div>
         </div>
 
@@ -147,7 +211,5 @@ export default function CustomerDetailPage() {
           ))}
         </div>
       </div>
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-    </DashboardLayout>
   );
 }

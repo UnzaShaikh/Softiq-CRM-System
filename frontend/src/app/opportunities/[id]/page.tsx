@@ -8,6 +8,11 @@ import { ApiOpportunity, Opportunity, toOpportunity } from "@/data/opportunities
 import { apiRequest, getAccessToken } from "@/lib/api";
 import { DollarSign, BarChart2, Calendar, User, Building2, Tag, FileText } from "lucide-react";
 import ThemeLoader from "@/components/ui/ThemeLoader";
+import { usePermission } from "@/hooks/usePermissions";
+import {
+  getCachedOpportunity,
+  setCachedOpportunity,
+} from "@/data/opportunityCache";
 
 const AVATAR_COLORS: [string, string][] = [
   ["#4f46e5", "#7c3aed"], ["#0891b2", "#0e7490"], ["#059669", "#047857"],
@@ -25,30 +30,64 @@ export default function OpportunityDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const canEdit = usePermission("opportunities", "edit");
 
   useEffect(() => {
+    if (!id) return;
+
     let cancelled = false;
-    const run = async () => {
+
+    const cachedOpportunity = getCachedOpportunity(id);
+
+    if (cachedOpportunity) {
+      setOpp(cachedOpportunity);
+      setLoading(false);
+      setError(null);
+      setNotFound(false);
+    }
+
+    const refreshOpportunity = async () => {
       try {
-        const data = await apiRequest<ApiOpportunity>(`/api/opportunities/${id}/`);
+        const data = await apiRequest<ApiOpportunity>(
+          `/api/opportunities/${id}/`
+        );
+
         if (cancelled) return;
-        setOpp(toOpportunity(data));
+
+        const freshOpportunity = toOpportunity(data);
+
+        setOpp(freshOpportunity);
+        setCachedOpportunity(freshOpportunity);
+        setError(null);
+        setNotFound(false);
       } catch (err) {
         if (cancelled) return;
-        setError((err as Error).message);
-        setNotFound(true);
-        if (!getAccessToken()) router.push("/login");
+
+        // If cached data exists, keep it visible and do not replace
+        // the page with an error during a background refresh.
+        if (!cachedOpportunity) {
+          setError((err as Error).message);
+          setNotFound(true);
+
+          if (!getAccessToken()) {
+            router.push("/login");
+          }
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
-    void run();
+
+    void refreshOpportunity();
+
     return () => {
       cancelled = true;
     };
   }, [id, router]);
 
-  if (loading) return (
+  if (loading && !opp) return (
     <DashboardLayout>
       <ThemeLoader label="Loading opportunity..." />
     </DashboardLayout>
@@ -95,11 +134,13 @@ export default function OpportunityDetailPage() {
                 </div>
               </div>
             </div>
-            <button className="btn-add" onClick={() => router.push(`/opportunities/${id}/edit`)}
+            {canEdit && (
+          <button className="btn-add" onClick={() => router.push(`/opportunities/${id}/edit`)}
               style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.4)", backdropFilter: "blur(4px)" }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
               Edit Opportunity
             </button>
+            )}
           </div>
         </div>
 

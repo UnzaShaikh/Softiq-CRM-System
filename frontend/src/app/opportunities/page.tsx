@@ -19,6 +19,12 @@ import { apiRequest, getAccessToken, emitDataChanged } from "@/lib/api";
 import { Target, CheckCircle, Trophy, DollarSign, BarChart2 } from "lucide-react";
 import ThemeLoader from "@/components/ui/ThemeLoader";
 import { usePermission } from "@/hooks/usePermissions";
+import {
+  getCachedOpportunityList,
+  setCachedOpportunityList,
+  setCachedOpportunity,
+  removeCachedOpportunity,
+} from "@/data/opportunityCache";
 
 const PAGE_SIZE = 10;
 type FilterStage = "All" | OpportunityStage;
@@ -54,36 +60,134 @@ export default function OpportunitiesPage() {
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
+  /*
+   * Restore the cached list after hydration.
+   * Never read the cache during render because that can cause
+   * a server/client hydration mismatch.
+   */
+  useEffect(() => {
+    const cached = getCachedOpportunityList();
+
+    if (!cached) return;
+
+    setOpportunities(cached.opportunities);
+    setTotalCount(cached.totalCount);
+    setSearch(cached.search);
+    setStageFilter(cached.stageFilter);
+    setStatusFilter(cached.statusFilter);
+    setCurrentPage(cached.currentPage);
+    setLoading(false);
+    setError(null);
+  }, []);
+
+  /*
+   * Keep cached Opportunities visible while refreshing.
+   *
+   * First visit:
+   *   no cache → spinner → API → data
+   *
+   * Returning to Opportunities:
+   *   cache → data immediately → API refresh silently
+   */
   useEffect(() => {
     let cancelled = false;
+
     const params = new URLSearchParams();
-    if (search.trim()) params.set("search", search.trim());
-    const stageQ = stageFilter === "All" ? undefined : STAGE_TO_API[stageFilter];
-    const statusQ = statusFilter === "All" ? undefined : STATUS_TO_API[statusFilter];
+
+    if (search.trim()) {
+      params.set("search", search.trim());
+    }
+
+    const stageQ =
+      stageFilter === "All"
+        ? undefined
+        : STAGE_TO_API[stageFilter];
+
+    const statusQ =
+      statusFilter === "All"
+        ? undefined
+        : STATUS_TO_API[statusFilter];
+
     if (stageQ) params.set("stage", stageQ);
     if (statusQ) params.set("status", statusQ);
+
     params.set("page", String(currentPage));
 
     const run = async () => {
+      const cached = getCachedOpportunityList();
+
+      if (!cached) {
+        setLoading(true);
+      } else {
+        setLoading(false);
+      }
+
       try {
-        const data = await apiRequest<ApiOpportunityList>(`/api/opportunities/?${params.toString()}`);
+        const data =
+          await apiRequest<ApiOpportunityList>(
+            `/api/opportunities/?${params.toString()}`
+          );
+
         if (cancelled) return;
-        setOpportunities(data.results.map(toOpportunity));
+
+        const mappedOpportunities =
+          data.results.map(toOpportunity);
+
+        setOpportunities(mappedOpportunities);
         setTotalCount(data.count);
         setError(null);
-        const maxPage = Math.max(1, Math.ceil(data.count / PAGE_SIZE));
-        if (currentPage > maxPage) setCurrentPage(maxPage);
+
+        setCachedOpportunityList({
+          opportunities: mappedOpportunities,
+          totalCount: data.count,
+          search,
+          stageFilter,
+          statusFilter,
+          currentPage,
+        });
+
+        const maxPage = Math.max(
+          1,
+          Math.ceil(data.count / PAGE_SIZE)
+        );
+
+        if (currentPage > maxPage) {
+          setCurrentPage(maxPage);
+        }
       } catch (err) {
         if (cancelled) return;
-        setError((err as Error).message);
-        if (!getAccessToken()) router.push("/login");
+
+        /*
+         * If cached data is already visible, keep showing it.
+         * Only show an error when there is genuinely no data.
+         */
+        if (!cached) {
+          setError((err as Error).message);
+
+          if (!getAccessToken()) {
+            router.push("/login");
+          }
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
+
     void run();
-    return () => { cancelled = true; };
-  }, [search, stageFilter, statusFilter, currentPage, refreshKey, router]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    search,
+    stageFilter,
+    statusFilter,
+    currentPage,
+    refreshKey,
+    router,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,6 +228,7 @@ export default function OpportunitiesPage() {
     setDeleting(true);
     try {
       await apiRequest(`/api/opportunities/${deleteModal.id}/`, { method: "DELETE" });
+      removeCachedOpportunity(deleteModal.id);
       emitDataChanged();
       showToast(`"${deleteModal.name}" has been deleted.`);
       setDeleteModal(null);
@@ -237,8 +342,14 @@ export default function OpportunitiesPage() {
             <>
               <OpportunityTable
                 opportunities={opportunities}
-                onView={(o) => router.push(`/opportunities/${o.id}`)}
-                onEdit={(o) => router.push(`/opportunities/${o.id}/edit`)}
+                onView={(o) => {
+                  setCachedOpportunity(o);
+                  router.push(`/opportunities/${o.id}`);
+                }}
+                onEdit={(o) => {
+                  setCachedOpportunity(o);
+                  router.push(`/opportunities/${o.id}/edit`);
+                }}
                 onDelete={setDeleteModal}
               />
 

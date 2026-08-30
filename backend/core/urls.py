@@ -234,6 +234,14 @@ urlpatterns = [
         "api/",
         include("project_settings.urls"),
     ),
+    # =========================================================
+        # Reports
+    # =========================================================
+
+    path(
+    "api/reports/",
+    include("reports.urls")
+),
 ]
 
 
