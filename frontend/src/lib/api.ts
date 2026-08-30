@@ -134,3 +134,44 @@ export async function apiRequest<T = unknown>(
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
+
+export async function apiDownload(
+  path: string,
+  { body, headers, ...options }: RequestOptions = {}
+): Promise<Blob> {
+  const send = async (token: string | null): Promise<Response> => {
+    return fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  };
+
+  let res = await send(getAccessToken());
+
+  if (res.status === 401) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      res = await send(newToken);
+    } else {
+      clearTokens();
+      redirectToLogin();
+    }
+  }
+
+  if (!res.ok) {
+    let detail = `Request failed with status ${res.status}`;
+    try {
+      const err = await res.json();
+      detail = err.detail ?? JSON.stringify(err);
+    } catch {
+      // ignore body parse errors
+    }
+    throw new Error(detail);
+  }
+
+  return res.blob();
+}
