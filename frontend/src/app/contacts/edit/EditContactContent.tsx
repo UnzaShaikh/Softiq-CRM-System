@@ -6,6 +6,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ContactForm from "@/components/contacts/ContactForm";
 import { ApiContact, Contact, toContact } from "@/data/contact";
 import { apiRequest, getAccessToken } from "@/lib/api";
+import { getCachedContact, setCachedContact } from "@/data/contactCache";
 import ThemeLoader from "@/components/ui/ThemeLoader";
 
 export default function EditContactContent() {
@@ -16,20 +17,41 @@ export default function EditContactContent() {
 
   const id = Number(searchParams.get("id"));
 
+  // Never read the client cache during render. The page is also
+  // server-rendered, so reading it in the initial state can make
+  // server HTML differ from the client HTML.
   const [contact, setContact] = useState<Contact | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [hydrated, setHydrated] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setHydrated(true);
+      setNotFound(true);
+      return;
+    }
 
     let cancelled = false;
+
+    // Restore cached contact after hydration for instant client navigation.
+    const cached = getCachedContact(id);
+    if (cached) {
+      setContact(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
+    setHydrated(true);
 
     const run = async () => {
       try {
         const data = await apiRequest<ApiContact>(`/api/contacts/${id}/`);
         if (cancelled) return;
-        setContact(toContact(data));
+        const nextContact = toContact(data);
+        setCachedContact(nextContact);
+        setContact(nextContact);
       } catch {
         if (cancelled) return;
         setNotFound(true);
@@ -46,7 +68,15 @@ export default function EditContactContent() {
     };
   }, [id, router]);
 
-  if (loading && id) {
+  if (!hydrated) {
+    return (
+      <DashboardLayout>
+        <div style={{ minHeight: "220px" }} aria-hidden="true" />
+      </DashboardLayout>
+    );
+  }
+
+  if (loading && !contact && id) {
     return (
       <DashboardLayout>
         <ThemeLoader label="Loading contact..." />

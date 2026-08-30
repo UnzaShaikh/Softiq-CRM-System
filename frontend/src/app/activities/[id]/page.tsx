@@ -6,30 +6,45 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { ActivityStatusBadge, ActivityTypeBadge, ActivityPriorityBadge } from "@/components/activities/ActivityStatusBadge";
 import { ApiActivity, ActivityStatus, toActivity, STATUS_TO_API, apiErrorMessage } from "@/data/activity";
 import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
+import { getCachedActivity, setCachedActivity } from "@/data/activityCache";
 import { Calendar, Clock, MapPin, User, Tag, FileText } from "lucide-react";
 import ThemeLoader from "@/components/ui/ThemeLoader";
+import { usePermission } from "@/hooks/usePermissions";
 
 export default function ActivityDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
   const [activity, setActivity] = useState<ApiActivity | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const canEdit = usePermission("activities", "edit");
 
   useEffect(() => {
     let cancelled = false;
+    const cached = getCachedActivity(id);
+    if (cached) {
+      setActivity(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     const run = async () => {
       try {
         const data = await apiRequest<ApiActivity>(`/api/activities/${id}/`);
         if (cancelled) return;
         setActivity(data);
+        setCachedActivity(data);
+        setNotFound(false);
       } catch (err) {
         if (cancelled) return;
-        setError(apiErrorMessage(err));
-        setNotFound(true);
+        if (!cached) {
+          setError(apiErrorMessage(err));
+          setNotFound(true);
+        }
         if (!getAccessToken()) router.push("/login");
       } finally {
         if (!cancelled) setLoading(false);
@@ -40,13 +55,14 @@ export default function ActivityDetailPage() {
   }, [id, router]);
 
   async function handleStatusChange(status: ActivityStatus) {
-    if (!activity) return;
+    if (!activity || !canEdit) return;
     setBusy(true);
     try {
       const updated = await apiRequest<ApiActivity>(`/api/activities/${activity.id}/status/`, {
         method: "PATCH",
         body: { status: STATUS_TO_API[status] },
       });
+      setCachedActivity(updated);
       emitDataChanged();
       setActivity(updated);
     } catch (err) {
@@ -104,7 +120,7 @@ export default function ActivityDetailPage() {
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-              {actionable && (
+              {actionable && canEdit && (
                 <>
                   <button className="btn-add" onClick={() => handleStatusChange("Completed")} disabled={busy}
                     style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.4)" }}>
@@ -117,11 +133,13 @@ export default function ActivityDetailPage() {
                   </button>
                 </>
               )}
-              <button className="btn-secondary" onClick={() => router.push(`/activities/${id}/edit`)}
+              {canEdit && (
+          <button className="btn-secondary" onClick={() => router.push(`/activities/${id}/edit`)}
                 style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.4)", color: "#fff" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                 Edit Activity
               </button>
+              )}
             </div>
           </div>
         </div>

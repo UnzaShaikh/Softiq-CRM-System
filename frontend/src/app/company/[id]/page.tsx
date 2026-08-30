@@ -1,53 +1,139 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import {
+  useParams,
+  useRouter,
+} from "next/navigation";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { usePermission } from "@/hooks/usePermissions";
 import ThemeLoader from "@/components/ui/ThemeLoader";
-import { ApiCompany, Company, toCompany } from "@/data/company";
-import { apiRequest, getAccessToken } from "@/lib/api";
+
+import {
+  ApiCompany,
+  Company,
+  toCompany,
+} from "@/data/company";
+
+import {
+  getCachedCompany,
+  setCachedCompany,
+  subscribeCompanyCache,
+} from "@/data/companyCache";
+
+import {
+  apiRequest,
+  getAccessToken,
+} from "@/lib/api";
 
 export default function CompanyDetailPage() {
   const router = useRouter();
   const params = useParams();
+
   const companyId = Number(params?.id);
 
-  const [company, setCompany] = useState<Company | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [notFound, setNotFound] = useState(false);
+  const cachedCompany =
+    useSyncExternalStore(
+      subscribeCompanyCache,
+      () =>
+        companyId
+          ? getCachedCompany(companyId)
+          : null,
+      () => null
+    );
 
-  const missingId = !companyId;
+  const [company, setCompany] =
+    useState<Company | null>(null);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  const [notFound, setNotFound] =
+    useState(false);
+
+  const displayCompany =
+    company ?? cachedCompany;
+
+  const canEdit = usePermission("companies", "edit");
 
   useEffect(() => {
     if (!companyId) return;
 
     let cancelled = false;
 
+    /*
+     * Cached company is immediately available.
+     * Do not show the loader in this case.
+     */
+    if (cachedCompany) {
+      setCompany(cachedCompany);
+      setLoading(false);
+    }
+
     const run = async () => {
       try {
-        const data = await apiRequest<ApiCompany>(
-          `/api/companies/${companyId}/`
-        );
+        const data =
+          await apiRequest<ApiCompany>(
+            `/api/companies/${companyId}/`
+          );
+
         if (cancelled) return;
-        setCompany(toCompany(data));
+
+        const mapped = toCompany(data);
+
+        setCompany(mapped);
+        setCachedCompany(mapped);
+        setError(null);
+        setNotFound(false);
       } catch (err) {
         if (cancelled) return;
-        setError((err as Error).message);
-        setNotFound(true);
-        if (!getAccessToken()) router.push("/login");
+
+        /*
+         * If cached data exists, keep showing it.
+         * Only treat the request as a missing company
+         * when there is no cached company.
+         */
+        if (!cachedCompany) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Unable to load company."
+          );
+
+          setNotFound(true);
+        }
+
+        if (!getAccessToken()) {
+          router.push("/login");
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     void run();
+
     return () => {
       cancelled = true;
     };
-  }, [companyId, router]);
+  }, [
+    companyId,
+    router,
+    cachedCompany,
+  ]);
+
+  const missingId = !companyId;
 
   if (missingId || notFound) {
     return (
@@ -55,14 +141,20 @@ export default function CompanyDetailPage() {
         <div className="page-wrapper">
           <div className="page-header">
             <div>
-              <h1 className="page-title">Company Not Found</h1>
+              <h1 className="page-title">
+                Company Not Found
+              </h1>
+
               <p className="page-subtitle">
-                {error || "We couldn't find a company with this ID."}
+                {error ||
+                  "We couldn't find a company with this ID."}
               </p>
             </div>
 
             <Link href="/company">
-              <button className="filter-btn">← Back to Companies</button>
+              <button className="filter-btn">
+                ← Back to Companies
+              </button>
             </Link>
           </div>
         </div>
@@ -70,7 +162,11 @@ export default function CompanyDetailPage() {
     );
   }
 
-  if (loading) {
+  /*
+   * Only show the spinner when there is no cached
+   * company and the API request is still running.
+   */
+  if (loading && !displayCompany) {
     return (
       <DashboardLayout>
         <ThemeLoader label="Loading company..." />
@@ -78,20 +174,26 @@ export default function CompanyDetailPage() {
     );
   }
 
-  if (!company) {
+  if (!displayCompany) {
     return (
       <DashboardLayout>
         <div className="page-wrapper">
           <div className="page-header">
             <div>
-              <h1 className="page-title">Company Not Found</h1>
+              <h1 className="page-title">
+                Company Not Found
+              </h1>
+
               <p className="page-subtitle">
-                We couldn&apos;t find a company with this ID.
+                We couldn&apos;t find a company
+                with this ID.
               </p>
             </div>
 
             <Link href="/company">
-              <button className="filter-btn">← Back to Companies</button>
+              <button className="filter-btn">
+                ← Back to Companies
+              </button>
             </Link>
           </div>
         </div>
@@ -100,278 +202,289 @@ export default function CompanyDetailPage() {
   }
 
   const description =
-    company.description ||
-    `${company.name} is a ${company.industry.toLowerCase()} company with ${company.contacts} contacts and ${company.deals} active deals.`;
-
-  const infoFields = [
-    { icon: "🏭", label: "Industry", value: company.industry || "—" },
-    {
-      icon: "🌐",
-      label: "Website",
-      value: company.website ? (
-        <a href={company.website} target="_blank" rel="noopener noreferrer">
-          {company.website}
-        </a>
-      ) : (
-        "—"
-      ),
-    },
-    { icon: "📞", label: "Phone", value: company.phone || "—" },
-    {
-      icon: "✉️",
-      label: "Email",
-      value: company.email ? (
-        <a href={`mailto:${company.email}`}>{company.email}</a>
-      ) : (
-        "—"
-      ),
-    },
-    { icon: "👥", label: "Contacts", value: company.contacts },
-    { icon: "💼", label: "Deals", value: company.deals },
-    { icon: "📅", label: "Created On", value: company.createdOn || "—" },
-    { icon: "📍", label: "Address", value: company.address || "—" },
-    { icon: "🏢", label: "Company Size", value: company.size || "—" },
-  ];
+    displayCompany.description ||
+    `${displayCompany.name} is a ${displayCompany.industry.toLowerCase()} company with ${displayCompany.contacts} contacts and ${displayCompany.deals} active deals.`;
 
   return (
     <DashboardLayout>
       <div className="page-wrapper">
-        {/* Header */}
         <div className="page-header">
           <div>
-            <h1 className="page-title">Company Details</h1>
-            <p className="page-subtitle">View company information</p>
+            <h1 className="page-title">
+              Company Details
+            </h1>
+
+            <p className="page-subtitle">
+              View company information
+            </p>
           </div>
 
           <div className="company-detail-actions">
-  <Link href="/company">
-    <button className="filter-btn">
-      ← Back to Companies
-    </button>
-  </Link>
+            <Link href="/company">
+              <button className="filter-btn">
+                ← Back to Companies
+              </button>
+            </Link>
 
-  <Link href={`/company/${company.id}/edit`}>
-    <button className="add-company-btn">
-      Edit Company
-    </button>
-  </Link>
-</div>
+            {canEdit && (
+              <Link
+                href={`/company/${displayCompany.id}/edit`}
+              >
+                <button className="add-company-btn">
+                  Edit Company
+                </button>
+              </Link>
+            )}
+          </div>
         </div>
 
-        {/* Company Card */}
-        {/* Company Profile */}
-<div className="company-detail-card">
+        <div className="company-detail-card">
+          {/* Profile */}
+          <div className="company-profile">
+            <div className="company-avatar">
+              {displayCompany.name
+                .substring(0, 2)
+                .toUpperCase()}
+            </div>
 
-  {/* Profile Header */}
-  <div className="company-profile">
-    <div className="company-avatar">
-      {company.name.substring(0, 2).toUpperCase()}
-    </div>
+            <div className="company-profile-content">
+              <div className="company-profile-title-row">
+                <h2>
+                  {displayCompany.name}
+                </h2>
 
-    <div className="company-profile-content">
-      <div className="company-profile-title-row">
-        <h2>{company.name}</h2>
+                <span
+                  className={
+                    displayCompany.status ===
+                    "Active"
+                      ? "status-badge status-active"
+                      : "status-badge status-inactive"
+                  }
+                >
+                  {displayCompany.status}
+                </span>
+              </div>
 
-        <span
-          className={
-            company.status === "Active"
-              ? "status-badge status-active"
-              : "status-badge status-inactive"
-          }
-        >
-          {company.status}
-        </span>
-      </div>
+              <p className="company-profile-meta">
+                {displayCompany.industry ||
+                  "—"}
 
-      <p className="company-profile-meta">
-        {company.industry || "—"}
-        {company.size ? ` • ${company.size}` : ""}
-      </p>
-    </div>
-  </div>
+                {displayCompany.size
+                  ? ` • ${displayCompany.size}`
+                  : ""}
+              </p>
+            </div>
+          </div>
 
-  {/* Company Information */}
-  <div className="company-detail-section">
-    <h3 className="company-detail-section-title">
-      Company Information
-    </h3>
+          {/* Company Information */}
+          <div className="company-detail-section">
+            <h3 className="company-detail-section-title">
+              Company Information
+            </h3>
 
-    <div className="company-info-grid">
-      <div className="company-info-item">
-        <label>
-          <span
-            className="company-info-icon"
-            aria-hidden="true"
-          >
-            🏭
-          </span>
-          Industry
-        </label>
+            <div className="company-info-grid">
+              <div className="company-info-item">
+                <label>
+                  <span
+                    className="company-info-icon"
+                    aria-hidden="true"
+                  >
+                    🏭
+                  </span>
+                  Industry
+                </label>
 
-        <p>{company.industry || "—"}</p>
-      </div>
+                <p>
+                  {displayCompany.industry ||
+                    "—"}
+                </p>
+              </div>
 
-      <div className="company-info-item">
-        <label>
-          <span
-            className="company-info-icon"
-            aria-hidden="true"
-          >
-            🏢
-          </span>
-          Company Size
-        </label>
+              <div className="company-info-item">
+                <label>
+                  <span
+                    className="company-info-icon"
+                    aria-hidden="true"
+                  >
+                    🏢
+                  </span>
+                  Company Size
+                </label>
 
-        <p>{company.size || "—"}</p>
-      </div>
+                <p>
+                  {displayCompany.size ||
+                    "—"}
+                </p>
+              </div>
 
-      <div className="company-info-item">
-        <label>
-          <span
-            className="company-info-icon"
-            aria-hidden="true"
-          >
-            🌐
-          </span>
-          Website
-        </label>
+              <div className="company-info-item">
+                <label>
+                  <span
+                    className="company-info-icon"
+                    aria-hidden="true"
+                  >
+                    🌐
+                  </span>
+                  Website
+                </label>
 
-        <p>
-          {company.website ? (
-            <a
-              href={company.website}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {company.website}
-            </a>
-          ) : (
-            "—"
-          )}
-        </p>
-      </div>
+                <p>
+                  {displayCompany.website ? (
+                    <a
+                      href={
+                        displayCompany.website
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {
+                        displayCompany.website
+                      }
+                    </a>
+                  ) : (
+                    "—"
+                  )}
+                </p>
+              </div>
 
-      <div className="company-info-item">
-        <label>
-          <span
-            className="company-info-icon"
-            aria-hidden="true"
-          >
-            📅
-          </span>
-          Created On
-        </label>
+              <div className="company-info-item">
+                <label>
+                  <span
+                    className="company-info-icon"
+                    aria-hidden="true"
+                  >
+                    📅
+                  </span>
+                  Created On
+                </label>
 
-        <p>{company.createdOn || "—"}</p>
-      </div>
-    </div>
-  </div>
+                <p>
+                  {displayCompany.createdOn ||
+                    "—"}
+                </p>
+              </div>
+            </div>
+          </div>
 
-  {/* Contact Information */}
-  <div className="company-detail-section">
-    <h3 className="company-detail-section-title">
-      Contact Information
-    </h3>
+          {/* Contact Information */}
+          <div className="company-detail-section">
+            <h3 className="company-detail-section-title">
+              Contact Information
+            </h3>
 
-    <div className="company-info-grid">
-      <div className="company-info-item">
-        <label>
-          <span
-            className="company-info-icon"
-            aria-hidden="true"
-          >
-            ✉️
-          </span>
-          Email
-        </label>
+            <div className="company-info-grid">
+              <div className="company-info-item">
+                <label>
+                  <span
+                    className="company-info-icon"
+                    aria-hidden="true"
+                  >
+                    ✉️
+                  </span>
+                  Email
+                </label>
 
-        <p>
-          {company.email ? (
-            <a href={`mailto:${company.email}`}>
-              {company.email}
-            </a>
-          ) : (
-            "—"
-          )}
-        </p>
-      </div>
+                <p>
+                  {displayCompany.email ? (
+                    <a
+                      href={`mailto:${displayCompany.email}`}
+                    >
+                      {displayCompany.email}
+                    </a>
+                  ) : (
+                    "—"
+                  )}
+                </p>
+              </div>
 
-      <div className="company-info-item">
-        <label>
-          <span
-            className="company-info-icon"
-            aria-hidden="true"
-          >
-            📞
-          </span>
-          Phone
-        </label>
+              <div className="company-info-item">
+                <label>
+                  <span
+                    className="company-info-icon"
+                    aria-hidden="true"
+                  >
+                    📞
+                  </span>
+                  Phone
+                </label>
 
-        <p>{company.phone || "—"}</p>
-      </div>
+                <p>
+                  {displayCompany.phone ||
+                    "—"}
+                </p>
+              </div>
 
-      <div className="company-info-item">
-        <label>
-          <span
-            className="company-info-icon"
-            aria-hidden="true"
-          >
-            👥
-          </span>
-          Contacts
-        </label>
+              <div className="company-info-item">
+                <label>
+                  <span
+                    className="company-info-icon"
+                    aria-hidden="true"
+                  >
+                    👥
+                  </span>
+                  Contacts
+                </label>
 
-        <p>{company.contacts ?? 0}</p>
-      </div>
+                <p>
+                  {displayCompany.contacts ??
+                    0}
+                </p>
+              </div>
 
-      <div className="company-info-item">
-        <label>
-          <span
-            className="company-info-icon"
-            aria-hidden="true"
-          >
-            💼
-          </span>
-          Deals
-        </label>
+              <div className="company-info-item">
+                <label>
+                  <span
+                    className="company-info-icon"
+                    aria-hidden="true"
+                  >
+                    💼
+                  </span>
+                  Deals
+                </label>
 
-        <p>{company.deals ?? 0}</p>
-      </div>
-    </div>
-  </div>
+                <p>
+                  {displayCompany.deals ??
+                    0}
+                </p>
+              </div>
+            </div>
+          </div>
 
-  {/* Address */}
-  <div className="company-detail-section">
-    <h3 className="company-detail-section-title">
-      Address
-    </h3>
+          {/* Address */}
+          <div className="company-detail-section">
+            <h3 className="company-detail-section-title">
+              Address
+            </h3>
 
-    <div className="company-info-item company-info-full">
-      <label>
-        <span
-          className="company-info-icon"
-          aria-hidden="true"
-        >
-          📍
-        </span>
-        Address
-      </label>
+            <div className="company-info-item company-info-full">
+              <label>
+                <span
+                  className="company-info-icon"
+                  aria-hidden="true"
+                >
+                  📍
+                </span>
+                Address
+              </label>
 
-      <p>{company.address || "—"}</p>
-    </div>
-  </div>
+              <p>
+                {displayCompany.address ||
+                  "—"}
+              </p>
+            </div>
+          </div>
 
-  {/* Description */}
-  <div className="company-detail-section">
-    <h3 className="company-detail-section-title">
-      Description
-    </h3>
+          {/* Description */}
+          <div className="company-detail-section">
+            <h3 className="company-detail-section-title">
+              Description
+            </h3>
 
-    <div className="company-description">
-      {description}
-    </div>
-  </div>
-</div>
+            <div className="company-description">
+              {description}
+            </div>
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );

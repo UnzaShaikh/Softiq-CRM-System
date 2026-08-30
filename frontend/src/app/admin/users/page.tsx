@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ThemeLoader from "@/components/ui/ThemeLoader";
+import Pagination from "@/components/customers/Pagination";
 import {
-  listAdminUsers,
+  listAdminUsersPage,
   deleteAdminUser,
   updateAdminUser,
   listRoles,
@@ -36,7 +37,14 @@ export default function AdminUsersPage() {
   const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [activeCount, setActiveCount] = useState(0);
+  const [inactiveCount, setInactiveCount] = useState(0);
   const [success, setSuccess] = useState("");
+
+  const PAGE_SIZE = 10;
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingUser, setDeletingUser] = useState<AdminUser | null>(null);
@@ -46,28 +54,56 @@ export default function AdminUsersPage() {
   const [assignRoleId, setAssignRoleId] = useState<number | null>(null);
   const [assigning, setAssigning] = useState(false);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setCurrentPage(1);
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     setLoadError("");
+
     try {
-      const params: { search?: string; is_active?: string } = {};
-      if (search) params.search = search;
+      const params: {
+        search?: string;
+        is_active?: string;
+        page: number;
+        page_size: number;
+      } = {
+        page: currentPage,
+        page_size: PAGE_SIZE,
+      };
+
+      if (debouncedSearch) params.search = debouncedSearch;
       if (filter === "active") params.is_active = "true";
       if (filter === "inactive") params.is_active = "false";
-      const [userData, roleData] = await Promise.all([
-        listAdminUsers(params),
-        listRoles(),
-      ]);
-      setUsers(userData);
-      setRoles(roleData);
+
+      const response = await listAdminUsersPage(params);
+      setUsers(response.results);
+      setTotalCount(response.count);
+      setActiveCount(response.active_users);
+      setInactiveCount(response.inactive_users);
+
+      const maxPage = Math.max(1, Math.ceil(response.count / PAGE_SIZE));
+      if (currentPage > maxPage) setCurrentPage(maxPage);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Failed to load users.");
     } finally {
       setLoading(false);
     }
-  }, [search, filter]);
+  }, [debouncedSearch, filter, currentPage]);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => {
+    void fetchUsers();
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    if (filter !== "all") setCurrentPage(1);
+  }, [filter]);
 
   async function handleDelete() {
     if (!deletingUser) return;
@@ -75,6 +111,9 @@ export default function AdminUsersPage() {
     try {
       await deleteAdminUser(deletingUser.id);
       setUsers(prev => prev.filter(u => u.id !== deletingUser.id));
+      setTotalCount(prev => Math.max(0, prev - 1));
+      if (deletingUser.is_active) setActiveCount(prev => Math.max(0, prev - 1));
+      else setInactiveCount(prev => Math.max(0, prev - 1));
       setShowDeleteModal(false);
       setSuccess(`User "${deletingUser.username}" deleted.`);
       setDeletingUser(null);
@@ -90,6 +129,13 @@ export default function AdminUsersPage() {
     try {
       const updated = await updateAdminUser(user.id, { is_active: !user.is_active });
       setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
+      if (user.is_active) {
+        setActiveCount(prev => Math.max(0, prev - 1));
+        setInactiveCount(prev => prev + 1);
+      } else {
+        setActiveCount(prev => prev + 1);
+        setInactiveCount(prev => Math.max(0, prev - 1));
+      }
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Failed to update user.");
     }
@@ -136,8 +182,9 @@ export default function AdminUsersPage() {
     return role?.bg_color ?? "#f1f5f9";
   }
 
-  const activeCount = users.filter(u => u.is_active).length;
-  const inactiveCount = users.length - activeCount;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const rangeStart = totalCount === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(currentPage * PAGE_SIZE, totalCount);
 
   return (
     <DashboardLayout>
@@ -154,9 +201,20 @@ export default function AdminUsersPage() {
         {/* Page Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
           <div>
-            <button type="button" className="btn-secondary" onClick={() => router.push("/admin")} style={{ marginBottom: "12px" }}>
-              <HiArrowLeft size={15} /> Administration
-            </button>
+            <Link
+              href="/admin"
+              className="btn-secondary"
+              style={{
+                marginBottom: "12px",
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <HiArrowLeft size={15} />
+              Administration
+            </Link>
             <h1 className="page-title">User Management</h1>
             <p className="page-subtitle">Create, edit, and manage user accounts and role assignments.</p>
           </div>
@@ -180,7 +238,16 @@ export default function AdminUsersPage() {
         <div className="company-table-card">
           <div className="contacts-table-toolbar">
             <div className="contacts-search-wrap">
-              <HiSearch className="contacts-search-icon" size={17} />
+              <HiSearch className="contacts-search-icon" size={17} aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  left: "306px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "#94a3b8",
+                  pointerEvents: "none",
+                  zIndex: 2,
+                }}/>
               <input type="text" className="contacts-search-input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search users..." />
               {search && (
                 <button type="button" className="input-action" onClick={() => setSearch("")} aria-label="Clear search">
@@ -189,7 +256,7 @@ export default function AdminUsersPage() {
               )}
             </div>
             <div className="contacts-toolbar-right">
-              <span className="contacts-results-count">{users.length} {users.length === 1 ? "user" : "users"}</span>
+              <span className="contacts-results-count">{totalCount} {totalCount === 1 ? "user" : "users"}</span>
               <div className="contacts-filter-tabs">
                 <button type="button" className={`contacts-filter-tab ${filter === "all" ? "active" : ""}`} onClick={() => setFilter("all")}>All</button>
                 <button type="button" className={`contacts-filter-tab ${filter === "active" ? "active" : ""}`} onClick={() => setFilter("active")}>Active ({activeCount})</button>
@@ -273,6 +340,31 @@ export default function AdminUsersPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {!loading && !loadError && totalCount > 0 && (
+            <div
+              style={{
+                padding: "14px 20px",
+                borderTop: "1px solid #f1f5f9",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 16,
+                flexWrap: "wrap",
+              }}
+            >
+              <p style={{ margin: 0, fontSize: "0.8125rem", color: "#64748b" }}>
+                Showing <strong>{rangeStart}</strong> to <strong>{rangeEnd}</strong> of <strong>{totalCount}</strong> users
+              </p>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalCount}
+                itemsPerPage={PAGE_SIZE}
+                onPageChange={setCurrentPage}
+              />
             </div>
           )}
         </div>

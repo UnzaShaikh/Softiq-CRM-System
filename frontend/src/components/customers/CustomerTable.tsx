@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Customer } from "@/data/customers";
 import StatusBadge from "./StatusBadge";
+import { usePermission } from "@/hooks/usePermissions";
 
 interface CustomerTableProps {
   customers: Customer[];
@@ -43,6 +44,43 @@ function formatDate(iso: string): string {
   });
 }
 
+function SortIcon({
+  col,
+  sortKey,
+  sortDir,
+}: {
+  col: SortKey;
+  sortKey: SortKey;
+  sortDir: SortDir;
+}) {
+  const active = sortKey === col;
+
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={active ? "#4f46e5" : "#94a3b8"}
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ flexShrink: 0 }}
+    >
+      {active && sortDir === "asc" ? (
+        <polyline points="18 15 12 9 6 15" />
+      ) : active && sortDir === "desc" ? (
+        <polyline points="6 9 12 15 18 9" />
+      ) : (
+        <>
+          <polyline points="18 15 12 9 6 15" opacity="0.4" />
+          <polyline points="6 9 12 15 18 9" opacity="0.4" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 export default function CustomerTable({
   customers,
   onView,
@@ -51,6 +89,9 @@ export default function CustomerTable({
 }: CustomerTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const canEdit = usePermission("customers", "edit");
+  const canDelete = usePermission("customers", "delete");
 
   function handleSort(key: SortKey) {
     if (key === sortKey) {
@@ -71,35 +112,7 @@ export default function CustomerTable({
     return 0;
   });
 
-  function SortIcon({ col }: { col: SortKey }) {
-    const active = sortKey === col;
-    return (
-      <svg
-        width="12"
-        height="12"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke={active ? "#4f46e5" : "#94a3b8"}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        style={{ flexShrink: 0 }}
-      >
-        {active && sortDir === "asc" ? (
-          <polyline points="18 15 12 9 6 15" />
-        ) : active && sortDir === "desc" ? (
-          <polyline points="6 9 12 15 18 9" />
-        ) : (
-          <>
-            <polyline points="18 15 12 9 6 15" opacity="0.4" />
-            <polyline points="6 9 12 15 18 9" opacity="0.4" />
-          </>
-        )}
-      </svg>
-    );
-  }
-
-  const thStyle: React.CSSProperties = {
+  const thStyle: CSSProperties = {
     padding: "11px 16px",
     textAlign: "left",
     fontSize: "0.75rem",
@@ -113,7 +126,7 @@ export default function CustomerTable({
     userSelect: "none",
   };
 
-  const tdStyle: React.CSSProperties = {
+  const tdStyle: CSSProperties = {
     padding: "14px 16px",
     fontSize: "0.875rem",
     color: "#374151",
@@ -173,7 +186,7 @@ export default function CustomerTable({
               onClick={() => handleSort("name")}
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                Customer <SortIcon col="name" />
+                Customer <SortIcon col="name" sortKey={sortKey} sortDir={sortDir} />
               </span>
             </th>
             {/* Company */}
@@ -182,7 +195,7 @@ export default function CustomerTable({
               onClick={() => handleSort("company")}
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                Company <SortIcon col="company" />
+                Company <SortIcon col="company" sortKey={sortKey} sortDir={sortDir} />
               </span>
             </th>
             {/* Contact */}
@@ -193,7 +206,7 @@ export default function CustomerTable({
               onClick={() => handleSort("status")}
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                Status <SortIcon col="status" />
+                Status <SortIcon col="status" sortKey={sortKey} sortDir={sortDir} />
               </span>
             </th>
             {/* Joined */}
@@ -202,7 +215,7 @@ export default function CustomerTable({
               onClick={() => handleSort("joinedDate")}
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                Joined <SortIcon col="joinedDate" />
+                Joined <SortIcon col="joinedDate" sortKey={sortKey} sortDir={sortDir} />
               </span>
             </th>
             {/* Revenue */}
@@ -211,7 +224,7 @@ export default function CustomerTable({
               onClick={() => handleSort("totalRevenue")}
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5, justifyContent: "flex-end" }}>
-                Revenue <SortIcon col="totalRevenue" />
+                Revenue <SortIcon col="totalRevenue" sortKey={sortKey} sortDir={sortDir} />
               </span>
             </th>
             {/* Actions */}
@@ -223,7 +236,7 @@ export default function CustomerTable({
           {sorted.map((customer, idx) => {
             const [c1, c2] = getAvatarColor(customer.name);
             const isLast = idx === sorted.length - 1;
-            const rowTd: React.CSSProperties = {
+            const rowTd: CSSProperties = {
               ...tdStyle,
               borderBottom: isLast ? "none" : "1px solid #f1f5f9",
             };
@@ -377,6 +390,7 @@ export default function CustomerTable({
                     </button>
 
                     {/* Edit */}
+                    {canEdit && (
                     <button
                       onClick={() => onEdit(customer)}
                       title="Edit customer"
@@ -408,8 +422,10 @@ export default function CustomerTable({
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                       </svg>
                     </button>
+                    )}
 
                     {/* Delete */}
+                    {canDelete && (
                     <button
                       onClick={() => onDelete(customer)}
                       title="Delete customer"
@@ -444,6 +460,7 @@ export default function CustomerTable({
                         <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
                       </svg>
                     </button>
+                    )}
                   </div>
                 </td>
               </tr>

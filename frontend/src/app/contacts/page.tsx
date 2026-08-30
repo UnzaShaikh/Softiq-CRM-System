@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -25,17 +24,47 @@ import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
 
 const CONTACTS_PER_PAGE = 10;
 
+/*
+ * Keeps the latest Contacts list in memory while navigating inside
+ * the CRM. This prevents the loading spinner from flashing when the
+ * user goes Contacts -> another module -> Contacts.
+ *
+ * It is intentionally module-level rather than localStorage so it
+ * can be used synchronously on client-side navigation. localStorage
+ * is restored only after hydration below.
+ */
+let contactsMemoryCache: {
+  contacts: Contact[];
+  totalCount: number;
+  search: string;
+  statusFilter: FilterStatus;
+  currentPage: number;
+} | null = null;
+
+
 type FilterStatus = "All" | "Active" | "Inactive" | "Lead";
 
 export default function ContactsPage() {
   const router = useRouter();
 
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<FilterStatus>("All");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [contacts, setContacts] = useState<Contact[]>(
+    () => contactsMemoryCache?.contacts ?? []
+  );
+  const [search, setSearch] = useState(
+    () => contactsMemoryCache?.search ?? ""
+  );
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>(
+    () => contactsMemoryCache?.statusFilter ?? "All"
+  );
+  const [currentPage, setCurrentPage] = useState(
+    () => contactsMemoryCache?.currentPage ?? 1
+  );
+  const [totalCount, setTotalCount] = useState(
+    () => contactsMemoryCache?.totalCount ?? 0
+  );
+  const [loading, setLoading] = useState(
+    () => contactsMemoryCache === null
+  );
   const [error, setError] = useState<string | null>(null);
   const canCreate = usePermission("contacts", "create");
   const canDelete = usePermission("contacts", "delete");
@@ -59,11 +88,33 @@ export default function ContactsPage() {
     params.set("page", String(currentPage));
 
     const run = async () => {
-      setLoading(true);
+      /*
+       * Only show the full-page/table loader when there is no data yet.
+       * Existing contacts remain visible while search/filter/page data
+       * is being refreshed.
+       */
+      if (contacts.length === 0) {
+        setLoading(true);
+      }
+
       try {
         const data = await apiRequest<ApiContactList>(`/api/contacts/?${params.toString()}`);
         if (cancelled) return;
-        setContacts(data.results.map(toContact));
+        const nextContacts = data.results.map(toContact);
+
+        /*
+         * Save the successful response synchronously in memory.
+         * The next client-side visit can render it immediately.
+         */
+        contactsMemoryCache = {
+          contacts: nextContacts,
+          totalCount: data.count,
+          search,
+          statusFilter,
+          currentPage,
+        };
+
+        setContacts(nextContacts);
         setTotalCount(data.count);
         setError(null);
         const maxPage = Math.max(1, Math.ceil(data.count / CONTACTS_PER_PAGE));

@@ -22,6 +22,18 @@ import {
   PRIORITY_TO_API,
 } from "@/data/activity";
 import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
+import {
+  getCachedActivitiesList,
+  setCachedActivitiesList,
+  getCachedActivitySummary,
+  setCachedActivitySummary,
+  getCachedActivityDropdowns,
+  setCachedActivityDropdowns,
+  getCachedActivityCalendar,
+  setCachedActivityCalendar,
+  removeCachedActivity,
+  setCachedActivity,
+} from "@/data/activityCache";
 import { Calendar, List, CheckCircle, Clock, AlertCircle } from "lucide-react";
 
 const PAGE_SIZE = 8;
@@ -67,6 +79,7 @@ export default function ActivitiesPage() {
   const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(() => new Date().getMonth());
   const [loading, setLoading] = useState(true);
+  const [hydrated, setHydrated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteModal, setDeleteModal] = useState<Activity | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -79,21 +92,54 @@ export default function ActivitiesPage() {
   const ordering = useMemo(() => `${sortDir === "asc" ? "" : "-"}${ORDERING_FIELD[sortKey]}`, [sortKey, sortDir]);
 
   useEffect(() => {
+    const cached = getCachedActivitiesList();
+    if (cached) {
+      setActivities(cached.activities);
+      setTotalCount(cached.totalCount);
+      setLoading(false);
+    }
+
+    const cachedSummary = getCachedActivitySummary();
+    if (cachedSummary) setSummary(cachedSummary);
+
+    const cachedDropdowns = getCachedActivityDropdowns();
+    if (cachedDropdowns) {
+      setUsers(cachedDropdowns.users.map((u) => ({ id: u.id, name: u.name })));
+    }
+
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     let cancelled = false;
+
     const loadUsers = async () => {
+      const cached = getCachedActivityDropdowns();
+      if (cached) {
+        setUsers(cached.users.map((u) => ({ id: u.id, name: u.name })));
+        return;
+      }
       try {
         const data = await apiRequest<{ users: { id: number; name: string }[] }>("/api/activities/dropdowns/");
-        if (!cancelled) setUsers(data.users ?? []);
+        if (!cancelled) {
+          const normalized = { users: data.users ?? [], customers: [], leads: [], deals: [] };
+          setCachedActivityDropdowns(normalized);
+          setUsers(normalized.users);
+        }
       } catch {
         // dropdown failure is non-fatal
       }
     };
     void loadUsers();
     return () => { cancelled = true; };
-  }, []);
+  }, [hydrated]);
 
   useEffect(() => {
+    if (!hydrated) return;
     let cancelled = false;
+    setLoading(!getCachedActivitiesList());
+    
     const params = new URLSearchParams();
     if (search.trim()) params.set("search", search.trim());
     if (statusFilter !== "All") params.set("status", STATUS_TO_API[statusFilter]);
@@ -106,13 +152,33 @@ export default function ActivitiesPage() {
     params.set("page", String(currentPage));
     params.set("page_size", String(PAGE_SIZE));
 
+    const cacheKey = params.toString();
+    const cached = getCachedActivityCalendar(cacheKey);
+    if (cached) setCalendarActivities(cached);
+
     const run = async () => {
       try {
         const data = await apiRequest<ApiActivityList>(`/api/activities/?${params.toString()}`);
         if (cancelled) return;
-        setActivities(data.results.map(toActivity));
+        const mapped = data.results.map(toActivity);
+        setActivities(mapped);
         setTotalCount(data.count);
         setError(null);
+        setCachedActivitiesList({
+          activities: mapped,
+          apiActivities: data.results,
+          totalCount: data.count,
+          search,
+          statusFilter,
+          typeFilter,
+          priorityFilter,
+          assignedToFilter,
+          dateFrom,
+          dateTo,
+          currentPage,
+          sortKey,
+          sortDir,
+        });
         const maxPage = Math.max(1, Math.ceil(data.count / PAGE_SIZE));
         if (currentPage > maxPage) setCurrentPage(maxPage);
       } catch (err) {
@@ -125,22 +191,26 @@ export default function ActivitiesPage() {
     };
     void run();
     return () => { cancelled = true; };
-  }, [search, statusFilter, typeFilter, priorityFilter, assignedToFilter, dateFrom, dateTo, currentPage, ordering, refreshKey, router]);
+  }, [hydrated, search, statusFilter, typeFilter, priorityFilter, assignedToFilter, dateFrom, dateTo, currentPage, ordering, refreshKey, router, sortKey, sortDir]);
 
   useEffect(() => {
+    if (!hydrated) return;
     let cancelled = false;
     const fetchSummary = async () => {
       try {
         const s = await apiRequest<ApiActivitySummary>("/api/activities/summary/");
-        if (!cancelled) setSummary(s);
+        if (!cancelled) {
+          setSummary(s);
+          setCachedActivitySummary(s);
+        }
       } catch { /* keep last known values */ }
     };
     void fetchSummary();
     return () => { cancelled = true; };
-  }, [refreshKey]);
+  }, [hydrated, refreshKey]);
 
   useEffect(() => {
-    if (viewMode !== "calendar") return;
+    if (!hydrated || viewMode !== "calendar") return;
     let cancelled = false;
     const lastDay = new Date(calendarYear, calendarMonth + 1, 0);
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -159,15 +229,20 @@ export default function ActivitiesPage() {
     if (dateFrom) params.set("date_from", dateFrom > dateFromCal ? dateFrom : dateFromCal);
     if (dateTo) params.set("date_to", dateTo && dateTo < dateToCal ? dateTo : dateToCal);
 
+    const cacheKey = `calendar:${dateFromCal}:${dateToCal}`;
     const run = async () => {
       try {
         const data = await apiRequest<ApiActivityList>(`/api/activities/?${params.toString()}`);
-        if (!cancelled) setCalendarActivities(data.results.map(toActivity));
+        if (!cancelled) {
+          const mapped = data.results.map(toActivity);
+          setCalendarActivities(mapped);
+          setCachedActivityCalendar(cacheKey, mapped);
+        }
       } catch { /* keep last known values */ }
     };
     void run();
     return () => { cancelled = true; };
-  }, [viewMode, calendarYear, calendarMonth, search, statusFilter, typeFilter, priorityFilter, assignedToFilter, dateFrom, dateTo, refreshKey]);
+  }, [hydrated, viewMode, calendarYear, calendarMonth, search, statusFilter, typeFilter, priorityFilter, assignedToFilter, dateFrom, dateTo, refreshKey]);
 
   function handleSearch(val: string) { setSearch(val); setCurrentPage(1); }
   function handleStatusFilter(val: FilterStatus) { setStatusFilter(val); setCurrentPage(1); }
@@ -191,6 +266,7 @@ export default function ActivitiesPage() {
     setDeleting(true);
     try {
       await apiRequest(`/api/activities/${deleteModal.id}/`, { method: "DELETE" });
+      removeCachedActivity(deleteModal.id);
       emitDataChanged();
       showToast(`"${deleteModal.title}" has been deleted.`);
       setDeleteModal(null);
@@ -204,10 +280,11 @@ export default function ActivitiesPage() {
 
   async function handleStatusChange(activity: Activity, status: ActivityStatus) {
     try {
-      await apiRequest(`/api/activities/${activity.id}/status/`, {
+      const updated = await apiRequest<import("@/data/activity").ApiActivity>(`/api/activities/${activity.id}/status/`, {
         method: "PATCH",
         body: { status: STATUS_TO_API[status] },
       });
+      setCachedActivity(updated);
       emitDataChanged();
       showToast(`"${activity.title}" marked as ${status.toLowerCase()}.`);
       setRefreshKey(k => k + 1);

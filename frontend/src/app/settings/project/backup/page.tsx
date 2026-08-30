@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { apiRequest } from "@/lib/api";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import SettingsNav from "@/components/project-settings/SettingsNav";
 import Link from "next/link";
@@ -19,26 +20,26 @@ function Toggle({ value, onChange }: { value: boolean; onChange: () => void }) {
 }
 
 const BACKUP_HISTORY = [
-  { id: 1, name: "Full Backup",         date: "Aug 14, 2026",  time: "02:00 AM", size: "24.5 MB", status: "Success", type: "Auto"   },
-  { id: 2, name: "Full Backup",         date: "Aug 13, 2026",  time: "02:00 AM", size: "24.1 MB", status: "Success", type: "Auto"   },
-  { id: 3, name: "Manual Backup",       date: "Aug 12, 2026",  time: "10:30 AM", size: "23.8 MB", status: "Success", type: "Manual" },
-  { id: 4, name: "Full Backup",         date: "Aug 11, 2026",  time: "02:00 AM", size: "23.2 MB", status: "Failed",  type: "Auto"   },
-  { id: 5, name: "Full Backup",         date: "Aug 10, 2026",  time: "02:00 AM", size: "22.9 MB", status: "Success", type: "Auto"   },
+  { id: 1, name: "Full Backup", date: "Aug 14, 2026", time: "02:00 AM", size: "24.5 MB", status: "Success", type: "Auto" },
+  { id: 2, name: "Full Backup", date: "Aug 13, 2026", time: "02:00 AM", size: "24.1 MB", status: "Success", type: "Auto" },
+  { id: 3, name: "Manual Backup", date: "Aug 12, 2026", time: "10:30 AM", size: "23.8 MB", status: "Success", type: "Manual" },
+  { id: 4, name: "Full Backup", date: "Aug 11, 2026", time: "02:00 AM", size: "23.2 MB", status: "Failed", type: "Auto" },
+  { id: 5, name: "Full Backup", date: "Aug 10, 2026", time: "02:00 AM", size: "22.9 MB", status: "Success", type: "Auto" },
 ];
 
 const EXPORT_MODULES = ["Customers", "Contacts", "Leads", "Deals", "Activities", "Notes", "Follow-ups", "Tasks"];
 
 export default function BackupExportPage() {
-  const [autoBackup,       setAutoBackup]       = useState(true);
-  const [backupFrequency,  setBackupFrequency]  = useState("Daily");
-  const [backupTime,       setBackupTime]       = useState("02:00");
-  const [retentionDays,    setRetentionDays]    = useState("30");
-  const [exportFormat,     setExportFormat]     = useState("CSV");
-  const [selectedModules,  setSelectedModules]  = useState<string[]>(["Customers", "Leads", "Deals"]);
-  const [backingUp,        setBackingUp]        = useState(false);
-  const [exporting,        setExporting]        = useState(false);
-  const [saving,           setSaving]           = useState(false);
-  const [toast,            setToast]            = useState<string | null>(null);
+  const [autoBackup, setAutoBackup] = useState(true);
+  const [backupFrequency, setBackupFrequency] = useState("Daily");
+  const [backupTime, setBackupTime] = useState("02:00");
+  const [retentionDays, setRetentionDays] = useState("30");
+  const [exportFormat, setExportFormat] = useState("CSV");
+  const [selectedModules, setSelectedModules] = useState<string[]>(["Customers", "Leads", "Deals"]);
+  const [backingUp, setBackingUp] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 3500); }
 
@@ -49,12 +50,251 @@ export default function BackupExportPage() {
     showToast("Backup completed successfully.");
   }
 
+  type ExportRecord = Record<string, unknown>;
+
+  const EXPORT_ENDPOINTS: Record<string, string> = {
+    Customers: "/api/customers/",
+    Contacts: "/api/contacts/",
+    Leads: "/api/leads/",
+    Deals: "/api/opportunities/",
+    Activities: "/api/activities/",
+    Notes: "/api/notes/",
+    "Follow-ups": "/api/followups/",
+    Tasks: "/api/tasks/",
+  };
+
+  function getRecordsFromResponse(payload: unknown): {
+    records: ExportRecord[];
+    paginated: boolean;
+    count?: number;
+  } {
+    if (Array.isArray(payload)) {
+      return {
+        records: payload.filter((item): item is ExportRecord =>
+          Boolean(item) && typeof item === "object"
+        ),
+        paginated: false,
+      };
+    }
+
+    if (payload && typeof payload === "object") {
+      const value = payload as Record<string, unknown>;
+      const results =
+        Array.isArray(value.results)
+          ? value.results
+          : Array.isArray(value.data)
+            ? value.data
+            : Array.isArray(value.items)
+              ? value.items
+              : [];
+
+      const records = results.filter(
+        (item): item is ExportRecord =>
+          Boolean(item) && typeof item === "object"
+      );
+
+      const count =
+        typeof value.count === "number"
+          ? value.count
+          : undefined;
+
+      const paginated =
+        "results" in value ||
+        "next" in value ||
+        typeof count === "number";
+
+      return { records, paginated, count };
+    }
+
+    return { records: [], paginated: false };
+  }
+
+  async function fetchAllModuleRecords(endpoint: string): Promise<ExportRecord[]> {
+    const pageSize = 100;
+    const allRecords: ExportRecord[] = [];
+
+    for (let page = 1; page <= 1000; page += 1) {
+      const separator = endpoint.includes("?") ? "&" : "?";
+      const payload = await apiRequest<unknown>(
+        `${endpoint}${separator}page=${page}&page_size=${pageSize}`
+      );
+
+      const { records, paginated, count } =
+        getRecordsFromResponse(payload);
+
+      allRecords.push(...records);
+
+      if (!paginated) {
+        break;
+      }
+
+      if (count !== undefined && allRecords.length >= count) {
+        break;
+      }
+
+      if (records.length === 0 || records.length < pageSize) {
+        break;
+      }
+    }
+
+    return allRecords;
+  }
+
+  function stringifyCsvValue(value: unknown): string {
+    if (value === null || value === undefined) return "";
+
+    const text =
+      typeof value === "object"
+        ? JSON.stringify(value)
+        : String(value);
+
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+
+  function downloadBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.style.display = "none";
+
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   async function handleExport() {
-    if (!selectedModules.length) { showToast("Please select at least one module."); return; }
+    if (!selectedModules.length) {
+      showToast("Please select at least one module.");
+      return;
+    }
+
     setExporting(true);
-    await new Promise(r => setTimeout(r, 1500));
-    setExporting(false);
-    showToast(`Data exported as ${exportFormat} successfully.`);
+
+    try {
+      const selected = selectedModules.filter(
+        (module) => EXPORT_ENDPOINTS[module]
+      );
+
+      if (!selected.length) {
+        throw new Error("No valid modules selected for export.");
+      }
+
+      const moduleEntries = await Promise.all(
+        selected.map(async (module) => {
+          const records = await fetchAllModuleRecords(
+            EXPORT_ENDPOINTS[module]
+          );
+          return [module, records] as const;
+        })
+      );
+
+      const exportedData = Object.fromEntries(moduleEntries) as Record<
+        string,
+        ExportRecord[]
+      >;
+
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-");
+
+      if (exportFormat === "JSON") {
+        const json = JSON.stringify(
+          {
+            exportedAt: new Date().toISOString(),
+            modules: exportedData,
+          },
+          null,
+          2
+        );
+
+        downloadBlob(
+          new Blob([json], { type: "application/json;charset=utf-8" }),
+          `CRM_Data_Export_${timestamp}.json`
+        );
+      } else if (exportFormat === "CSV") {
+        type ExportRecord = Record<string, unknown>;
+        const rows: ExportRecord[] = selected.flatMap((module) =>
+          exportedData[module].map((record) => ({
+            Module: module,
+            ...record,
+          }))
+        );
+
+        const columns = Array.from(
+          new Set(rows.flatMap((row) => Object.keys(row)))
+        );
+
+        const csv = [
+          columns.map(stringifyCsvValue).join(","),
+          ...rows.map((row) =>
+            columns
+              .map((column) => stringifyCsvValue(row[column]))
+              .join(",")
+          ),
+        ].join("\r\n");
+
+        downloadBlob(
+          new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }),
+          `CRM_Data_Export_${timestamp}.csv`
+        );
+      } else {
+        const XLSX = await import("xlsx");
+        const workbook = XLSX.utils.book_new();
+
+        for (const module of selected) {
+          const records = exportedData[module];
+          const worksheet = XLSX.utils.json_to_sheet(
+            records.length ? records : [{ Message: "No records found" }]
+          );
+
+          const safeSheetName = module
+            .replace(/[\\/?*\[\]:]/g, "")
+            .slice(0, 31) || "Export";
+
+          XLSX.utils.book_append_sheet(
+            workbook,
+            worksheet,
+            safeSheetName
+          );
+        }
+
+        const workbookArray = XLSX.write(workbook, {
+          bookType: "xlsx",
+          type: "array",
+        });
+
+        downloadBlob(
+          new Blob([workbookArray], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          }),
+          `CRM_Data_Export_${timestamp}.xlsx`
+        );
+      }
+
+      const totalRecords = Object.values(exportedData).reduce(
+        (total, records) => total + records.length,
+        0
+      );
+
+      showToast(
+        totalRecords > 0
+          ? `Data exported successfully (${totalRecords} records).`
+          : "Export file downloaded. No records were found."
+      );
+    } catch (error) {
+      console.error("CRM data export failed:", error);
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "Failed to export CRM data."
+      );
+    } finally {
+      setExporting(false);
+    }
   }
 
   async function handleSave() {
@@ -135,7 +375,7 @@ export default function BackupExportPage() {
                     <div className="form-group">
                       <label className="form-label">Frequency</label>
                       <select value={backupFrequency} onChange={e => setBackupFrequency(e.target.value)} style={selectStyle}>
-                        {["Daily","Weekly","Monthly"].map(v => <option key={v}>{v}</option>)}
+                        {["Daily", "Weekly", "Monthly"].map(v => <option key={v}>{v}</option>)}
                       </select>
                     </div>
                     <div className="form-group">
@@ -146,7 +386,7 @@ export default function BackupExportPage() {
                     <div className="form-group">
                       <label className="form-label">Retention (days)</label>
                       <select value={retentionDays} onChange={e => setRetentionDays(e.target.value)} style={selectStyle}>
-                        {["7","14","30","60","90"].map(v => <option key={v}>{v}</option>)}
+                        {["7", "14", "30", "60", "90"].map(v => <option key={v}>{v}</option>)}
                       </select>
                     </div>
                   </div>
@@ -169,7 +409,7 @@ export default function BackupExportPage() {
                 <div className="form-group" style={{ maxWidth: 200 }}>
                   <label className="form-label">Export Format</label>
                   <select value={exportFormat} onChange={e => setExportFormat(e.target.value)} style={selectStyle}>
-                    {["CSV","Excel (.xlsx)","JSON"].map(v => <option key={v}>{v}</option>)}
+                    {["CSV", "Excel (.xlsx)", "JSON"].map(v => <option key={v}>{v}</option>)}
                   </select>
                 </div>
                 <div>
@@ -203,7 +443,7 @@ export default function BackupExportPage() {
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "#f8fafc" }}>
-                    {["Name","Date & Time","Size","Type","Status",""].map(h => (
+                    {["Name", "Date & Time", "Size", "Type", "Status", ""].map(h => (
                       <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: "0.72rem", fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: "1px solid #e2e8f0" }}>{h}</th>
                     ))}
                   </tr>
@@ -259,9 +499,9 @@ export default function BackupExportPage() {
               </div>
               <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
                 {[
-                  { label: "Last Backup",    value: "Aug 14, 2026 02:00 AM", icon: <HiClock size={13} /> },
-                  { label: "Total Backups",  value: "5 backups",              icon: <HiArchive size={13} /> },
-                  { label: "Success Rate",   value: "80% (4/5)",              icon: <HiCheckCircle size={13} /> },
+                  { label: "Last Backup", value: "Aug 14, 2026 02:00 AM", icon: <HiClock size={13} /> },
+                  { label: "Total Backups", value: "5 backups", icon: <HiArchive size={13} /> },
+                  { label: "Success Rate", value: "80% (4/5)", icon: <HiCheckCircle size={13} /> },
                 ].map(r => (
                   <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 5, color: "#64748b", fontSize: "0.78rem" }}>{r.icon} {r.label}</div>

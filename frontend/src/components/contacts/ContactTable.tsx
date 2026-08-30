@@ -10,6 +10,7 @@ import {
   ChevronUp,
 } from "lucide-react";
     import { Contact } from "@/data/contact";
+import { usePermission } from "@/hooks/usePermissions";
 
 
 
@@ -44,6 +45,9 @@ export default function ContactTable({
   contacts,
   onDelete,
 }: Props) {
+  const canEdit = usePermission("contacts", "edit");
+  const canDelete = usePermission("contacts", "delete");
+
   return (
     <div className="contacts-data-table-wrapper">
       <table className="contacts-data-table">
@@ -191,6 +195,7 @@ export default function ContactTable({
                     </Link>
 
                     {/* EDIT */}
+                    {canEdit && (
                     <Link
                       href={`/contacts/edit?id=${contact.id}`}
                       className="contacts-action-button contacts-action-edit"
@@ -199,8 +204,10 @@ export default function ContactTable({
                     >
                       <Pencil size={13} strokeWidth={2} />
                     </Link>
+                    )}
 
                     {/* DELETE */}
+                    {canDelete && (
                     <button
                       type="button"
                       className="contacts-action-button contacts-action-delete"
@@ -210,6 +217,7 @@ export default function ContactTable({
                     >
                       <Trash2 size={13} strokeWidth={2} />
                     </button>
+                    )}
                   </div>
                 </td>
               </tr>

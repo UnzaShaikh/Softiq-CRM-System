@@ -16,6 +16,7 @@ import {
   apiErrorMessage,
 } from "@/data/activity";
 import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
+import { getCachedActivity, setCachedActivity, getCachedActivityDropdowns, setCachedActivityDropdowns } from "@/data/activityCache";
 import ThemeLoader from "@/components/ui/ThemeLoader";
 
 interface FormErrors {
@@ -40,36 +41,69 @@ export default function EditActivityPage() {
 
   const [form, setForm] = useState<ActivityFormValues | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [dropdowns, setDropdowns] = useState<ActivityDropdowns>({ users: [], customers: [], leads: [], deals: [] });
-  const [dropdownsLoading, setDropdownsLoading] = useState(true);
+  const [dropdownsLoading, setDropdownsLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    const run = async () => {
+    const cachedActivity = getCachedActivity(id);
+    const cachedDropdowns = getCachedActivityDropdowns();
+
+    if (cachedActivity) {
+      setForm(toActivityFormValues(cachedActivity));
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
+    if (cachedDropdowns) {
+      setDropdowns(cachedDropdowns);
+      setDropdownsLoading(false);
+    } else {
+      setDropdownsLoading(true);
+    }
+
+    const loadActivity = async () => {
       try {
-        const [actData, ddData] = await Promise.all([
-          apiRequest<ApiActivity>(`/api/activities/${id}/`),
-          apiRequest<ActivityDropdowns>("/api/activities/dropdowns/"),
-        ]);
+        const data = await apiRequest<ApiActivity>(`/api/activities/${id}/`);
         if (cancelled) return;
-        setForm(toActivityFormValues(actData));
-        setDropdowns(ddData);
+        setForm(toActivityFormValues(data));
+        setCachedActivity(data);
+        setNotFound(false);
       } catch (err) {
         if (cancelled) return;
-        setSubmitError(apiErrorMessage(err));
-        setNotFound(true);
+        if (!cachedActivity) {
+          setSubmitError(apiErrorMessage(err));
+          setNotFound(true);
+        }
         if (!getAccessToken()) router.push("/login");
       } finally {
         if (!cancelled) setLoading(false);
+      }
+    };
+
+    const loadDropdowns = async () => {
+      if (cachedDropdowns) return;
+      try {
+        const data = await apiRequest<ActivityDropdowns>("/api/activities/dropdowns/");
+        if (cancelled) return;
+        setDropdowns(data);
+        setCachedActivityDropdowns(data);
+      } catch (err) {
+        if (!cancelled) setSubmitError(apiErrorMessage(err));
+        if (!getAccessToken()) router.push("/login");
+      } finally {
         if (!cancelled) setDropdownsLoading(false);
       }
     };
-    void run();
+
+    void loadActivity();
+    void loadDropdowns();
     return () => { cancelled = true; };
   }, [id, router]);
 
@@ -112,10 +146,11 @@ export default function EditActivityPage() {
     setSaving(true);
     setSubmitError("");
     try {
-      await apiRequest(`/api/activities/${id}/`, {
+      const updated = await apiRequest<ApiActivity>(`/api/activities/${id}/`, {
         method: "PATCH",
         body: toActivityApiPayload(form),
       });
+      setCachedActivity(updated);
       emitDataChanged();
       setSuccess(true);
       setTimeout(() => router.push(`/activities/${id}`), 1800);
@@ -149,7 +184,7 @@ export default function EditActivityPage() {
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         {/* Header */}
         <div>
-          <button className="back-btn" onClick={() => router.push(`/activities/${id}`)} style={{ marginBottom: "8px" }}>
+          <button className="back-btn" onClick={() => router.push(`/activities`)} style={{ marginBottom: "8px" }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
             Back to Activity
           </button>
@@ -204,7 +239,7 @@ export default function EditActivityPage() {
           </div>
 
           <div className="form-actions">
-            <button type="button" className="btn-secondary" onClick={() => router.push(`/activities/${id}`)} disabled={saving}>Cancel</button>
+            <button type="button" className="btn-secondary" onClick={() => router.push(`/activities`)} disabled={saving}>Cancel</button>
             <button type="submit" className="btn-add" disabled={saving || success}>
               {saving ? (<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 0.8s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>Saving...</>) : success ? "Saved!" : "Save Changes"}
             </button>

@@ -14,6 +14,7 @@ import {
   apiErrorMessage,
 } from "@/data/activity";
 import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
+import { getCachedActivityDropdowns, setCachedActivityDropdowns } from "@/data/activityCache";
 
 interface FormErrors {
   title?: string;
@@ -44,14 +45,26 @@ export default function AddActivityPage() {
   const [success, setSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [dropdowns, setDropdowns] = useState<ActivityDropdowns>({ users: [], customers: [], leads: [], deals: [] });
-  const [dropdownsLoading, setDropdownsLoading] = useState(true);
+  const [dropdownsLoading, setDropdownsLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    const cached = getCachedActivityDropdowns();
+    if (cached) {
+      setDropdowns(cached);
+      setDropdownsLoading(false);
+    } else {
+      setDropdownsLoading(true);
+    }
+
     const loadDropdowns = async () => {
+      if (cached) return;
       try {
         const data = await apiRequest<ActivityDropdowns>("/api/activities/dropdowns/");
-        if (!cancelled) setDropdowns(data);
+        if (!cancelled) {
+          setDropdowns(data);
+          setCachedActivityDropdowns(data);
+        }
       } catch (err) {
         if (cancelled) return;
         setSubmitError(`Failed to load dropdown options: ${apiErrorMessage(err)}`);

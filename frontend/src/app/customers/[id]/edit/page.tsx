@@ -7,6 +7,7 @@ import FormField from "@/components/customers/FormField";
 import { ApiCustomer, CustomerFormValues, CustomerStatus, STATUS_TO_API, toFormValues } from "@/data/customers";
 import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
 import ThemeLoader from "@/components/ui/ThemeLoader";
+import { cacheCustomer, getCachedCustomer } from "@/data/customerCache";
 
 interface FormErrors {
   first_name?: string; last_name?: string; email?: string;
@@ -27,22 +28,72 @@ export default function EditCustomerPage() {
   const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
+    if (!id) return;
+
     let cancelled = false;
+
+    // Restore the customer from the in-memory/session cache immediately
+    // after hydration. Never read the cache during the initial render.
+    const cachedCustomer = getCachedCustomer(id);
+
+    if (cachedCustomer) {
+      setForm({
+        first_name: cachedCustomer.name.split(" ")[0] || "",
+        last_name: cachedCustomer.name.split(" ").slice(1).join(" "),
+        email: cachedCustomer.email,
+        phone: cachedCustomer.phone,
+        company: cachedCustomer.company,
+        status: cachedCustomer.status,
+      });
+      setLoading(false);
+      setSubmitError("");
+      setNotFound(false);
+    }
+
     const run = async () => {
       try {
-        const data = await apiRequest<ApiCustomer>(`/api/customers/${id}/`);
+        const data = await apiRequest<ApiCustomer>(
+          `/api/customers/${id}/`
+        );
+
         if (cancelled) return;
+
         setForm(toFormValues(data));
+
+        // Keep the detail cache fresh so the next navigation is instant.
+        cacheCustomer({
+          ...toFormValues(data),
+          id: String(data.id),
+          name: `${data.first_name || "Unnamed"} ${data.last_name || ""}`.trim(),
+          location: cachedCustomer?.location || "—",
+          joinedDate: data.created_at.slice(0, 10),
+          totalDeals: cachedCustomer?.totalDeals || 0,
+          totalRevenue: cachedCustomer?.totalRevenue || 0,
+          avatar:
+            `${(data.first_name || "U").charAt(0)}${(data.last_name || "").charAt(0)}`.toUpperCase(),
+        });
+
+        setSubmitError("");
+        setNotFound(false);
       } catch (err) {
         if (cancelled) return;
-        setSubmitError((err as Error).message);
-        setNotFound(true);
-        if (!getAccessToken()) router.push("/login");
+
+        // Keep cached form visible if background refresh fails.
+        if (!cachedCustomer) {
+          setSubmitError((err as Error).message);
+          setNotFound(true);
+
+          if (!getAccessToken()) {
+            router.push("/login");
+          }
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
+
     void run();
+
     return () => {
       cancelled = true;
     };
@@ -75,17 +126,44 @@ export default function EditCustomerPage() {
     setSaving(true);
     setSubmitError("");
     try {
-      await apiRequest(`/api/customers/${id}/`, {
-        method: "PATCH",
-        body: {
-          first_name: form.first_name,
-          last_name: form.last_name,
-          email: form.email,
-          phone: form.phone,
-          company: form.company,
-          status: STATUS_TO_API[form.status as CustomerStatus],
-        },
+      const updatedApiCustomer = await apiRequest<ApiCustomer>(
+        `/api/customers/${id}/`,
+        {
+          method: "PATCH",
+          body: {
+            first_name: form.first_name,
+            last_name: form.last_name,
+            email: form.email,
+            phone: form.phone,
+            company: form.company,
+            status: STATUS_TO_API[form.status as CustomerStatus],
+          },
+        }
+      );
+
+      const previousCustomer = getCachedCustomer(id);
+
+      cacheCustomer({
+        id: String(updatedApiCustomer.id),
+        name: `${updatedApiCustomer.first_name || "Unnamed"} ${updatedApiCustomer.last_name || ""}`.trim(),
+        email: updatedApiCustomer.email,
+        phone: updatedApiCustomer.phone,
+        company: updatedApiCustomer.company,
+        status: ({
+          lead: "Lead",
+          active: "Active",
+          inactive: "Inactive",
+        } as const)[updatedApiCustomer.status],
+        location: previousCustomer?.location || "—",
+        joinedDate:
+          previousCustomer?.joinedDate ||
+          updatedApiCustomer.created_at.slice(0, 10),
+        totalDeals: previousCustomer?.totalDeals || 0,
+        totalRevenue: previousCustomer?.totalRevenue || 0,
+        avatar:
+          `${(updatedApiCustomer.first_name || "U").charAt(0)}${(updatedApiCustomer.last_name || "").charAt(0)}`.toUpperCase(),
       });
+
       emitDataChanged();
       setSuccess(true);
       setTimeout(() => router.push(`/customers/${id}`), 1800);

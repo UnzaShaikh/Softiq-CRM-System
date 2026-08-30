@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -17,7 +17,7 @@ import CompanyTable from "@/components/company/CompanyTable";
 import SearchBar from "@/components/company/SearchBar";
 import ThemeLoader from "@/components/ui/ThemeLoader";
 import Pagination from "@/components/customers/Pagination";
-const PAGE_SIZE = 10;
+
 import {
   ApiCompanyList,
   ApiCompanyStats,
@@ -25,76 +25,231 @@ import {
   Company,
   toCompany,
 } from "@/data/company";
-import { apiRequest, emitDataChanged, getAccessToken } from "@/lib/api";
+
+import {
+  buildCompanyListCacheKey,
+  getCachedCompaniesList,
+  getCachedCompanyFilterOptions,
+  getCachedCompanyStats,
+  removeCachedCompany,
+  setCachedCompaniesList,
+  setCachedCompanyFilterOptions,
+  setCachedCompanyStats,
+  subscribeCompanyCache,
+} from "@/data/companyCache";
+
+import {
+  apiRequest,
+  emitDataChanged,
+  getAccessToken,
+} from "@/lib/api";
+
 import { usePermission } from "@/hooks/usePermissions";
+
+const PAGE_SIZE = 10;
 
 export default function CompanyPage() {
   const router = useRouter();
+
   const canCreate = usePermission("companies", "create");
   const canDelete = usePermission("companies", "delete");
-
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [industryFilter, setIndustryFilter] = useState("All");
   const [sizeFilter, setSizeFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState<"name" | "created_at">("created_at");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  const [stats, setStats] = useState<ApiCompanyStats | null>(null);
+  const [sortBy, setSortBy] =
+    useState<"name" | "created_at">("created_at");
+
+  const [sortDir, setSortDir] =
+    useState<"asc" | "desc">("desc");
+
+  const cacheKey = buildCompanyListCacheKey({
+    search,
+    statusFilter,
+    industryFilter,
+    sizeFilter,
+    currentPage,
+    sortBy,
+    sortDir,
+  });
+
+  const cachedList = useSyncExternalStore(
+    subscribeCompanyCache,
+    () => getCachedCompaniesList(cacheKey),
+    () => null
+  );
+
+  const cachedStats = useSyncExternalStore(
+    subscribeCompanyCache,
+    getCachedCompanyStats,
+    () => null
+  );
+
+  const cachedFilterOptions = useSyncExternalStore(
+    subscribeCompanyCache,
+    getCachedCompanyFilterOptions,
+    () => null
+  );
+
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const [stats, setStats] =
+    useState<ApiCompanyStats | null>(null);
+
   const [filterOptions, setFilterOptions] =
     useState<ApiFilterOptions | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Delete confirmation modal state
-  const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
+  const [deleteTarget, setDeleteTarget] =
+    useState<Company | null>(null);
+
   const [deleting, setDeleting] = useState(false);
 
-  const companiesPerPage = 10;
-  const statusTabs = ["All", "Active", "Inactive"];
+  const displayCompanies =
+    cachedList?.companies ?? companies;
 
+  const displayTotalCount =
+    cachedList?.totalCount ?? totalCount;
+
+  const displayStats = cachedStats ?? stats;
+
+  const displayFilterOptions =
+    cachedFilterOptions ?? filterOptions;
+
+  useEffect(() => {
+    if (cachedList) {
+      setCompanies(cachedList.companies);
+      setTotalCount(cachedList.totalCount);
+      setLoading(false);
+    }
+  }, [cachedList]);
+
+  useEffect(() => {
+    if (cachedStats) {
+      setStats(cachedStats);
+    }
+  }, [cachedStats]);
+
+  useEffect(() => {
+    if (cachedFilterOptions) {
+      setFilterOptions(cachedFilterOptions);
+    }
+  }, [cachedFilterOptions]);
+
+  /*
+   * Company list request.
+   *
+   * If cached data exists:
+   * - keep the existing table visible
+   * - do not show the spinner
+   * - refresh the data silently
+   *
+   * If no cache exists:
+   * - show the normal loading spinner
+   */
   useEffect(() => {
     let cancelled = false;
 
     const params = new URLSearchParams();
-    if (search.trim()) params.set("search", search.trim());
-    if (statusFilter !== "All") params.set("status", statusFilter.toLowerCase());
-    if (industryFilter !== "All") params.set("industry", industryFilter);
-    if (sizeFilter !== "All") params.set("size", sizeFilter);
+
+    if (search.trim()) {
+      params.set("search", search.trim());
+    }
+
+    if (statusFilter !== "All") {
+      params.set(
+        "status",
+        statusFilter.toLowerCase()
+      );
+    }
+
+    if (industryFilter !== "All") {
+      params.set("industry", industryFilter);
+    }
+
+    if (sizeFilter !== "All") {
+      params.set("size", sizeFilter);
+    }
+
     params.set("page", String(currentPage));
-    params.set("ordering", sortDir === "asc" ? sortBy : `-${sortBy}`);
+
+    params.set(
+      "ordering",
+      sortDir === "asc"
+        ? sortBy
+        : `-${sortBy}`
+    );
 
     const run = async () => {
-      setLoading(true);
+      if (!cachedList) {
+        setLoading(true);
+      }
+
       try {
-        const data = await apiRequest<ApiCompanyList>(
-          `/api/companies/?${params.toString()}`
-        );
+        const data =
+          await apiRequest<ApiCompanyList>(
+            `/api/companies/?${params.toString()}`
+          );
+
         if (cancelled) return;
-        setCompanies(data.results.map(toCompany));
+
+        const mapped =
+          data.results.map(toCompany);
+
+        setCompanies(mapped);
         setTotalCount(data.count);
         setError(null);
+
+        setCachedCompaniesList(
+          cacheKey,
+          {
+            companies: mapped,
+            totalCount: data.count,
+            search,
+            statusFilter,
+            industryFilter,
+            sizeFilter,
+            currentPage,
+            sortBy,
+            sortDir,
+          }
+        );
+
         const maxPage = Math.max(
           1,
-          Math.ceil(data.count / companiesPerPage)
+          Math.ceil(data.count / PAGE_SIZE)
         );
-        if (currentPage > maxPage) setCurrentPage(maxPage);
+
+        if (currentPage > maxPage) {
+          setCurrentPage(maxPage);
+        }
       } catch (err) {
         if (cancelled) return;
-        setError((err as Error).message);
-        if (!getAccessToken()) router.push("/login");
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to load companies."
+        );
+
+        if (!getAccessToken()) {
+          router.push("/login");
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     void run();
+
     return () => {
       cancelled = true;
     };
@@ -106,61 +261,109 @@ export default function CompanyPage() {
     currentPage,
     sortBy,
     sortDir,
-    refreshKey,
     router,
+    cacheKey,
+    cachedList,
   ]);
 
+  /*
+   * Stats and filter options.
+   * These are cached separately because they are independent
+   * from the company table pagination/filter cache.
+   */
   useEffect(() => {
     let cancelled = false;
 
     const run = async () => {
       try {
-        const [statsData, optionsData] = await Promise.all([
-          apiRequest<ApiCompanyStats>("/api/companies/stats/"),
-          apiRequest<ApiFilterOptions>("/api/companies/filter-options/"),
-        ]);
+        const requests: [
+          Promise<ApiCompanyStats>,
+          Promise<ApiFilterOptions>
+        ] = [
+          apiRequest<ApiCompanyStats>(
+            "/api/companies/stats/"
+          ),
+          apiRequest<ApiFilterOptions>(
+            "/api/companies/filter-options/"
+          ),
+        ];
+
+        const [statsData, optionsData] =
+          await Promise.all(requests);
+
         if (cancelled) return;
+
         setStats(statsData);
         setFilterOptions(optionsData);
+
+        setCachedCompanyStats(statsData);
+        setCachedCompanyFilterOptions(
+          optionsData
+        );
       } catch {
         if (cancelled) return;
-        if (!getAccessToken()) router.push("/login");
+
+        if (!getAccessToken()) {
+          router.push("/login");
+        }
       }
     };
 
+    /*
+     * If both are already cached, still refresh them
+     * silently in the background.
+     */
     void run();
+
     return () => {
       cancelled = true;
     };
-  }, [refreshKey, router]);
+  }, [router]);
 
-  const totalCompanies = stats?.total_companies ?? totalCount;
-  const activeCompanies = stats?.active_companies ?? 0;
-  const newCompaniesThisMonth = stats?.new_this_month ?? 0;
-  const totalContacts = stats?.total_contacts ?? 0;
+  const totalCompanies =
+    displayStats?.total_companies ??
+    displayTotalCount;
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / companiesPerPage));
+  const activeCompanies =
+    displayStats?.active_companies ?? 0;
 
-  const startIndex =
-    totalCount === 0 ? 0 : (currentPage - 1) * companiesPerPage + 1;
-  const endIndex = Math.min(currentPage * companiesPerPage, totalCount);
+  const newCompaniesThisMonth =
+    displayStats?.new_this_month ?? 0;
 
-  const handleSearchChange = (value: string) => {
+  const totalContacts =
+    displayStats?.total_contacts ?? 0;
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      displayTotalCount / PAGE_SIZE
+    )
+  );
+
+  const handleSearchChange = (
+    value: string
+  ) => {
     setSearch(value);
     setCurrentPage(1);
   };
 
-  const handleStatusChange = (value: string) => {
+  const handleStatusChange = (
+    value: string
+  ) => {
     setStatusFilter(value);
     setCurrentPage(1);
   };
 
-  const handleIndustryChange = (value: string) => {
+  const handleIndustryChange = (
+    value: string
+  ) => {
     setIndustryFilter(value);
     setCurrentPage(1);
   };
 
-  const handleSizeChange = (value: string) => {
+  const handleSizeChange = (
+    value: string
+  ) => {
     setSizeFilter(value);
     setCurrentPage(1);
   };
@@ -173,17 +376,24 @@ export default function CompanyPage() {
     setCurrentPage(1);
   };
 
-  const handleSort = (field: "name" | "created_at") => {
+  const handleSort = (
+    field: "name" | "created_at"
+  ) => {
     if (sortBy === field) {
-      setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
+      setSortDir((dir) =>
+        dir === "asc" ? "desc" : "asc"
+      );
     } else {
       setSortBy(field);
       setSortDir("asc");
     }
+
     setCurrentPage(1);
   };
 
-  const handleDelete = (company: Company) => {
+  const handleDelete = (
+    company: Company
+  ) => {
     setDeleteTarget(company);
   };
 
@@ -191,24 +401,45 @@ export default function CompanyPage() {
     if (!deleteTarget) return;
 
     setDeleting(true);
+
     try {
-      await apiRequest(`/api/companies/${deleteTarget.id}/`, {
-        method: "DELETE",
-      });
+      await apiRequest(
+        `/api/companies/${deleteTarget.id}/`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      /*
+       * Immediately remove the company from
+       * all in-memory cached views.
+       */
+      removeCachedCompany(
+        deleteTarget.id
+      );
+
       emitDataChanged();
+
       setError(null);
       setDeleteTarget(null);
-      setRefreshKey((key) => key + 1);
     } catch (err) {
-      setError((err as Error).message);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to delete company."
+      );
+
       setDeleteTarget(null);
     } finally {
       setDeleting(false);
     }
   };
 
-  const industries = filterOptions?.industries ?? [];
-  const companySizes = filterOptions?.sizes ?? [];
+  const industries =
+    displayFilterOptions?.industries ?? [];
+
+  const companySizes =
+    displayFilterOptions?.sizes ?? [];
 
   const statCards = [
     {
@@ -241,31 +472,57 @@ export default function CompanyPage() {
     },
   ];
 
+  /*
+   * Important:
+   *
+   * Spinner is only rendered when there is NO cached
+   * company list.
+   *
+   * When navigating back to Company, cached data stays
+   * visible while the API refreshes in the background.
+   */
+  const showInitialLoader =
+    loading &&
+    !cachedList &&
+    displayCompanies.length === 0;
+
   return (
     <DashboardLayout>
       <div className="page-wrapper">
         <div className="page-header">
           <div>
-            <h1 className="page-title">Companies</h1>
-            <p className="page-subtitle">Manage all companies in one place.</p>
+            <h1 className="page-title">
+              Companies
+            </h1>
+
+            <p className="page-subtitle">
+              Manage all companies in one place.
+            </p>
           </div>
 
           {canCreate && (
-          <Link href="/company/new" className="btn-add add-company-btn">
-            <Plus size={16} />
-            Add Company
-          </Link>
+            <Link
+              href="/company/new"
+              className="btn-add add-company-btn"
+            >
+              <Plus size={16} />
+              Add Company
+            </Link>
           )}
         </div>
 
         {/* Summary Cards */}
         <div className="stats-grid">
           {statCards.map((card) => (
-            <div key={card.label} className="stat-card">
+            <div
+              key={card.label}
+              className="stat-card"
+            >
               <div
                 className="stat-card-icon"
                 style={{
-                  background: card.background,
+                  background:
+                    card.background,
                   color: card.color,
                 }}
               >
@@ -275,7 +532,9 @@ export default function CompanyPage() {
               <div>
                 <p
                   className="stat-card-value"
-                  style={{ color: card.color }}
+                  style={{
+                    color: card.color,
+                  }}
                 >
                   {card.value}
                 </p>
@@ -288,22 +547,19 @@ export default function CompanyPage() {
           ))}
         </div>
 
-        {/* Company table card */}
+        {/* Company Table */}
         <div className="table-card">
-
-          {/* Search + Results + Status Tabs */}
           <div className="table-toolbar">
-
-            {/* Search */}
             <div className="table-search-wrap">
               <SearchBar
                 value={search}
-                onChange={handleSearchChange}
+                onChange={
+                  handleSearchChange
+                }
                 placeholder="Search companies..."
               />
             </div>
 
-            {/* Results + Status */}
             <div
               style={{
                 display: "flex",
@@ -318,17 +574,31 @@ export default function CompanyPage() {
                   whiteSpace: "nowrap",
                 }}
               >
-                {totalCount} result{totalCount === 1 ? "" : "s"}
+                {displayTotalCount} result
+                {displayTotalCount === 1
+                  ? ""
+                  : "s"}
               </span>
 
               <div className="filter-tabs">
-                {statusTabs.map((tab) => (
+                {[
+                  "All",
+                  "Active",
+                  "Inactive",
+                ].map((tab) => (
                   <button
                     key={tab}
                     type="button"
-                    className={`filter-tab${statusFilter === tab ? " active" : ""
-                      }`}
-                    onClick={() => handleStatusChange(tab)}
+                    className={`filter-tab${
+                      statusFilter === tab
+                        ? " active"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      handleStatusChange(
+                        tab
+                      )
+                    }
                   >
                     {tab}
                   </button>
@@ -337,55 +607,69 @@ export default function CompanyPage() {
             </div>
           </div>
 
-          {/* Industry + Company Size Filters */}
+          {/* Filters */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
               gap: "10px",
               padding: "12px 16px",
-              borderTop: "1px solid #f1f5f9",
+              borderTop:
+                "1px solid #f1f5f9",
               background: "#fff",
               flexWrap: "wrap",
             }}
           >
-            {/* Industry */}
             <select
               className="filter-select"
               value={industryFilter}
               onChange={(event) =>
-                handleIndustryChange(event.target.value)
+                handleIndustryChange(
+                  event.target.value
+                )
               }
               aria-label="Filter by industry"
             >
-              <option value="All">All Industries</option>
+              <option value="All">
+                All Industries
+              </option>
 
-              {industries.map((industry) => (
-                <option key={industry} value={industry}>
-                  {industry}
-                </option>
-              ))}
+              {industries.map(
+                (industry) => (
+                  <option
+                    key={industry}
+                    value={industry}
+                  >
+                    {industry}
+                  </option>
+                )
+              )}
             </select>
 
-            {/* Company Size */}
             <select
               className="filter-select"
               value={sizeFilter}
               onChange={(event) =>
-                handleSizeChange(event.target.value)
+                handleSizeChange(
+                  event.target.value
+                )
               }
               aria-label="Filter by company size"
             >
-              <option value="All">All Sizes</option>
+              <option value="All">
+                All Sizes
+              </option>
 
               {companySizes.map((size) => (
-                <option key={size} value={size}>
+                <option
+                  key={size}
+                  value={size}
+                >
                   {size}
                 </option>
               ))}
             </select>
 
-            {/* Reset */}
             <button
               type="button"
               className="btn-secondary"
@@ -396,16 +680,22 @@ export default function CompanyPage() {
           </div>
 
           {error && (
-            <div className="msg-error" role="alert">
+            <div
+              className="msg-error"
+              role="alert"
+            >
               ❌ {error}
             </div>
           )}
 
-          {loading ? (
-            <ThemeLoader label="Loading companies..." minHeight={220} />
-          ) : companies.length > 0 ? (
+          {showInitialLoader ? (
+            <ThemeLoader
+              label="Loading companies..."
+              minHeight={220}
+            />
+          ) : displayCompanies.length > 0 ? (
             <CompanyTable
-              companies={companies}
+              companies={displayCompanies}
               onDelete={handleDelete}
               sortBy={sortBy}
               sortDir={sortDir}
@@ -413,51 +703,70 @@ export default function CompanyPage() {
             />
           ) : (
             <div className="company-empty-state">
-              <h3 className="empty-state-title">No companies found</h3>
+              <h3 className="empty-state-title">
+                No companies found
+              </h3>
+
               <p className="empty-state-sub">
-                Try changing your search or filters.
+                Try changing your search or
+                filters.
               </p>
             </div>
           )}
 
-          {!loading && !error && totalCount > 0 && (
-            <div className="pagination-wrap">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={totalCount}
-                itemsPerPage={PAGE_SIZE}
-                onPageChange={setCurrentPage}
-              />
-            </div>
-          )}
+          {!showInitialLoader &&
+            !error &&
+            displayTotalCount > 0 && (
+              <div className="pagination-wrap">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={
+                    displayTotalCount
+                  }
+                  itemsPerPage={PAGE_SIZE}
+                  onPageChange={
+                    setCurrentPage
+                  }
+                />
+              </div>
+            )}
         </div>
       </div>
 
-
-      {/* Delete confirmation modal */}
+      {/* Delete Confirmation */}
       {deleteTarget && (
         <div
           className="contacts-modal-overlay"
           onClick={() => {
-            if (!deleting) setDeleteTarget(null);
+            if (!deleting) {
+              setDeleteTarget(null);
+            }
           }}
         >
           <div
             className="contacts-modal"
             role="dialog"
             aria-modal="true"
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
           >
             <div className="contacts-modal-icon">
               <Trash2 size={22} />
             </div>
 
-            <h3 className="contacts-modal-title">Delete Company</h3>
+            <h3 className="contacts-modal-title">
+              Delete Company
+            </h3>
 
             <p className="contacts-modal-text">
-              Are you sure you want to delete{" "}
-              <strong>{deleteTarget.name}</strong>? This action cannot be
+              Are you sure you want to
+              delete{" "}
+              <strong>
+                {deleteTarget.name}
+              </strong>
+              ? This action cannot be
               undone.
             </p>
 
@@ -465,7 +774,9 @@ export default function CompanyPage() {
               <button
                 type="button"
                 className="contacts-modal-cancel"
-                onClick={() => setDeleteTarget(null)}
+                onClick={() =>
+                  setDeleteTarget(null)
+                }
                 disabled={deleting}
               >
                 Cancel
@@ -474,10 +785,14 @@ export default function CompanyPage() {
               <button
                 type="button"
                 className="contacts-modal-delete"
-                onClick={handleDeleteConfirmed}
+                onClick={
+                  handleDeleteConfirmed
+                }
                 disabled={deleting}
               >
-                {deleting ? "Deleting..." : "Delete"}
+                {deleting
+                  ? "Deleting..."
+                  : "Delete"}
               </button>
             </div>
           </div>
