@@ -1,4 +1,4 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://crmsystem-nn8y.vercel.app";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://crmsystem-u8kw.vercel.app";
 
 const ACCESS_KEY = "access_token";
 const REFRESH_KEY = "refresh_token";
@@ -37,8 +37,7 @@ export function clearTokens(): void {
 
 function setTokenCookies(access: string, refresh?: string | null): void {
   document.cookie = `${ACCESS_KEY}=${access}; path=/; max-age=86400`;
-  if (refresh)
-    document.cookie = `${REFRESH_KEY}=${refresh}; path=/; max-age=86400`;
+  if (refresh) document.cookie = `${REFRESH_KEY}=${refresh}; path=/; max-age=86400`;
 }
 
 let redirecting = false;
@@ -50,9 +49,7 @@ export function redirectToLogin(): void {
   if (pathname === "/login" || pathname === "/register") return;
 
   redirecting = true;
-  window.location.assign(
-    `/login?next=${encodeURIComponent(pathname + search)}`,
-  );
+  window.location.assign(`/login?next=${encodeURIComponent(pathname + search)}`);
 }
 
 const DATA_CHANGED_EVENT = "crm:data-changed";
@@ -97,7 +94,7 @@ interface RequestOptions extends Omit<RequestInit, "body"> {
 
 export async function apiRequest<T = unknown>(
   path: string,
-  { body, headers, ...options }: RequestOptions = {},
+  { body, headers, ...options }: RequestOptions = {}
 ): Promise<T> {
   const send = async (token: string | null): Promise<Response> => {
     return fetch(`${API_URL}${path}`, {
@@ -136,58 +133,4 @@ export async function apiRequest<T = unknown>(
 
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
-}
-export async function apiDownload(
-  path: string,
-  options: Omit<RequestInit, "body"> = {},
-): Promise<Blob> {
-  const send = async (token: string | null): Promise<Response> => {
-    return fetch(`${API_URL}${path}`, {
-      ...options,
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...options.headers,
-      },
-    });
-  };
-
-  let res = await send(getAccessToken());
-
-  // Access token expired → refresh and retry once
-  if (res.status === 401) {
-    const newToken = await refreshAccessToken();
-
-    if (newToken) {
-      res = await send(newToken);
-    } else {
-      clearTokens();
-      redirectToLogin();
-      throw new Error("Authentication required");
-    }
-  }
-
-  if (!res.ok) {
-    let detail = `Download failed with status ${res.status}`;
-
-    try {
-      const contentType = res.headers.get("content-type") || "";
-
-      if (contentType.includes("application/json")) {
-        const err = await res.json();
-        detail = err.detail ?? JSON.stringify(err);
-      } else {
-        const text = await res.text();
-
-        if (text) {
-          detail = text;
-        }
-      }
-    } catch {
-      // Ignore error-body parsing failures
-    }
-
-    throw new Error(detail);
-  }
-
-  return await res.blob();
 }
