@@ -1,1617 +1,385 @@
-# CRM System
-
-A modern **Customer Relationship Management (CRM)** system built using **Next.js** for the frontend and **Django REST Framework** for the backend. The application follows a RESTful architecture with JWT-based authentication and a modular codebase to support scalable CRM features.
-
----
-
-# 🚀 Project Status
-
-**Current Progress:** 🟢 **Day 14 Completed**
-
-## Completed Modules
-
-- ✅ Authentication
-- ✅ Dashboard
-- ✅ Customer Management
-- ✅ Lead Management
-- ✅ Deal Management
-- ✅ Sales Pipeline Analytics APIs
-- ✅ Sales Pipeline UI
-- ✅ Sales Pipeline Integration
-- ✅ Opportunity Management UI
-- ✅ Opportunity CRUD APIs
-- ✅ Opportunity Analytics & Supporting APIs
-- ✅ Contact Management UI
-- ✅ Contact Backend APIs
-- ✅ Contact API Integration
-- ✅ Follow-ups UI
-- ✅ Company Management UI
-- ✅ Company CRUD APIs
-- ✅ Company Search, Filtering & Supporting APIs
-- ✅ Email Templates UI
-- 🟡 Task Management UI
-- 🟡 Company API Integration
-- 🟡 Dashboard API Integration (Partial)
-- ✅ Reports & Analytics UI
-- ✅ Revenue Module UI
-- ✅ Activity CRUD APIs
-- ✅ Activity Search, Filtering & Supporting APIs
-- ✅ Notes APIs
-- ✅ Notes Search, Filtering & Supporting APIs
-- ✅ Profile Settings Module UI
-- ✅ Follow-ups Search, Filtering & Supporting APIs
-- ✅ Email Templates Backend APIs
-- ✅ Project Settings Module UI
-
----
-
-# 🛠 Tech Stack
-
-## Frontend
-
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- Context API
-
-## Backend
-
-- Django
-- Django REST Framework
-- Simple JWT Authentication
-- PostgreSQL (Neon Database)
-- Django Filters
-
-## Development Tools
-
-- Git
-- GitHub
-- Postman
-- Visual Studio Code
-
----
-
-# 📁 Project Structure
-
-```text
-crm-system/
-│
-├── backend/
-│   ├── core/
-│   ├── users/
-│   ├── customers/
-│   ├── leads/
-│   ├── deals/
-│   ├── dashboard/
-│   ├── pipeline/
-│   └── manage.py
-│
-├── frontend/
-│   ├── app/
-│   ├── components/
-│   ├── context/
-│   ├── hooks/
-│   ├── services/
-│   └── public/
-│
-└── README.md
-```
-
----
-
-# ✨ Features
-
-## 🔐 Authentication
-
-- User Registration
-- User Login
-- JWT Authentication
-- Access Token
-- Refresh Token
-- Protected API Endpoints
-- Protected Routes
-- Persistent User Session
-- Logout Functionality
-
----
-
-# 📊 Dashboard
-
-## Completed
-
-- Dashboard Summary API
-- JWT Protected Endpoint
-- Dashboard Statistics
-- Serializer-Based Response
-- RESTful API Design
-- Total Customers
-- Active Customers
-- Total Deals
-- Total Revenue
-- Recent Customers
-- Recent Leads
-
-## In Progress
-
-- Sales Overview
-- Lead Sources
-- Deals Pipeline Analytics
-- Recent Activities
-- Top Performers
-
----
-
-# 👥 Customer Management
-
-## Backend
-
-- Customer Model
-- CRUD APIs
-- Search
-- Filtering
-- Ordering
-- Pagination
-- JWT Authentication
-- Validation
-
-## Frontend
-
-- Customer Listing
-- Add Customer
-- Edit Customer
-- Customer Details
-- Search
-- Filters
-- Responsive Design
-- Loading States
-- Form Validation
+SOFTIQ CRM
 
----
+A modern Customer Relationship Management (CRM) system built with Next.js/React, Django REST Framework, and PostgreSQL. The system provides centralized customer, sales, productivity, analytics, search, notification, and access-management capabilities.
 
-# 🎯 Lead Management
+🚀 Project Status
 
-## Backend
+Day 30 Completed — Development, integration, testing, debugging, and optimization completed.
 
-- Lead Model
-- CRUD APIs
-- Search
-- Filtering
-- Ordering
-- Pagination
-- JWT Authentication
-- Serializer Validation
+🔐 Authentication & Security
 
-## Frontend
+User registration and email-based login
 
-- Lead Listing
-- Add Lead
-- Edit Lead
-- Lead Details
-- Search
-- Status Filters
-- Pagination
-- Responsive UI
-- Action Buttons
+JWT access and refresh tokens
 
----
+Persistent authentication sessions
 
-# 💼 Deal Management
+Protected API endpoints and frontend routes
 
-## Backend
+Role-Based Access Control (RBAC)
 
-### CRUD Features
+Permission-aware UI
 
-- Deal Model
-- Deal Serializer
-- Create Deal
-- Update Deal
-- Delete Deal
-- Get Deal by ID
-- Get All Deals
-- Search
-- Filtering
-- Ordering
-- Pagination
-- JWT Authentication
-- Validation
+Viewer permission issue resolved
 
-### Deal Fields
+📊 Dashboard
 
-- Name
-- Customer
-- Deal Value
-- Pipeline Stage
-- Probability
-- Expected Close Date
-- Notes
-- Created By
-- Created At
-- Updated At
+KPI cards and business overview
 
----
+Revenue, Leads, Deals, Customers and Activity insights
 
-# 📈 Sales Pipeline Analytics
+Pipeline and performance analytics
 
-## Backend
+Real CRM data integration
 
-### Completed APIs
+Dashboard data-loading optimization
 
-#### Pipeline Summary API
+👥 Customer Management
 
-Returns:
+Customer CRUD, search, filtering, pagination and ordering
 
-- Total Deals
-- Total Pipeline Value
-- Active Deals
-- Closed Won
-- Closed Lost
+JWT authentication and validation
 
-#### Stage Distribution API
+Customer data-loading issue resolved
 
-Returns:
+🎯 Lead Management
 
-- Pipeline Stage
-- Deal Count
-- Total Value
-- Percentage Distribution
+Lead CRUD APIs
 
-#### Recent Deals API
+Search, filtering, ordering and pagination
 
-Returns:
+JWT authentication and validation
 
-- Customer
-- Company
-- Deal Value
-- Pipeline Stage
-- Expected Closing Date
+Frontend integration
 
-#### Pipeline Performance API
+💼 Opportunity Management
 
-Returns Monthly Analytics:
+Full CRUD and partial updates
 
-- Deals Created
-- Deals Closed
-- Revenue Generated
+Search and combined filtering
 
-#### Pipeline Trend Comparison API
+Stage, status and customer filters
 
-Provides:
+Pagination and ordering
 
-- Current Month Statistics
-- Previous Month Statistics
-- Growth Percentage
-
-#### Pipeline Export API
-
-Supports:
-
-- CSV Export
-- Excel Export
-- PDF Export
+Validation and automated API tests
 
-#### Stage Drill-down API
+💰 Deals & Sales Pipeline
 
-Returns all deals belonging to a selected pipeline stage.
+Deal CRUD and customer relationships
 
-### Features
-
-- Date Range Filtering
-- Monthly Analytics
-- Yearly Analytics
-- Aggregation Queries
-- JWT Authentication
-- Serializer Validation
-- Live Database Data
-- RESTful API Design
-- Postman API Testing
-
----
-
-# 💡 Opportunity Management
-
-## Frontend
-
-- Opportunity Listing
-- Add Opportunity
-- Edit Opportunity
-- Opportunity Details
-- Responsive Design
-- Form Validation
-- Loading States
-
----
-
-# 📇 Contact Management
-
-## Frontend
-
-- Contact Listing
-- Add Contact
-- Edit Contact
-- Contact Details
-- Search
-- Filtering
-- Responsive Design
-- Validation
-
----
-
-
-# 📅 Follow-ups Management
-
-## Backend
-
-### Follow-up Search, Filtering & Supporting APIs
-
-- Follow-up Search by Subject, Related To, Company, and Notes
-- Type, Status, Priority, and Date Range Filtering
-- Combined Search and Filtering
-- Server-side Pagination
-- Ordering / Sorting
-- Total Records Count
-- Dashboard Statistics
-- Upcoming, Completed, and Overdue Counts
-- Conversion Rate Support
-- Follow-up Insights
-- Upcoming Reminders
-- Reminder Ordering and Limits
-- Supporting Options APIs
-- Export Support
-- Aggregation Queries
-- Query Optimization
-- JWT Authentication and Authorization
-- API Validation and Error Handling
-- Postman API Testing
-- Backend Automated Test Cases
-
-## Frontend
-
-- Follow-ups Listing UI
-- Follow-up Overview Cards
-- Total Follow-ups
-- Upcoming Follow-ups
-- Completed Follow-ups
-- Overdue Follow-ups
-- Conversion Rate
-- Create Follow-up UI
-- Search and Filters
-- Type, Status, Priority, and Date Range Filters
-- Follow-up Table
-- View, Edit, and Delete Actions
-- Pagination
-- Upcoming Reminders
-- Follow-up Insights
-- Responsive Design
-- UI/UX Consistency
-
-# 🏢 Company Management
-
-## Backend
-
-### Company CRUD APIs
-
-- Company Model
-- Company Serializer
-- Create Company
-- Get All Companies
-- Get Company by ID
-- Update Company
-- Delete Company
-- Field Validation
-- JWT Authentication
-- Database Relationships
-- API Error Handling
-- Optimized Database Queries
-
-### Company Search, Filtering & Supporting APIs
-
-- Search Companies
-- Industry Filtering
-- Company Size Filtering
-- Status Filtering
-- Pagination
-- Ordering
-- Total Records Count
-- Industry Options
-- Company Size Options
-- Company Status Options
-- Serializer Validation
-- JWT Authentication
-- Postman API Testing
-- Backend Test Cases
-
-## Frontend
-
-- Company Listing
-- Add Company
-- Edit Company
-- Company Details
-- Search Companies
-- Company Filters
-- Active / Inactive Status Filtering
-- Industry Filtering
-- Company Size Filtering
-- Reset Filters
-- Shared CRM Pagination
-- Company Statistics Cards
-- Company Avatar Styling
-- Status Indicator Dots
-- Consistent Action Buttons and Hover States
-- Responsive Design
-- Loading States
-- Client-side Validation
-- Company Form UI Consistency
-- Company Details UI Refinement
-- Company-specific CSS Cleanup
-- Existing API Integration Preserved
-
----
-
-# 📧 Email Templates Management
-
-## Backend
-
-### Email Templates CRUD & Management APIs
-
-- Email Template Model and Serializer
-- Create, Get All, Get by ID, Update, and Delete APIs
-- Template Category and Type Support
-- Active / Inactive Status
-- Public / Private Visibility
-- Duplicate Template Support
-- Template Variables
-- Template Preview Support
-- Template Activity Tracking
-- Field Validation
-- JWT Authentication and Authorization
-- API Error Handling
-- Optimized Database Queries
-- Postman API Testing
-- Backend Automated Test Cases
-
-### Email Templates Search, Filtering & Supporting APIs
-
-- Search by Template Name and Subject
-- Category, Template Type, and Status Filtering
-- Combined Filtering
-- Pagination and Ordering
-- Total Records Count
-- Category, Template Type, Status, and Variable Options
-- Statistics / Supporting Data
-- Query Optimization
-- Validation
-- JWT Authentication
-- Postman API Testing
-- Backend Test Cases
-
-## Frontend
-
-- Email Templates Listing UI
-- Template Search
-- Pagination
-- Create Email Template UI
-- Email Content Editor
-- Variable Insertion
-- Category and Template Type
-- Active/Inactive Status
-- Email Preview
-- View Email Template UI
-- Edit and Duplicate Actions
-- Delete Confirmation Popup
-- Responsive Design
-- UI/UX Consistency
-
-# ⚙️ Project Settings
-
-## Frontend
-
-- Project Settings Navigation
-- Company Information UI
-- Company Logo Upload and Preview
-- Company Favicon Management
-- Company Information Validation
-- Localization Settings
-- Language and Region Settings
-- Timezone and Fiscal Year Settings
-- Date & Time Format Settings
-- Number & Currency Format Settings
-- Localization Preview
-- Reset to Default Support
-- Email Settings UI
-- SMTP Configuration
-- Email Preferences
-- Reply-To Settings
-- Email Signature Editor
-- Test Email Functionality
-- Email Usage Information
-- Save, Loading, Success, and Error States
-- Responsive Design
-- Reusable Settings Components
-- Accessibility Support
-- UI/UX Consistency with the existing Softiq CRM design system
-
-# ✅ Task Management
-
-## Frontend
-
-- Task Management Listing UI
-- Task Overview Cards
-- Task Search
-- Status, Priority, Assignee, and Due Date Filters
-- Task Table
-- Pagination
-- Kanban View
-- Task Status Columns
-- New Task UI
-- Task Form
-- Responsive Design
-- Frontend Testing
-
-# 📅 Activity Management
-
-## Backend
-
-### Activity CRUD APIs
-
-- Activity Model
-- Activity Serializer
-- Create Activity
-- Get All Activities
-- Get Activity by ID
-- Update Activity
-- Delete Activity
-- Activity Status Update
-- JWT Authentication
-- Serializer Validation
-- API Error Handling
-
-### Activity Search, Filtering & Supporting APIs
-
-- Activity Search
-- Type Filtering
-- Status Filtering
-- Priority Filtering
-- Assignee Filtering
-- Date Range Filtering Support
-- Pagination
-- Ordering
-- Total Records Count
-- Calendar Data Support
-- Activity Type Options
-- Activity Status Options
-- Activity Priority Options
-- Assignee Options
-- Activity Summary and Count Support
-- Optimized Database Queries
-- Postman API Testing
-- Backend Test Cases
-
-# 📝 Notes Management
-
-## Backend
-
-### Notes CRUD APIs
-
-- Note Model
-- Note Serializer
-- Note Category Support
-- Create Note
-- Get All Notes
-- Get Note by ID
-- Update Note
-- Delete Note
-- Pin / Unpin Note
-- Archive / Unarchive Note
-- Field Validation
-- JWT Authentication
-- API Error Handling
-- Optimized Database Queries
-- Postman API Testing
-- Backend Test Cases
-
-### Notes Search, Filtering & Supporting APIs
-
-- Search Notes by Title and Content
-- Category Filtering
-- Priority Filtering
-- Pinned / Unpinned Filtering
-- Archived / Active Filtering
-- Tag Filtering
-- Pagination
-- Ordering
-- Total Records Count
-- Notes Summary / Statistics API
-- Notes Options / Supporting Data API
-- Category Options
-- Priority Options
-- Pinned Status Options
-- Archived Status Options
-- Serializer Validation
-- JWT Authentication
-- Optimized Database Queries
-- Postman API Testing
-- Backend Test Cases
-
-# 👤 Profile Settings
-
-## Frontend
-
-- Profile Information UI
-- Edit Profile UI
-- Change Password UI
-- Password Strength and Validation UI
-- Preferences UI
-- Language and Region Preferences
-- Date & Time Format Preferences
-- Default Currency Preference
-- Theme Preferences
-- Items Per Page Preference
-- Other Application Preferences
-- Activity Log UI
-- Activity Summary UI
-- Profile Settings Navigation
-- Responsive Design
-- UI/UX Consistency with the existing Softiq CRM design system
-
-# 📊 Reports & Revenue
-
-## Frontend
-
-- Reports Dashboard UI
-- Revenue Module UI
-- Analytics overview cards
-- Reporting and revenue visualizations
-- Responsive design
-- UI/UX consistency with the existing CRM design system
-
-# 🌐 API Endpoints
-
-## Authentication
-
-| Method | Endpoint |
-|---------|----------|
-| POST | `/api/auth/register/` |
-| POST | `/api/auth/login/` |
-| POST | `/api/auth/refresh/` |
-| POST | `/api/auth/verify/` |
-
----
-
-## Dashboard
-
-| Method | Endpoint |
-|---------|----------|
-| GET | `/api/dashboard-summary/` |
-
----
-
-## Customers
-
-| Method | Endpoint |
-|---------|----------|
-| POST | `/api/customers/` |
-| GET | `/api/customers/` |
-| GET | `/api/customers/{id}/` |
-| PATCH | `/api/customers/{id}/` |
-| DELETE | `/api/customers/{id}/` |
-
-Supports:
-
-- Search
-- Filtering
-- Ordering
-- Pagination
-
----
-
-## Leads
-
-| Method | Endpoint |
-|---------|----------|
-| POST | `/api/leads/` |
-| GET | `/api/leads/` |
-| GET | `/api/leads/{id}/` |
-| PATCH | `/api/leads/{id}/` |
-| DELETE | `/api/leads/{id}/` |
-
-Supports:
-
-- Search
-- Filtering
-- Ordering
-- Pagination
-
----
-
-## Deals
-
-| Method | Endpoint |
-|---------|----------|
-| POST | `/api/deals/` |
-| GET | `/api/deals/` |
-| GET | `/api/deals/{id}/` |
-| PATCH | `/api/deals/{id}/` |
-| DELETE | `/api/deals/{id}/` |
-
-Supports:
-
-- Search
-- Filtering
-- Ordering
-- Pagination
-
----
-
-## Contacts
-
-| Method | Endpoint |
-|---------|----------|
-| POST | `/api/contacts/` |
-| GET | `/api/contacts/` |
-| GET | `/api/contacts/{id}/` |
-| PATCH | `/api/contacts/{id}/` |
-| DELETE | `/api/contacts/{id}/` |
-
-Supports:
-
-- Search
-- Status Filtering
-- Ordering
-- Pagination
-- Total Records Count
-- JWT Authentication
-- Validation
-
----
-
-## Companies
-
-| Method | Endpoint |
-|---------|----------|
-| POST | `/api/companies/` |
-| GET | `/api/companies/` |
-| GET | `/api/companies/{id}/` |
-| PATCH | `/api/companies/{id}/` |
-| DELETE | `/api/companies/{id}/` |
-| GET | `/api/companies/filter-options/` |
-
-Supports:
-
-- Search
-- Industry Filtering
-- Company Size Filtering
-- Status Filtering
-- Ordering
-- Pagination
-- Total Records Count
-- Supporting Filter Options
-- JWT Authentication
-- Validation
-
-## Notes
-
-| Method | Endpoint |
-|---------|----------|
-| POST | `/api/notes/` |
-| GET | `/api/notes/` |
-| GET | `/api/notes/{id}/` |
-| PATCH | `/api/notes/{id}/` |
-| DELETE | `/api/notes/{id}/` |
-| PATCH | `/api/notes/{id}/pin/` |
-| PATCH | `/api/notes/{id}/unpin/` |
-| PATCH | `/api/notes/{id}/archive/` |
-| PATCH | `/api/notes/{id}/unarchive/` |
-| GET | `/api/notes/summary/` |
-| GET | `/api/notes/options/` |
-
-Supports:
-
-- Search by title and content
-- Category Filtering
-- Priority Filtering
-- Pinned / Archived Filtering
-- Tag Filtering
-- Ordering
-- Pagination
-- Total Records Count
-- Summary Statistics
-- Supporting Filter Options
-- JWT Authentication
-- Validation
-
-## Sales Pipeline
-
-| Method | Endpoint |
-|---------|----------|
-| GET | `/api/pipeline/summary/` |
-| GET | `/api/pipeline/stages/` |
-| GET | `/api/pipeline/recent-deals/` |
-| GET | `/api/pipeline/performance/` |
-| GET | `/api/pipeline/trends/` |
-| GET | `/api/pipeline/export/` |
-| GET | `/api/pipeline/stages/{stage}/deals/` |
-
----
-
-# 🔒 Authentication
-
-Protected endpoints require a JWT Access Token.
-
-Example:
-
-```text
-Authorization: Bearer <access_token>
-```
-
----
-
-# 📦 Backend Modules
-
-```text
-backend/
-
-├── core/
-├── users/
-├── dashboard/
-├── customers/
-├── leads/
-├── deals/
-├── pipeline/
-```
-
----
-
-# 🎨 Frontend Modules
-
-```text
-frontend/
-
-├── app/
-├── components/
-│   ├── Navbar
-│   ├── Sidebar
-│   ├── Dashboard
-│   ├── Customers
-│   ├── Leads
-│   ├── Deals
-│   ├── Sales Pipeline
-│   ├── Opportunities
-│   ├── Contacts
-│   ├── Follow-ups
-│   ├── Email Templates
-│   ├── Project Settings
-│   └── Company Management
-│
-├── context/
-│   └── AuthContext
-│
-├── hooks/
-│
-├── services/
-│   └── API Services
-```
-
----
-
-# 🔄 Authentication Flow
-
-1. User submits login credentials.
-2. Backend validates the credentials.
-3. JWT Access and Refresh tokens are generated.
-4. Tokens are stored securely.
-5. Protected API requests include the Access Token.
-6. Unauthorized requests return **401 Unauthorized**.
-7. Refresh token is used to obtain a new access token when required.
-
----
-
-# ▶️ Running the Project
-
-## Backend
-
-```bash
-cd backend
-
-python -m venv venv
-
-venv\Scripts\activate
-
-pip install -r requirements.txt
-
-python manage.py makemigrations
-
-python manage.py migrate
-
-python manage.py runserver
-```
-
-Backend runs at:
-
-```text
-http://127.0.0.1:8000/
-```
-
----
-
-## Frontend
-
-```bash
-cd frontend
-
-npm install
-
-npm run dev
-```
-
-Frontend runs at:
-
-```text
-http://localhost:3000/
-```
-
----
-
-# 🧪 Testing
-
-API testing completed using **Postman**.
-
-### Authentication
-
-- Register
-- Login
-- JWT Authentication
-- Refresh Token
-
-### Customer APIs
-
-- CRUD Operations
-- Search
-- Filtering
-- Ordering
-- Pagination
-
-### Lead APIs
-
-- CRUD Operations
-- Search
-- Filtering
-- Ordering
-- Pagination
-
-### Deal APIs
-
-- CRUD Operations
-- Search
-- Filtering
-- Ordering
-- Pagination
-
-### Contact APIs
-
-- Contact CRUD Operations
-- Search
-- Status Filtering
-- Ordering
-- Pagination
-- Total Records Count
-- JWT Authentication
-- Validation
-- Error Handling
-
-### Notes APIs
-
-- Notes CRUD Operations
-- Search by Title and Content
-- Category Filtering
-- Priority Filtering
-- Pinned / Archived Filtering
-- Tag Filtering
-- Pagination
-- Ordering
-- Total Records Count
-- Notes Summary / Statistics
-- Supporting Filter Options
-- Pin / Unpin
-- Archive / Unarchive
-- JWT Authentication
-- Validation
-- Error Handling
-
-### Companies
-
-| Method | Endpoint |
-|---------|----------|
-| POST | `/api/companies/` |
-| GET | `/api/companies/` |
-| GET | `/api/companies/{id}/` |
-| PATCH | `/api/companies/{id}/` |
-| DELETE | `/api/companies/{id}/` |
-| GET | `/api/companies/filter-options/` |
-
-Supports:
-
-- Search
-- Industry Filtering
-- Company Size Filtering
-- Status Filtering
-- Ordering
-- Pagination
-- Total Records Count
-- Supporting Filter Options
-- JWT Authentication
-- Validation
-
-## Sales Pipeline APIs
-
-- Pipeline Summary API
-- Stage Distribution API
-- Recent Deals API
-- Pipeline Performance API
-- Pipeline Trends API
-- Pipeline Export API
-- Stage Drill-down API
-- JWT Authentication
-- Date Filters
-- Response Validation
-
----
-
-# 📅 Development Progress
-
-## Day 1
-
-- Project Setup
-- Authentication Module
-- JWT Configuration
-
-## Day 2
-
-### Backend
-
-- Customer CRUD APIs
-
-## Day 3
-
-### Frontend
-
-- Customer Management UI
-- Dashboard UI
-
-## Day 4
-
-### Backend
-
-- Dashboard APIs
-
-### Integration
-
-- Customer Module Integration
-
-## Day 5
-
-### Backend
-
-- Lead CRUD APIs
-- Dashboard Statistics APIs
-
-### Frontend
-
-- Customer Forms
-- Customer Details
-- Lead Management UI
-
-### Integration
-
-- Dashboard Statistics Integration
-
-## Day 6
-
-### Backend
-
-- Deal CRUD APIs
-- Search
-- Filtering
-- Ordering
-- Pagination
-- JWT Authentication
-- Serializer Validation
-- Complete Postman Testing
-
-### Frontend
-
-- Opportunity Management UI
-- Contact Management UI
-- Responsive Improvements
-- UI Review & Enhancements
-
-### Integration
-
-- Dashboard Summary Integration
-- JWT Authentication Fixes
-- Live Database Integration
-
-## Day 7
-
-### Backend
-
-- Sales Pipeline Summary API
-- Stage Distribution API
-- Recent Deals API
-- Pipeline Performance API
-- Pipeline Trends API
-- Pipeline Export API
-- Stage Drill-down API
-- Date Filters
-- Aggregation Queries
-- JWT Authentication
-- Serializer Validation
-- API Validation
-- Backend Debugging
-- Postman Testing
-
-### Frontend
-
-- Sales Pipeline UI Improvements
-- Company Management UI
-- Dashboard Cards Review
-- Leads Page UI Improvements
-- Navigation Bar Review
-
-### Integration
-
-- Backend API Preparation
-- API Contract Review
-- Frontend Integration Support
-
----
-
-## Day 8
-
-### Backend
-
-- Opportunity Model
-- Opportunity Serializer
-- Opportunity CRUD APIs
-- Create Opportunity API
-- Get All Opportunities API
-- Get Opportunity by ID API
-- Update Opportunity API
-- Delete Opportunity API
-- Search
-- Filtering
-- Ordering
-- Pagination
-- JWT Authentication
-- Serializer Validation
-- Backend Test Cases
-- Postman API Testing
-- Opportunity Statistics API
-- Opportunity Filters API
-- Customer Dropdown API
-- Company Dropdown API
-- Opportunity Dashboard Summary API
-- Aggregation Queries
-- Optimized Database Queries
-- API Validation
-- Backend Debugging
-
-### Frontend
-
-- Opportunity Management UI Refinements
-- Opportunity Listing UI
-- Opportunity Statistics Cards
-- Opportunity Search and Filtering UI
-- Opportunity Stage Filters
-- Opportunity Status Filters
-- Opportunity Actions
-- UI Enhancement Suggestions
-- CSS Conflict Resolution
-- Git Merge Conflict Resolution
-- Responsive UI Review
-- Frontend Module Review
-
-### Integration
-
-- Completed Sales Pipeline frontend-backend integration
-- Pipeline Summary API Integration
-- Pipeline Stage API Integration
-- Recent Deals API Integration
-- Pipeline Performance API Integration
-- API Response Verification
-- Frontend-Backend Data Flow Verification
-- End-to-End Pipeline Testing
-- Integration Issue Resolution
-- Git Branch Synchronization
-- Pull Request Preparation
-
-
-## Day 9
-
-### Backend
-
-- Contact CRUD APIs
-- Contact Serializer
-- Contact Field Validation
-- JWT Authentication
-- Contact Search
-- Status Filtering
-- Pagination
-- Ordering
-- Total Records Count
-- Optimized Database Queries
-- API Error Handling
-- Postman API Testing
-- Backend Test Cases
-
-### Frontend
-
-- Follow-ups Dashboard UI
-- Follow-up Overview Cards
-- Follow-up Listing Table
-- Search and Filter UI
-- Follow-up Actions
-- Upcoming Reminders UI
-- Follow-up Insights UI
-- Pagination
-- Responsive UI Review
-- Sidebar and UI Enhancements
-- Sales Pipeline Typography and Card Icon Improvements
-- Company Table and Form UI Improvements
-- Contact Table and Action Button Improvements
-- Contact Delete Confirmation and Success Feedback
-- CSS Conflict Resolution
-- Git Merge and UI Review
-
-### Integration
-
-- Contacts Listing Integration
-- Add Contact Integration
-- View Contact Integration
-- Edit and Update Contact Integration
-- Delete Contact Integration
-- Search and Status Filter Integration
-- Pagination and Ordering Integration
-- JWT Authentication
-- Validation and Error Handling
-- End-to-End Contact Module Testing
-- Git Branch Synchronization
-
-## Day 10
-
-### Backend
-
-- Company CRUD APIs
-- Company Serializer and Field Validation
-- JWT Authentication
-- Database Relationships
-- API Error Handling
-- Optimized Database Queries
-- Company Search
-- Industry Filtering
-- Company Size Filtering
-- Status Filtering
-- Pagination
-- Ordering
-- Total Records Count
-- Company Filter Options API
-- Postman API Testing
-- Backend Test Cases
-
-### Frontend
-
-- Email Templates Listing UI
-- Create Email Template UI
-- View Email Template UI
-- Edit and Duplicate Template Actions
-- Delete Confirmation Popup
-- Template Search and Pagination
-- Email Content Editor and Variable Insertion
-- Email Preview
-- Task Management UI Development
-- Task Listing and Overview Cards
-- Kanban View
-- New Task UI
-
-### Integration
-
-- Company API Integration
-- Companies Listing Integration
-- Add, View, Edit, Update, and Delete Company Integration
-- Search and Filtering Integration
-- Pagination and Ordering Integration
-- End-to-End Company Module Testing
-- Integration work remains in progress
-
-## Day 11
-
-### Backend
-
-- Activity CRUD APIs
-- Activity Serializer and Validation
-- Activity Status Update API
-- Activity Search
-- Activity Type Filtering
-- Activity Status Filtering
-- Activity Priority Filtering
-- Activity Assignee Filtering
-- Activity Date Range Filtering Support
-- Pagination and Ordering
-- Total Records Count
-- Calendar Data Support
-- Activity Summary and Count Support
-- Activity Supporting Data APIs
-- Notes APIs
-- JWT Authentication
-- Optimized Database Queries
-- Postman API Testing
-- Backend Test Cases
-
-### Frontend
-
-- Reports Dashboard UI
-- Revenue Module UI
-- Reports and Revenue overview cards
-- Analytics and reporting visualizations
-- Responsive UI implementation
-- UI/UX consistency with the existing Softiq CRM design system
-
-### Integration
-
-- Activity API integration support
-- Notes API integration support
-- Frontend-backend request and response verification
-- API validation and error handling
-- End-to-end testing of Activity and Notes functionality
-- Git branch synchronization and Pull Request preparation
-
-
-## Day 12
-
-### Backend
-
-- Notes CRUD APIs
-- Note Serializer and Validation
-- Note Category Support
-- Pin / Unpin Note APIs
-- Archive / Unarchive Note APIs
-- Notes Search by Title and Content
-- Category Filtering
-- Priority Filtering
-- Pinned / Archived Filtering
-- Tag Filtering
-- Pagination and Ordering
-- Total Records Count
-- Notes Summary / Statistics API
-- Notes Options / Supporting Data API
-- JWT Authentication
-- Optimized Database Queries
-- Postman API Testing
-- Backend Test Cases
-- Notes Database Migrations and Validation
-
-### Frontend
-
-- Profile Settings Module UI
-- Profile Information UI
-- Change Password UI
-- Preferences UI
-- Activity Log UI
-- Profile Settings Navigation
-- Responsive UI implementation
-- UI/UX consistency with the existing Softiq CRM design system
-
-### Integration
-
-- Notes module integration support
-- Profile Settings integration support
-- Frontend-backend request and response verification
-- API validation and error handling
-- End-to-end testing of Notes functionality
-- Git branch synchronization and Pull Request preparation
-
-## Day 13
-
-### Backend
-
-- Follow-up Search API
-- Search by Subject, Related To, Company, and Notes
-- Type, Status, Priority, and Date Range Filtering
-- Combined Filtering
-- Server-side Pagination
-- Ordering and Sorting
-- Total Records Count
-- Dashboard Statistics
-- Upcoming / Completed / Overdue Counts
-- Conversion Rate Support
-- Follow-up Insights API
-- Upcoming Reminders API
-- Reminder Ordering and Limits
-- Supporting Options APIs
-- Export API
-- Aggregation Queries
-- Query Optimization
-- JWT Authentication and Authorization
-- API Validation and Error Handling
-- Postman API Testing
-- Backend Automated Test Cases
-
-### Frontend
-
-- Project Settings Module UI
-- Project Settings Navigation
-- Company Information UI
-- Company Logo and Favicon Management
-- Localization UI and Preview
-- Email Settings UI
-- SMTP Configuration
-- Email Preferences
-- Reply-To Settings
-- Email Signature
-- Test Email UI
-- Responsive Design
-- Reusable Settings Components
-- Validation and State Handling
-
-### Integration
-
-- Follow-up API integration support
-- Search and Filter API contract verification
-- Pagination and ordering integration support
-- Dashboard statistics and reminders API verification
-- Frontend-backend request and response verification
-- API validation and error handling
-- End-to-end Follow-up testing
-- Git branch synchronization and Pull Request preparation
-
-## Day 14
-
-### Backend — Enzela
-
-- Email Templates CRUD APIs
-- Email Template Serializer and Validation
-- Template Category and Type Support
-- Active / Inactive Status
-- Public / Private Visibility
-- Duplicate Template Support
-- Template Variables
-- Template Preview Support
-- Template Activity Tracking
-- JWT Authentication and Authorization
-- API Error Handling
-- Optimized Database Queries
-- Postman API Testing
-- Backend Automated Test Cases
-
-### Backend — Unza
-
-- Email Template Search
-- Category, Template Type, and Status Filtering
-- Combined Filtering
-- Pagination and Ordering
-- Total Records Count
-- Supporting Options APIs
-- Template Statistics / Supporting Data
-- Query Optimization
-- Validation
-- JWT Authentication and Authorization
-- API Error Handling
-- Postman API Testing
-- Backend Automated Test Cases
-
-### Frontend — Khaanzadi
-
-- Completed Project Settings Navigation
-- Company Information UI
-- Company Logo and Favicon Upload / Preview
-- Company Information Validation
-- Localization Settings and Dynamic Preview
-- Date / Time and Number / Currency Format Settings
-- Reset to Default
-- Email Settings UI
-- SMTP Configuration
-- Email Preferences
-- Reply-To Settings
-- Email Signature Editor
-- Test Email Functionality
-- Email Usage Section
-- Loading, Success, Error and Unsaved-change States
-- Responsive and Accessible UI
-- Reusable Settings Components
-- Backend API Integration Support
-- Frontend Testing
-
-### Frontend — Unza
-
-- Refined Company Management UI according to the CRM / Customer design
-- Updated Company Listing Table and Visual Consistency
-- Improved Search, Filters and Reset Filters
-- Updated Shared Pagination and PAGE_SIZE Configuration
-- Improved Company Statistics Cards
-- Refined Company Add / Edit Forms
-- Improved Company Details Layout
-- Reviewed and Cleaned Company-specific CSS
-- Added Company Status Indicator Dots
-- Preserved Existing API Integration and Validation Logic
-- Prepared Company Module for Feature Branch and Pull Request
-
-### Integration
-
-- Email Templates frontend-backend API contract review
-- CRUD, Search, Filtering and Pagination integration support
-- Duplicate and Preview workflow integration support
-- Template Variables and Activity integration support
-- Authentication, validation and error handling verification
-- Frontend-backend request and response verification
-- End-to-end Email Templates testing
-- Git branch synchronization and Pull Request preparation
-
-# 📌 Current Status
-
-| Module | Status |
-|---------|--------|
-| Authentication | ✅ Completed |
-| Dashboard UI | ✅ Completed |
-| Dashboard APIs | 🟡 In Progress |
-| Customers | ✅ Completed |
-| Leads | ✅ Completed |
-| Deals | ✅ Completed |
-| Sales Pipeline APIs | ✅ Completed |
-| Sales Pipeline UI | ✅ Completed |
-| Sales Pipeline Integration | ✅ Completed |
-| Opportunity APIs | ✅ Completed |
-| Opportunity Analytics APIs | ✅ Completed |
-| Opportunity UI | ✅ Completed |
-| Contact UI | ✅ Completed |
-| Contact APIs | ✅ Completed |
-| Contact API Integration | ✅ Completed |
-| Company Management UI | ✅ Completed |
-| Company CRUD APIs | ✅ Completed |
-| Company Search & Supporting APIs | ✅ Completed |
-| Company API Integration | 🟡 In Progress |
-| Follow-ups UI | ✅ Completed |
-| Follow-ups Search & Supporting APIs | ✅ Completed |
-| Email Templates UI | ✅ Completed |
-| Email Templates Backend APIs | ✅ Completed |
-| Project Settings UI | ✅ Completed |
-| Task Management UI | 🟡 In Progress |
-| Dashboard Integration | 🟡 In Progress |
-| Reports & Analytics UI | ✅ Completed |
-| Revenue Module UI | ✅ Completed |
-| Activity APIs | ✅ Completed |
-| Notes APIs | ✅ Completed |
-| Notes Search & Supporting APIs | ✅ Completed |
-| Profile Settings UI | ✅ Completed |
-
----
-
-# 🚀 Future Modules
-
-- Notifications
-- Role-Based Access Control (RBAC)
-- Settings
-
----
-
-# 🌿 Git Workflow
-
-- Feature Branch Development
-- Pull Requests
-- Code Reviews
-- Merge into Develop Branch
-
----
-
-# 📂 Repository
-
-**GitHub Repository**
-
-```
-https://github.com/UnzaShaikh/crm-system
-```
-
----
-
-# 📄 License
-
-This project is developed as part of the **SoftiqTech Internship Program** for educational and internship purposes.
+Pipeline stages, value, probability and close dates
+
+Pipeline Summary and Stage Distribution
+
+Recent Deals, Trends and Performance
+
+Stage Drill-down analytics
+
+Pipeline Performance 500 error resolved
+
+📇 Contacts
+
+CRUD functionality
+
+Search and status filtering
+
+Pagination and ordering
+
+Status options API
+
+Validation and backend testing
+
+🏢 Companies
+
+Search and Industry, Size and Status filters
+
+Combined filtering, pagination and ordering
+
+Filter options API
+
+Optimized database queries
+
+Automated testing
+
+📅 Activities
+
+Search by title, description and location
+
+Type, Status and Priority filtering
+
+Combined filtering and ordering
+
+Validation, authentication and error handling
+
+Backend test coverage
+
+📝 Notes
+
+Search, category, priority and tag filtering
+
+Pinned and archived status filters
+
+Pagination and ordering
+
+Summary/statistics and options APIs
+
+Pin/unpin and archive/unarchive
+
+Query optimization and error handling
+
+23/23 tests passed
+
+🔄 Follow-ups
+
+Search and filtering
+
+Follow-up statistics
+
+UI improvements
+
+API and functional testing
+
+📧 Email Templates
+
+Search and category/status/type filtering
+
+Combined filtering, pagination and ordering
+
+Statistics and category counts
+
+Variables API, preview and variable rendering
+
+Authorization, validation and error handling
+
+Query optimization and migrations
+
+52/52 tests passed
+
+🔎 Global Search
+
+Search across 9 CRM modules
+
+Module-specific and multi-module filtering
+
+Pagination and parameter validation
+
+JWT protection and standardized responses
+
+Dashboard search-bar integration
+
+Debounced requests and results dropdown
+
+Loading, empty and clear states
+
+Escape/outside-click handling
+
+Direct navigation to CRM records
+
+29/29 tests passed
+
+🔔 Notifications & Tasks
+
+Task assignment, due and overdue notifications
+
+Notification preferences and duplicate prevention
+
+Unread count, individual read and mark-all-as-read
+
+Notification navigation
+
+Task List, Create, Kanban, View and Edit functionality
+
+⚙️ Settings & Administration
+
+Profile and Project Settings
+
+User and Role Management
+
+Permission Management and Permission Matrix
+
+Notification Settings and Activity Logs
+
+Admin Panel and RBAC
+
+🧪 Testing & Quality Assurance
+
+API Testing
+
+Postman CRUD testing
+
+Authentication testing
+
+Search, filtering, pagination and ordering
+
+Validation and error scenarios
+
+Automated Testing
+
+Django REST Framework tests
+
+Authentication and validation tests
+
+Search and filtering tests
+
+Regression testing after fixes and optimization
+
+Key Results
+
+Module
+
+Result
+
+Notes
+
+23/23 Passed
+
+Global Search
+
+29/29 Passed
+
+Email Templates
+
+52/52 Passed
+
+Companies
+
+8/8 Passed
+
+🐛 Debugging & Issues Resolved
+
+Authentication startup/login redirect issue
+
+Dashboard data-loading issues
+
+Customer data-loading issue
+
+Pipeline Performance API 500 error
+
+Notification count “Failed to Fetch” issue
+
+Admin Panel back-navigation issue
+
+Viewer Edit-option visibility issue
+
+Frontend/backend response-mapping and runtime issues
+
+Debugging Workflow
+
+Reproduce → Investigate → Identify Root Cause → Fix → Retest → Regression Test
+
+⚡ Performance Optimization
+
+Optimized Dashboard, Customer and Contact data loading
+
+Improved Users & Roles loading
+
+Reduced redundant and sequential API requests
+
+Improved Assign User and Assign Role workflows
+
+Used local state updates where full refetches were unnecessary
+
+Optimized related-object retrieval and pagination
+
+Added select_related query optimization
+
+Improved frontend loading states
+
+Result: Faster data loading, fewer API requests, better database efficiency, and improved user experience.
+
+🔧 Development Workflow
+
+Requirement Analysis → Module Development → Frontend/Backend Integration → Testing → Debugging → Optimization → Code Review → Pull Request/Integration
+
+Feature branches
+
+Pull Requests
+
+Code review
+
+Testing before integration
+
+Controlled merging
+
+Collaborative GitHub workflow
+
+🛠 Technology Stack
+
+Frontend
+
+Next.js
+
+React
+
+TypeScript
+
+Tailwind CSS
+
+Context API
+
+Backend
+
+Django
+
+Django REST Framework
+
+Simple JWT
+
+Django Filters
+
+Database
+
+PostgreSQL
+
+Neon Database
+
+Testing & Development
+
+Postman
+
+Django Test Framework
+
+Git
+
+GitHub
+
+Visual Studio Code
+
+✨ Key Capabilities
+
+Customer Management: Customers • Contacts • Companies
+
+Sales Management: Leads • Opportunities • Deals • Sales Pipeline
+
+Productivity: Activities • Tasks • Follow-ups • Notes • Email Templates
+
+Insights & System: Dashboard • Global Search • Notifications • Reports • Users & Roles • Permissions
+
+📈 Day 30 Outcome
+
+By Day 30, SOFTIQ CRM progressed from individual module development to a complete integrated CRM workflow.
+
+Core CRM modules completed
+
+Frontend and backend integrated
+
+JWT authentication implemented
+
+RBAC implemented
+
+Global Search and Dashboard Analytics integrated
+
+Notifications and Tasks integrated
+
+API, automated, functional and regression testing completed
+
+Debugging completed
+
+Performance optimization completed
+
+🏆 Final Status
+
+Development ✓ | Integration ✓ | Testing ✓ | Debugging ✓ | Optimization ✓
+
+SOFTIQ CRM is ready for final deployment and demonstration.
